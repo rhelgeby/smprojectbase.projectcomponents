@@ -1,10 +1,11 @@
 /*
  * ============================================================================
  *
- *  Zombie:Reloaded
+ *  Project
  *
  *  File:          version.inc
- *  Description:   Command for version information.
+ *  Type:          Base
+ *  Description:   Command to display Mercurial version information in-game.
  *
  *  Copyright (C) 2009-2010  Greyscale, Richard Helgeby
  *
@@ -24,41 +25,53 @@
  * ============================================================================
  */
 
-VersionOnCommandsCreate()
+/**
+ * Plugin has loaded.
+ */
+public VersionInfo_OnPluginStart()
 {
-    RegConsoleCmd("zr_version", Command_Version, "Prints version info about this plugin.");
+    // Create the command to display version information.
+    RegConsoleCmd("project_version", Command_Version, "Prints version info about this project.");
 }
 
+/**
+ * Command callback (project_version)
+ * 
+ * @param client    The client index.
+ * @param argc      The number of arguments that the client sent with the command.
+ */ 
 public Action:Command_Version(client, argc)
 {
-    decl String:buffer[512];
-    decl String:linebuffer[128];
-    buffer[0] = 0;
-    linebuffer[0] = 0;
+    new String:buffer[512];
+    new String:linebuffer[128];
     
+    // %24s is a formatting token that lines up text automatically.
     #define FORMATSTRING "%24s: %s\n"
     
-    Format(linebuffer, sizeof(linebuffer), "%s\n", ZR_VER_PRODUCT_NAME);
+    Format(linebuffer, sizeof(linebuffer), "%s\n", PROJECT_VER_PRODUCT_NAME);
     StrCat(buffer, sizeof(buffer), linebuffer);
     
-    Format(linebuffer, sizeof(linebuffer), "%s\n\n", ZR_VER_COPYRIGHT);
+    Format(linebuffer, sizeof(linebuffer), "%s\n\n", PROJECT_VER_COPYRIGHT);
     StrCat(buffer, sizeof(buffer), linebuffer);
     
-    Format(linebuffer, sizeof(linebuffer), FORMATSTRING, "Version", ZR_VER_VERSION);
+    Format(linebuffer, sizeof(linebuffer), FORMATSTRING, "Version", PROJECT_VER_VERSION);
     StrCat(buffer, sizeof(buffer), linebuffer);
     
-    Format(linebuffer, sizeof(linebuffer), FORMATSTRING, "Compile date", ZR_VER_DATE);
+    Format(linebuffer, sizeof(linebuffer), FORMATSTRING, "Compile date", PROJECT_VER_DATE);
     StrCat(buffer, sizeof(buffer), linebuffer);
     
-    Format(linebuffer, sizeof(linebuffer), FORMATSTRING, "License", ZR_VER_LICENSE);
+    Format(linebuffer, sizeof(linebuffer), FORMATSTRING, "License", PROJECT_VER_LICENSE);
     StrCat(buffer, sizeof(buffer), linebuffer);
     
-    Format(linebuffer, sizeof(linebuffer), FORMATSTRING, "Build", ZR_VER_REVISION);
+    Format(linebuffer, sizeof(linebuffer), FORMATSTRING, "Build", PROJECT_VER_REVISION);
     StrCat(buffer, sizeof(buffer), linebuffer);
     
-    Format(linebuffer, sizeof(linebuffer), FORMATSTRING, "Development branch", ZR_VER_BRANCH);
+    Format(linebuffer, sizeof(linebuffer), FORMATSTRING, "Development branch", PROJECT_VER_BRANCH);
     StrCat(buffer, sizeof(buffer), linebuffer);
     
+    // Send back reply in the correct place.  (Chat, client console, server console)
     ReplyToCommand(client, buffer);
+    
+    // Say that we handled the command so CS:S doesn't see it and print "Unknown command"
     return Plugin_Handled;
 }

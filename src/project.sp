@@ -36,16 +36,18 @@
 // the repository and HG installed (Mercurial or TortoiseHG).
 #define ADD_VERSION_INFO
 
-#if defined ADD_VERSION_INFO
-#include "project/hgversion"
-#endif
+// Base project includes.
 
 #if defined ADD_VERSION_INFO
+#include "project/hgversion"
 #include "project/versioninfo"
 #endif
 
-// Core includes.
-// #include "project/project"
+#include "project/project"
+#include "project/modulemanager"
+#include "project/eventmanager"
+
+// Module includes
 
 
 
@@ -81,6 +83,10 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
  */
 public OnPluginStart()
 {
+    // Forward event to other project base modules.
+    VersionInfo_OnPluginStart();
+    ModuleManager_OnPluginStart();
+    EventManager_OnPluginStart();
 }
 
 /**

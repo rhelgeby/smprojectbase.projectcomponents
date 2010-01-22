@@ -14,7 +14,10 @@ ZR
 	+Base
 		..\src\project.sp
 	+Plugin Includes
+		..\src\project\eventmanager.inc
 		..\src\project\hgversion.inc
+		..\src\project\modulemanager.inc
+		..\src\project\project.inc
 		..\src\project\versioninfo.inc
 	-SM Includes
 		..\env\include\admin.inc
@@ -77,9 +80,25 @@ ZR
 		..\env\include\version.inc
 [Open project files]
 0=..\src\project.sp
+1=..\src\project\versioninfo.inc
+2=..\src\project\eventmanager.inc
+3=..\src\project\modulemanager.inc
+4=..\src\project\project.inc
 [Selected Project Files]
 Main=
-Selected=..\src\project.sp
+Selected=..\src\project\eventmanager.inc
 [..\src\project.sp]
+TopLine=24
+Caret=1,52
+[..\src\project\versioninfo.inc]
 TopLine=1
-Caret=31,40
+Caret=39,10
+[..\src\project\eventmanager.inc]
+TopLine=55
+Caret=26,85
+[..\src\project\modulemanager.inc]
+TopLine=54
+Caret=6,85
+[..\src\project\project.inc]
+TopLine=1
+Caret=59,32

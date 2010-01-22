@@ -20,3 +20,5 @@ echo Starting compiler:
 %SPCOMP% -i%SOURCEDIR% -i%SOURCEDIR%/include -i%SMINCLUDES% -o%BUILDDIR%/project.smx %SOURCEDIR%\project.sp
 
 pause
+
+compile.bat
