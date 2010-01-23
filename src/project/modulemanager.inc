@@ -45,18 +45,6 @@
  */
 new Handle:g_adtModuleList;
 
-/**
- * All the data modules need to register.
- * See ModuleManager_Register()
- */
-enum ModuleData
-{
-    bool:ModuleData_Disabled = 0,   /** True if the module is disabled. */
-    String:ModuleData_FullName,     /** Probably going to be used when displaying modules. */
-    String:ModuleData_ShortName,    /** Probably going to be used for client interaction. */
-    // gunna need more than this..
-}
-
 // **********************************************
 //                 Forwards
 // **********************************************
@@ -88,7 +76,7 @@ stock ModuleManager_Register(moduledata[ModuleData])
     new Handle:adtModule = CreateArray(MM_DATA_MAX_LENGTH);
     
     // Push all the given module data to the new array.
-    PushArrayArray(adtModule, moduledata);
+    PushArrayArray(adtModule, moduledata[0]);
     
     // Store the handle in the global module list.
     new moduleID = PushArrayCell(g_adtModuleList, adtModule);
@@ -101,14 +89,52 @@ stock ModuleManager_Register(moduledata[ModuleData])
 }
 
 /**
+ * Disables a registered module.
+ * If the module is already disabled, nothing will change.
+ * 
+ * @param moduleID  The module ID of the module to disable.
+ */
+stock ModuleManager_Disable(moduleID)
+{
+    // Set the ModuleData_Disabled data to 'true'.
+    ModuleManager_WriteCell(moduleID, ModuleData_Disabled, true);
+}
+
+/**
+ * Enables a registered module.
+ * If the module is already enabled, nothing will change.
+ * 
+ * @param moduleID  The module ID of the module to enable.
+ */
+stock ModuleManager_Enable(moduleID)
+{
+    // Set the ModuleData_Disabled data to 'false'.
+    ModuleManager_WriteCell(moduleID, ModuleData_Disabled, false);
+}
+
+/**
+ * Returns if a module is disabled.
+ * 
+ * @param moduleID  The module ID of the module to check.
+ * 
+ * @return          True if the module is disabled, false if enabled.
+ */
+stock bool:ModuleManager_IsDisabled(moduleID)
+{
+    // Read the value in ModuleData_Disabled and return the cell as a bool.
+    return bool:ModuleManager_ReadCell(moduleID, ModuleData_Disabled);
+}
+
+/**
  * Module data reader that returns all available module data.
  * Modules can use this for communicating with other modules.
  * 
- * @param moduleID  The unique ID given to the registered module.
+ * @param moduleID      The unique ID given to the registered module.
+ * @param moduledata    Output array for all module data.  See enum ModuleData.
  */
 stock ModuleManager_ReadAll(moduleID, moduledata[ModuleData])
 {
-    GetArrayArray(MM_HANDLE_FROM_ID(moduleID), MODULE_DATA, moduledata);
+    GetArrayArray(MM_HANDLE_FROM_ID(moduleID), MODULE_DATA, moduledata[0]);
 }
 
 /**
@@ -116,13 +142,14 @@ stock ModuleManager_ReadAll(moduleID, moduledata[ModuleData])
  * Modules can use this for communicating with other modules.
  * 
  * @param moduleID  The unique ID given to the registered module.
+ * @param data      The data to get the value of.  See enum ModuleData.
  * 
  * @return          The integer value of the desired module data.
  */
 stock ModuleManager_ReadCell(moduleID, ModuleData:data)
 {
     new moduledata[ModuleData];
-    GetArrayArray(MM_HANDLE_FROM_ID(moduleID), MODULE_DATA, moduledata);
+    GetArrayArray(MM_HANDLE_FROM_ID(moduleID), MODULE_DATA, moduledata[0]);
     
     // Return the value.
     return _:moduledata[data];
@@ -133,21 +160,74 @@ stock ModuleManager_ReadCell(moduleID, ModuleData:data)
  * Modules can use this for communicating with other modules. 
  * 
  * @param moduleID  The unique ID given to the registered module.
- * @param fullname  Output variable for the full name the module gave upon registration.
+ * @param data      The data to get the value of.  See enum ModuleData.
+ * @param output    Output variable for the data read.
  * @param maxlen    The max length of the output string.
  */
-stock ModuleManager_ReadString(moduleID, String:fullname, maxlen)
+stock ModuleManager_ReadString(moduleID, ModuleData:data, String:output[], maxlen)
 {
     new moduledata[ModuleData];
-    GetArrayArray(MM_HANDLE_FROM_ID(moduleID), MODULE_DATA, moduledata);
+    GetArrayArray(MM_HANDLE_FROM_ID(moduleID), MODULE_DATA, moduledata[0]);
     
     // Copy full name to output
-    strcopy(fullname, maxlen, moduledata[ModuleData_FullName]);
+    strcopy(output, maxlen, String:moduledata[data]);
 }
 
 // **********************************************
 //   Private API (For base project files only)
 // **********************************************
+
+/**
+ * Module data writer that overwrites all data for a module with the given data.
+ * 
+ * @param moduleID      The unique ID given to the registered module.
+ * @param moduledata    New data to replace the old data.  See enum ModuleData.
+ */
+stock ModuleManager_WriteAll(moduleID, moduledata[ModuleData])
+{
+    SetArrayArray(MM_HANDLE_FROM_ID(moduleID), MODULE_DATA, moduledata[0]);
+}
+
+/**
+ * Module data writer that writes a specified non-string data value.
+ * 
+ * @param moduleID  The unique ID given to the registered module.
+ * @param data      Data to write new value to.  See enum ModuleData.
+ * @param value     Any cell value to write as the new data.
+ */
+stock ModuleManager_WriteCell(moduleID, ModuleData:data, any:value)
+{
+    // Read all the module data.
+    new moduledata[ModuleData];
+    ModuleManager_ReadAll(moduleID, moduledata);
+    
+    // Change the value of the specified module data.
+    moduledata[data] = value;
+    
+    // Overwrite the old array with the modified one.
+    SetArrayArray(MM_HANDLE_FROM_ID(moduleID), MODULE_DATA, moduledata[0]);
+}
+
+/**
+ * Module data writer that writes a specified string data value.
+ * 
+ * @param moduleID  The unique ID given to the registered module.
+ * @param data      Data to write new string to.  See enum ModuleData.
+ * @param maxlen    The max length of the data value.  See enum ModuleData.
+ * @param value     A string to write as the new data value.
+ */
+stock ModuleManager_WriteString(moduleID, ModuleData:data, maxlen, const String:value[])
+{
+    // Read all the module data.
+    new moduledata[ModuleData];
+    ModuleManager_ReadAll(moduleID, moduledata);
+    
+    // Change the value of the specified module data.
+    strcopy(String:moduledata[data], maxlen, value);
+    
+    // Overwrite the old array with the modified one.
+    SetArrayArray(MM_HANDLE_FROM_ID(moduleID), MODULE_DATA, moduledata[0]);
+}
 
 /**
  * Returns a module's handle given it's module ID.
@@ -188,6 +268,8 @@ stock ModuleManager_GetModuleID(Handle:adtModule)
 /**
  * Allows other modules to get the handle of the main array to manipulate data.
  * This is meant for other base project files to use, modules shouln't need this.
+ * 
+ * @return  The handle to the array with all module data handles.
  */
 stock Handle:ModuleManager_GetList()
 {

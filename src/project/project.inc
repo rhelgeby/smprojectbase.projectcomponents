@@ -30,3 +30,15 @@
  * All integers list than this (and greater than or equal to zero) are valid module IDs.
  */
 #define MODULE_COUNT GetArraySize(ModuleManager_GetList())
+
+/**
+ * All the data modules need to register.
+ * See ModuleManager_Register()
+ */
+enum ModuleData
+{
+    bool:ModuleData_Disabled = 0,       /** True if the module is disabled. */
+    String:ModuleData_FullName[32],     /** Probably going to be used when displaying modules. */
+    String:ModuleData_ShortName[16],    /** Probably going to be used for client interaction. */
+    // gunna need more than this..
+}

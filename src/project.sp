@@ -49,7 +49,7 @@
 
 // Module includes
 
-
+#include "project/testmodule"
 
 /**
  * Record plugin info.
@@ -84,9 +84,15 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 public OnPluginStart()
 {
     // Forward event to other project base modules.
-    VersionInfo_OnPluginStart();
+    #if defined ADD_VERSION_INFO
+        VersionInfo_OnPluginStart();
+    #endif
+    
     ModuleManager_OnPluginStart();
     EventManager_OnPluginStart();
+    
+    // Register modules here.
+    TestModule_OnPluginStart();
 }
 
 /**
