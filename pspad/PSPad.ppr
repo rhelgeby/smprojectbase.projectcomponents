@@ -12,14 +12,16 @@ ProjectFilesOnly=0
 [Project tree]
 ZR
 	+Base
+		+Base Includes
+			..\src\project\eventmanager.inc
+			..\src\project\hgversion.inc
+			..\src\project\modulemanager.inc
+			..\src\project\project.inc
+		+Module Includes
+			..\src\project\testmodule.inc
+			..\src\project\versioninfo.inc
 		..\src\project.sp
-	+Plugin Includes
-		..\src\project\eventmanager.inc
-		..\src\project\hgversion.inc
-		..\src\project\modulemanager.inc
-		..\src\project\project.inc
-		..\src\project\versioninfo.inc
-	-SM Includes
+	+SM Includes
 		..\env\include\admin.inc
 		..\env\include\adminmenu.inc
 		..\env\include\adt.inc
@@ -84,21 +86,29 @@ ZR
 2=..\src\project\eventmanager.inc
 3=..\src\project\modulemanager.inc
 4=..\src\project\project.inc
+5=..\src\project\testmodule.inc
+6=..\env\include\adt_array.inc
 [Selected Project Files]
 Main=
-Selected=..\src\project\eventmanager.inc
+Selected=..\src\project\testmodule.inc
 [..\src\project.sp]
-TopLine=24
-Caret=1,52
+TopLine=74
+Caret=1,95
 [..\src\project\versioninfo.inc]
-TopLine=1
-Caret=39,10
+TopLine=32
+Caret=1,78
 [..\src\project\eventmanager.inc]
-TopLine=55
-Caret=26,85
+TopLine=119
+Caret=27,127
 [..\src\project\modulemanager.inc]
-TopLine=54
-Caret=6,85
+TopLine=208
+Caret=94,229
 [..\src\project\project.inc]
 TopLine=1
-Caret=59,32
+Caret=35,43
+[..\src\project\testmodule.inc]
+TopLine=35
+Caret=67,62
+[..\env\include\adt_array.inc]
+TopLine=129
+Caret=1,150

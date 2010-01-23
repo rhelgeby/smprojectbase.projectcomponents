@@ -80,11 +80,11 @@ public EventManager_OnModuleRegister(Handle:adtModule)
 {
     // Push the ProjectEvents enum as the "bool" type to the module's data array.
     new bool:bProjectEvents[ProjectEvents];         // All values default to false.
-    PushArrayArray(adtModule, bProjectEvents[0]);
+    PushArrayArray(adtModule, bProjectEvents[0], sizeof(bProjectEvents));
     
     // Push the ProjectEvents enum as the "Function" type to the module's data array.
     new Function:funcProjectEvents[ProjectEvents];  // All values default to INVALID_FUNCTION.
-    PushArrayArray(adtModule, funcProjectEvents[0]);
+    PushArrayArray(adtModule, funcProjectEvents[0], sizeof(funcProjectEvents));
 }
 
 // **********************************************
@@ -179,9 +179,7 @@ stock Function:EventManager_SetEventForward(moduleID, ProjectEvents:event, const
  */
 stock EventManager_ReadAllEnableData(moduleID, bool:eventenabledata[ProjectEvents])
 {
-    PrintToServer("MODULE ID1 %d", moduleID);
-    GetArrayArray(ModuleManager_GetModuleArray(moduleID), EVENT_DATA_ENABLE, eventenabledata[0]);
-    PrintToServer("MODULE ID2 %d", moduleID);
+    GetArrayArray(ModuleManager_GetModuleArray(moduleID), EVENT_DATA_ENABLE, eventenabledata[0], sizeof(eventenabledata));
 }
 
 /**
@@ -210,7 +208,7 @@ stock EventManager_SyncEnableData(moduleID, bool:enable)
     }
     
     // Overwrite the old array with the modified one.
-    SetArrayArray(MM_HANDLE_FROM_ID(moduleID), EVENT_DATA_ENABLE, eventenabledata[0]);
+    SetArrayArray(MM_HANDLE_FROM_ID(moduleID), EVENT_DATA_ENABLE, eventenabledata[0], sizeof(eventenabledata));
 }
 
 /**
@@ -224,7 +222,7 @@ stock EventManager_SyncEnableData(moduleID, bool:enable)
 stock bool:EventManager_ReadEnableValue(moduleID, ProjectEvents:event)
 {
     new bool:eventenabledata[ProjectEvents];
-    GetArrayArray(ModuleManager_GetModuleArray(moduleID), EVENT_DATA_ENABLE, eventenabledata[0]);
+    GetArrayArray(ModuleManager_GetModuleArray(moduleID), EVENT_DATA_ENABLE, eventenabledata[0], sizeof(eventenabledata));
     
     // Return event's enable value.
     return eventenabledata[event];
@@ -242,13 +240,12 @@ stock EventManager_WriteEnableValue(moduleID, ProjectEvents:event, bool:enable)
     // Read all the module data.
     new bool:eventenabledata[ProjectEvents];
     EventManager_ReadAllEnableData(moduleID, eventenabledata);
-    PrintToServer("MODULE ID3 %d", moduleID);
     
     // Write the new function ID.
     eventenabledata[event] = enable;
     
     // Overwrite the old array with the modified one.
-    SetArrayArray(ModuleManager_GetModuleArray(moduleID), EVENT_DATA_ENABLE, eventenabledata[0]);
+    SetArrayArray(ModuleManager_GetModuleArray(moduleID), EVENT_DATA_ENABLE, eventenabledata[0], sizeof(eventenabledata));
 }
 
 /**
@@ -258,7 +255,7 @@ stock EventManager_WriteEnableValue(moduleID, ProjectEvents:event, bool:enable)
  */
 stock EventManager_ReadAllFuncData(moduleID, Function:eventfuncdata[ProjectEvents])
 {
-    GetArrayArray(ModuleManager_GetModuleArray(moduleID), EVENT_DATA_FUNCTION, eventfuncdata[0]);
+    GetArrayArray(ModuleManager_GetModuleArray(moduleID), EVENT_DATA_FUNCTION, eventfuncdata[0], sizeof(eventfuncdata));
 }
 
 /**
@@ -286,7 +283,7 @@ stock EventManager_ResetFuncData(moduleID)
     }
     
     // Overwrite the old array with the modified one.
-    SetArrayArray(MM_HANDLE_FROM_ID(moduleID), EVENT_DATA_FUNCTION, eventfuncdata[0]);
+    SetArrayArray(MM_HANDLE_FROM_ID(moduleID), EVENT_DATA_FUNCTION, eventfuncdata[0], sizeof(eventfuncdata));
 }
 
 /**
@@ -323,7 +320,7 @@ stock EventManager_WriteFuncValue(moduleID, ProjectEvents:event, Function:func)
     eventfuncdata[event] = func;
     
     // Overwrite the old array with the modified one.
-    SetArrayArray(MM_HANDLE_FROM_ID(moduleID), EVENT_DATA_FUNCTION, eventfuncdata[0]);
+    SetArrayArray(MM_HANDLE_FROM_ID(moduleID), EVENT_DATA_FUNCTION, eventfuncdata[0], sizeof(eventfuncdata));
 }
 
 // **********************************************

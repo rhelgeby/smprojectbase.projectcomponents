@@ -56,5 +56,21 @@ public TestModule_OnRoundStart()
 {
     decl String:fullname[32];
     ModuleManager_ReadString(g_iTestModuleID, ModuleData_FullName, fullname, sizeof(fullname));
-    PrintToServer("[%s] Round started!", fullname);
+    PrintToServer("[%s] Round started!  Switching event to new function.", fullname);
+    
+    // Switching event forward.
+    EventManager_SetEventForward(g_iTestModuleID, Event_RoundStart, "TestModule_OnRoundStart2");
+}
+
+/**
+ * Round has started. (Alternate)
+ */
+public TestModule_OnRoundStart2()
+{
+    decl String:fullname[32];
+    ModuleManager_ReadString(g_iTestModuleID, ModuleData_FullName, fullname, sizeof(fullname));
+    PrintToServer("[%s] Round started! (Alternate Function)  Disabling event.", fullname);
+    
+    // Disable event.
+    EventManager_Disable(g_iTestModuleID, Event_RoundStart);
 }

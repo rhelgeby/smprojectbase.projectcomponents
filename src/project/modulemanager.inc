@@ -134,7 +134,7 @@ stock bool:ModuleManager_IsDisabled(moduleID)
  */
 stock ModuleManager_ReadAll(moduleID, moduledata[ModuleData])
 {
-    GetArrayArray(MM_HANDLE_FROM_ID(moduleID), MODULE_DATA, moduledata[0]);
+    GetArrayArray(MM_HANDLE_FROM_ID(moduleID), MODULE_DATA, moduledata[0], sizeof(moduledata));
 }
 
 /**
@@ -149,10 +149,10 @@ stock ModuleManager_ReadAll(moduleID, moduledata[ModuleData])
 stock ModuleManager_ReadCell(moduleID, ModuleData:data)
 {
     new moduledata[ModuleData];
-    GetArrayArray(MM_HANDLE_FROM_ID(moduleID), MODULE_DATA, moduledata[0]);
+    GetArrayArray(MM_HANDLE_FROM_ID(moduleID), MODULE_DATA, moduledata[0], sizeof(moduledata));
     
     // Return the value.
-    return _:moduledata[data];
+    return _:moduledata[ModuleData_Disabled];
 }
 
 /**
@@ -167,7 +167,7 @@ stock ModuleManager_ReadCell(moduleID, ModuleData:data)
 stock ModuleManager_ReadString(moduleID, ModuleData:data, String:output[], maxlen)
 {
     new moduledata[ModuleData];
-    GetArrayArray(MM_HANDLE_FROM_ID(moduleID), MODULE_DATA, moduledata[0]);
+    GetArrayArray(MM_HANDLE_FROM_ID(moduleID), MODULE_DATA, moduledata[0], sizeof(moduledata));
     
     // Copy full name to output
     strcopy(output, maxlen, String:moduledata[data]);
@@ -185,7 +185,7 @@ stock ModuleManager_ReadString(moduleID, ModuleData:data, String:output[], maxle
  */
 stock ModuleManager_WriteAll(moduleID, moduledata[ModuleData])
 {
-    SetArrayArray(MM_HANDLE_FROM_ID(moduleID), MODULE_DATA, moduledata[0]);
+    SetArrayArray(MM_HANDLE_FROM_ID(moduleID), MODULE_DATA, moduledata[0], sizeof(moduledata));
 }
 
 /**
@@ -205,7 +205,7 @@ stock ModuleManager_WriteCell(moduleID, ModuleData:data, any:value)
     moduledata[data] = value;
     
     // Overwrite the old array with the modified one.
-    SetArrayArray(MM_HANDLE_FROM_ID(moduleID), MODULE_DATA, moduledata[0]);
+    SetArrayArray(MM_HANDLE_FROM_ID(moduleID), MODULE_DATA, moduledata[0], sizeof(moduledata));
 }
 
 /**
@@ -226,7 +226,7 @@ stock ModuleManager_WriteString(moduleID, ModuleData:data, maxlen, const String:
     strcopy(String:moduledata[data], maxlen, value);
     
     // Overwrite the old array with the modified one.
-    SetArrayArray(MM_HANDLE_FROM_ID(moduleID), MODULE_DATA, moduledata[0]);
+    SetArrayArray(MM_HANDLE_FROM_ID(moduleID), MODULE_DATA, moduledata[0], sizeof(moduledata));
 }
 
 /**
