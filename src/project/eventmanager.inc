@@ -26,14 +26,25 @@
  */
 
 /**
+ * Provides the plugin a way to know if the event manager is included in the project.
+ */
+#define EVENT_MANAGER
+
+/**
+ * The max number of cells needed for each of the event manager's allocated indexes.
+ */
+#define EM_DATA_MAX_CELLS EVENT_DATA_CELL_COUNT
+// The number of max cells needed is equal to the number of cells needed to store all data for enum ProjectEvents.
+
+/**
  * Defines the block of data in the module data arrays that contains event enable data.
  */
-#define EVENT_DATA_ENABLE 1
+#define EVENT_DATA_ENABLE g_iEMAllocatedIndexes[0]
 
 /**
  * Defines the block of data in the module data arrays that contains event function data.
  */
-#define EVENT_DATA_FUNCTION 2
+#define EVENT_DATA_FUNCTION g_iEMAllocatedIndexes[1]
 
 /**
  * This is a collection of ALL game and event custom events.
@@ -50,6 +61,16 @@ enum ProjectEvents
     Event_PlayerFire
 }
 
+/**
+ * The number of cells used to store all the event enable data in enum ProjectEvents.
+ */
+#define EVENT_DATA_CELL_COUNT 8
+
+/**
+ * Array to store the indexes of the allocated space in the module data arrays for the event manager.
+ */
+new g_iEMAllocatedIndexes[2];
+
 // **********************************************
 //                 Forwards
 // **********************************************
@@ -58,7 +79,7 @@ enum ProjectEvents
  * Plugin has loaded.
  * TODO: Support multiple games.
  */
-public EventManager_OnPluginStart()
+EventMgr_OnPluginStart()
 {
     // Hook events to manage and forward to modules.
     HookEvent("round_start", GameEvent_RoundStart);
@@ -69,6 +90,9 @@ public EventManager_OnPluginStart()
     //HookEvent("player_death", GameEvent_PlayerDeath);
     //HookEvent("player_jump", GameEvent_PlayerJump);
     //HookEvent("weapon_fire", GameEvent_WeaponFire);
+    
+    // Allocate 2 indexes for the data we want to store for each module.
+    ModuleMgr_Allocate(2, g_iEMAllocatedIndexes);
 }
 
 /**
@@ -76,13 +100,15 @@ public EventManager_OnPluginStart()
  * 
  * @param adtModule The adt array of the module being registered.
  */
-public EventManager_OnModuleRegister(Handle:adtModule)
+EventMgr_OnModuleRegister(Handle:adtModule)
 {
     // Push the ProjectEvents enum as the "bool" type to the module's data array.
+    // This is being pushed into our allocated space for event enable data.
     new bool:bProjectEvents[ProjectEvents];         // All values default to false.
     PushArrayArray(adtModule, bProjectEvents[0], sizeof(bProjectEvents));
     
     // Push the ProjectEvents enum as the "Function" type to the module's data array.
+    // This is being pushed into our allocated space for event function data.
     new Function:funcProjectEvents[ProjectEvents];  // All values default to INVALID_FUNCTION.
     PushArrayArray(adtModule, funcProjectEvents[0], sizeof(funcProjectEvents));
 }
@@ -100,7 +126,7 @@ public EventManager_OnModuleRegister(Handle:adtModule)
  * 
  * return               The function ID to the event forward.  INVALID_FUNCTION is returned upon failure.
  */
-stock Function:EventManager_RegisterEvent(moduleID, ProjectEvents:event, const String:functionname[])
+stock Function:EventMgr_RegisterEvent(moduleID, ProjectEvents:event, const String:functionname[])
 {
     // Find the function ID for the given function name.
     new Function:func = GetFunctionByName(GetMyHandle(), functionname);
@@ -109,8 +135,8 @@ stock Function:EventManager_RegisterEvent(moduleID, ProjectEvents:event, const S
     if (func != INVALID_FUNCTION)
     {
         // Enable the event to be forwarded to the module, and set the function ID to the event forward.
-        EventManager_WriteEnableValue(moduleID, event, true);
-        EventManager_WriteFuncValue(moduleID, event, func);
+        EventMgr_WriteEnableValue(moduleID, event, true);
+        EventMgr_WriteFuncValue(moduleID, event, func);
     }
     
     // Return the function ID.
@@ -124,10 +150,10 @@ stock Function:EventManager_RegisterEvent(moduleID, ProjectEvents:event, const S
  * @param moduleID  The module ID of the module whose event is being disabled.
  * @param event     The event to disable in the module.
  */
-stock EventManager_Disable(moduleID, ProjectEvents:event)
+stock EventMgr_Disable(moduleID, ProjectEvents:event)
 {
     // Disable the event in the module.
-    EventManager_WriteEnableValue(moduleID, event, false);
+    EventMgr_WriteEnableValue(moduleID, event, false);
 }
 
 /**
@@ -137,10 +163,10 @@ stock EventManager_Disable(moduleID, ProjectEvents:event)
  * @param moduleID  The module ID of the module whose event is being enabled.
  * @param event     The event to enable in the module.
  */
-stock EventManager_Enable(moduleID, ProjectEvents:event)
+stock EventMgr_Enable(moduleID, ProjectEvents:event)
 {
     // Enable the event in the module.
-    EventManager_WriteEnableValue(moduleID, event, true);
+    EventMgr_WriteEnableValue(moduleID, event, true);
 }
 
 /**
@@ -152,7 +178,7 @@ stock EventManager_Enable(moduleID, ProjectEvents:event)
  * 
  * return               The function ID to the event forward.  INVALID_FUNCTION is returned upon failure.
  */
-stock Function:EventManager_SetEventForward(moduleID, ProjectEvents:event, const String:functionname[])
+stock Function:EventMgr_SetEventForward(moduleID, ProjectEvents:event, const String:functionname[])
 {
     // Find the function ID for the given function name.
     new Function:func = GetFunctionByName(GetMyHandle(), functionname);
@@ -161,7 +187,7 @@ stock Function:EventManager_SetEventForward(moduleID, ProjectEvents:event, const
     if (func != INVALID_FUNCTION)
     {
         // Enable the event in the module.
-        EventManager_WriteFuncValue(moduleID, event, func);
+        EventMgr_WriteFuncValue(moduleID, event, func);
     }
     
     // Return the function ID.
@@ -174,34 +200,36 @@ stock Function:EventManager_SetEventForward(moduleID, ProjectEvents:event, const
 
 /**
  * Event data reader that returns all event enable data.
+ * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param moduleID  The unique ID given to the registered module.
  */
-stock EventManager_ReadAllEnableData(moduleID, bool:eventenabledata[ProjectEvents])
+stock EventMgr_ReadAllEnableData(moduleID, bool:eventenabledata[ProjectEvents])
 {
-    GetArrayArray(ModuleManager_GetModuleArray(moduleID), EVENT_DATA_ENABLE, eventenabledata[0], sizeof(eventenabledata));
+    GetArrayArray(ModuleMgr_GetModuleArray(moduleID), EVENT_DATA_ENABLE, eventenabledata[0], sizeof(eventenabledata));
 }
 
 /**
  * Sync all event enable data for all events with the given value.
+ * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param moduleID  The unique ID given to the registered module.
  * @param enable    True to enable all events, false to disable all.
  */
-stock EventManager_SyncEnableData(moduleID, bool:enable)
+stock EventMgr_SyncEnableData(moduleID, bool:enable)
 {
     // Read all the event function data.
     new Function:eventenabledata[ProjectEvents];
-    EventManager_ReadAllEnableData(moduleID, eventenabledata);
+    EventMgr_ReadAllEnableData(moduleID, eventenabledata);
     
     new ProjectEvents:event;
     
     // Loop through all events.
-    // x = Index of the current event (see enum ProjectEvents)
-    for (new x = 0; x < sizeof(eventenabledata); x++)
+    // eindex = Index of the current event (see enum ProjectEvents)
+    for (new eindex = 0; eindex < sizeof(eventenabledata); eindex++)
     {
         // Read the int as a ProjectEvent data type.
-        event = ProjectEvents:x;
+        event = ProjectEvents:eindex;
         
         // Sync event enable value with the given value.
         eventenabledata[event] = enable;
@@ -213,16 +241,17 @@ stock EventManager_SyncEnableData(moduleID, bool:enable)
 
 /**
  * Event data reader that returns a single event enable value.
+ * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param moduleID  The unique ID given to the registered module.
  * @param event     An event from enum ProjectEvents. (top of file)
  * 
  * @return          True if the event is enabled in the module, false if not.
  */
-stock bool:EventManager_ReadEnableValue(moduleID, ProjectEvents:event)
+stock bool:EventMgr_ReadEnableValue(moduleID, ProjectEvents:event)
 {
     new bool:eventenabledata[ProjectEvents];
-    GetArrayArray(ModuleManager_GetModuleArray(moduleID), EVENT_DATA_ENABLE, eventenabledata[0], sizeof(eventenabledata));
+    GetArrayArray(ModuleMgr_GetModuleArray(moduleID), EVENT_DATA_ENABLE, eventenabledata[0], sizeof(eventenabledata));
     
     // Return event's enable value.
     return eventenabledata[event];
@@ -230,53 +259,56 @@ stock bool:EventManager_ReadEnableValue(moduleID, ProjectEvents:event)
 
 /**
  * Module data writer that writes a new enable value for an event.
+ * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param moduleID  The unique ID given to the registered module.
  * @param event     The event to write new function ID to.
  * @param enable    The new enable value of the module's event.
  */
-stock EventManager_WriteEnableValue(moduleID, ProjectEvents:event, bool:enable)
+stock EventMgr_WriteEnableValue(moduleID, ProjectEvents:event, bool:enable)
 {
     // Read all the module data.
     new bool:eventenabledata[ProjectEvents];
-    EventManager_ReadAllEnableData(moduleID, eventenabledata);
+    EventMgr_ReadAllEnableData(moduleID, eventenabledata);
     
     // Write the new function ID.
     eventenabledata[event] = enable;
     
     // Overwrite the old array with the modified one.
-    SetArrayArray(ModuleManager_GetModuleArray(moduleID), EVENT_DATA_ENABLE, eventenabledata[0], sizeof(eventenabledata));
+    SetArrayArray(ModuleMgr_GetModuleArray(moduleID), EVENT_DATA_ENABLE, eventenabledata[0], sizeof(eventenabledata));
 }
 
 /**
  * Event data reader that returns all event function data.
+ * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param moduleID  The unique ID given to the registered module.
  */
-stock EventManager_ReadAllFuncData(moduleID, Function:eventfuncdata[ProjectEvents])
+stock EventMgr_ReadAllFuncData(moduleID, Function:eventfuncdata[ProjectEvents])
 {
-    GetArrayArray(ModuleManager_GetModuleArray(moduleID), EVENT_DATA_FUNCTION, eventfuncdata[0], sizeof(eventfuncdata));
+    GetArrayArray(ModuleMgr_GetModuleArray(moduleID), EVENT_DATA_FUNCTION, eventfuncdata[0], sizeof(eventfuncdata));
 }
 
 /**
  * Reset's all event function data for all events.
+ * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param moduleID  The unique ID given to the registered module.
  */
-stock EventManager_ResetFuncData(moduleID)
+stock EventMgr_ResetFuncData(moduleID)
 {
     // Read all the event function data.
     new Function:eventfuncdata[ProjectEvents];
-    EventManager_ReadAllFuncData(moduleID, eventfuncdata);
+    EventMgr_ReadAllFuncData(moduleID, eventfuncdata);
     
     new ProjectEvents:event;
     
     // Loop through all events.
     // x = Index of the current event (see enum ProjectEvents)
-    for (new x = 0; x < sizeof(eventfuncdata); x++)
+    for (new eindex = 0; eindex < sizeof(eventfuncdata); eindex++)
     {
         // Read the int as a ProjectEvent data type.
-        event = ProjectEvents:x;
+        event = ProjectEvents:eindex;
         
         // Reset the function ID to invalid.
         eventfuncdata[event] = INVALID_FUNCTION;
@@ -288,16 +320,17 @@ stock EventManager_ResetFuncData(moduleID)
 
 /**
  * Event data reader that returns a single event function value.
+ * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param moduleID  The unique ID given to the registered module.
  * @param event     An event from enum ProjectEvents. (top of file)
  * 
  * @return          The function ID of the event forward in the module.
  */
-stock Function:EventManager_ReadFuncValue(moduleID, ProjectEvents:event)
+stock Function:EventMgr_ReadFuncValue(moduleID, ProjectEvents:event)
 {
     new Function:eventfuncdata[ProjectEvents];
-    EventManager_ReadAllFuncData(moduleID, eventfuncdata);
+    EventMgr_ReadAllFuncData(moduleID, eventfuncdata);
     
     // Return event's enable value.
     return eventfuncdata[event];
@@ -305,22 +338,23 @@ stock Function:EventManager_ReadFuncValue(moduleID, ProjectEvents:event)
 
 /**
  * Module data writer that writes a new function ID for an event.
+ * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param moduleID  The unique ID given to the registered module.
  * @param event     The event to write new function ID to.
  * @param func      The new function ID to write as the event's forward function.
  */
-stock EventManager_WriteFuncValue(moduleID, ProjectEvents:event, Function:func)
+stock EventMgr_WriteFuncValue(moduleID, ProjectEvents:event, Function:func)
 {
     // Read all the module data.
     new Function:eventfuncdata[ProjectEvents];
-    EventManager_ReadAllFuncData(moduleID, eventfuncdata);
+    EventMgr_ReadAllFuncData(moduleID, eventfuncdata);
     
     // Write the new function ID.
     eventfuncdata[event] = func;
     
     // Overwrite the old array with the modified one.
-    SetArrayArray(MM_HANDLE_FROM_ID(moduleID), EVENT_DATA_FUNCTION, eventfuncdata[0], sizeof(eventfuncdata));
+    SetArrayArray(ModuleMgr_GetModuleArray(moduleID), EVENT_DATA_FUNCTION, eventfuncdata[0], sizeof(eventfuncdata));
 }
 
 // **********************************************
@@ -340,18 +374,17 @@ public GameEvent_RoundStart(Handle:event, const String:name[], bool:dontBroadcas
     new Function:func;
     
     // Loop through all the modules.
-    // x = module ID.
-    for (new x = 0; x < MODULE_COUNT; x++)
+    for (new moduleID = 0; moduleID < MODULE_COUNT; moduleID++)
     {
         // If the module is disabled, then stop this iteration.
-        if (ModuleManager_IsDisabled(x))
+        if (ModuleMgr_IsDisabled(moduleID))
             continue;
         
-        // Check if this event is enabled for x module.
-        if (EventManager_ReadEnableValue(x, Event_RoundStart))
+        // Check if this event is enabled for this module.
+        if (EventMgr_ReadEnableValue(moduleID, Event_RoundStart))
         {
             // Read the function ID.
-            func = EventManager_ReadFuncValue(x, Event_RoundStart);
+            func = EventMgr_ReadFuncValue(moduleID, Event_RoundStart);
             
             // If the function ID is invalid, then stop this iteration.
             if (func == INVALID_FUNCTION)

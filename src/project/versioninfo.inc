@@ -30,20 +30,31 @@
  */
 public VersionInfo_OnPluginStart()
 {
+    // Define all the module's data as layed out by enum ModuleData in project.inc.
+    new moduledata[ModuleData] = {false, "Version Information", "versioninfo"};
+    
+    // Register the module with this data.
+    ModuleMgr_Register(moduledata);
+    
+    // ************************
+    // Done registering module.
+    // ************************
+    
     // Create the command to display version information.
     RegConsoleCmd("project_version", Command_Version, "Prints version info about this project.");
 }
 
 /**
- * Command callback (project_version)
+ * Command callback: project_version
  * 
  * @param client    The client index.
  * @param argc      The number of arguments that the client sent with the command.
- */ 
+ */
 public Action:Command_Version(client, argc)
 {
-    new String:buffer[512];
-    new String:linebuffer[128];
+    decl String:buffer[512];
+    decl String:linebuffer[128];
+    buffer[0] = 0;
     
     // %24s is a formatting token that lines up text automatically.
     #define FORMATSTRING "%24s: %s\n"
@@ -51,7 +62,7 @@ public Action:Command_Version(client, argc)
     Format(linebuffer, sizeof(linebuffer), "%s\n", PROJECT_VER_PRODUCT_NAME);
     StrCat(buffer, sizeof(buffer), linebuffer);
     
-    Format(linebuffer, sizeof(linebuffer), "%s\n\n", PROJECT_VER_COPYRIGHT);
+    Format(linebuffer, sizeof(linebuffer), "%s\n \n", PROJECT_VER_COPYRIGHT);
     StrCat(buffer, sizeof(buffer), linebuffer);
     
     Format(linebuffer, sizeof(linebuffer), FORMATSTRING, "Version", PROJECT_VER_VERSION);

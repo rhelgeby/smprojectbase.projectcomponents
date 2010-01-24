@@ -37,16 +37,22 @@ new g_iTestModuleID;
 public TestModule_OnPluginStart()
 {
     // Define all the module's data as layed out by enum ModuleData in project.inc.
-    new moduledata[ModuleData];
-    moduledata[ModuleData_Disabled] = false;
-    strcopy(moduledata[ModuleData_FullName], sizeof(moduledata[ModuleData_FullName]), "Test Module");
-    strcopy(moduledata[ModuleData_ShortName], sizeof(moduledata[ModuleData_ShortName]), "testmodule");
+    new moduledata[ModuleData] = {false, "Test Module", "testmodule"};
     
     // Register the module with this data.
-    g_iTestModuleID = ModuleManager_Register(moduledata);
+    g_iTestModuleID = ModuleMgr_Register(moduledata);
     
     // Now register the events we're going to use.
-    EventManager_RegisterEvent(g_iTestModuleID, Event_RoundStart, "TestModule_OnRoundStart");
+    EventMgr_RegisterEvent(g_iTestModuleID, Event_RoundStart, "TestModule_OnRoundStart");
+    
+    // Register this module with the translations manager.
+    // Make sure testmodule.phrase.txt exists in translations/project/
+    TransMgr_Register(g_iTestModuleID);
+    
+    // ************************
+    // Done registering module.
+    // ************************
+    
 }
 
 /**
@@ -55,11 +61,11 @@ public TestModule_OnPluginStart()
 public TestModule_OnRoundStart()
 {
     decl String:fullname[32];
-    ModuleManager_ReadString(g_iTestModuleID, ModuleData_FullName, fullname, sizeof(fullname));
+    ModuleMgr_ReadString(g_iTestModuleID, ModuleData_FullName, fullname, sizeof(fullname));
     PrintToServer("[%s] Round started!  Switching event to new function.", fullname);
     
     // Switching event forward.
-    EventManager_SetEventForward(g_iTestModuleID, Event_RoundStart, "TestModule_OnRoundStart2");
+    EventMgr_SetEventForward(g_iTestModuleID, Event_RoundStart, "TestModule_OnRoundStart2");
 }
 
 /**
@@ -68,9 +74,9 @@ public TestModule_OnRoundStart()
 public TestModule_OnRoundStart2()
 {
     decl String:fullname[32];
-    ModuleManager_ReadString(g_iTestModuleID, ModuleData_FullName, fullname, sizeof(fullname));
+    ModuleMgr_ReadString(g_iTestModuleID, ModuleData_FullName, fullname, sizeof(fullname));
     PrintToServer("[%s] Round started! (Alternate Function)  Disabling event.", fullname);
     
     // Disable event.
-    EventManager_Disable(g_iTestModuleID, Event_RoundStart);
+    EventMgr_Disable(g_iTestModuleID, Event_RoundStart);
 }

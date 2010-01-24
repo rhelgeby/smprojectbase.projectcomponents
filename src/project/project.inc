@@ -29,11 +29,11 @@
  * The amount of registered modules.
  * All integers list than this (and greater than or equal to zero) are valid module IDs.
  */
-#define MODULE_COUNT GetArraySize(ModuleManager_GetList())
+#define MODULE_COUNT GetArraySize(ModuleMgr_GetList())
 
 /**
  * All the data modules need to register.
- * See ModuleManager_Register()
+ * See ModuleMgr_Register()
  */
 enum ModuleData
 {
@@ -42,3 +42,13 @@ enum ModuleData
     String:ModuleData_ShortName[16],    /** Probably going to be used for client interaction. */
     // gunna need more than this..
 }
+
+/**
+ * The number of cells used to store all the data in enum ModuleData.
+ */
+#define MODULE_DATA_CELL_COUNT 49
+
+/**
+ * The longest string that can be stored in the module's data. (Cell size of ModuleData_FullName)
+ */
+#define MODULE_DATA_LONGEST_STRING 32

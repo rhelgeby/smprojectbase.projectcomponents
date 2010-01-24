@@ -26,14 +26,21 @@
  */
 
 /**
- * Defines the block of data in the module data arrays that contains module-defined data.
+ * TODO:
+ * - Forwarding event code should be generic-itized and done through a call to a function.
+ * Ex: EventMgr_ForwardEvent(ProjectEvents:event, eventinfo1, ...)
+ * 
+ * - A command to list all modules and it's info.
+ * project_moduleinfo [module shortname]
+ * 
+ * - Have the logmanager print changes to the modules status (register, disabled, enabled, etc)
+ * 
+ * - Make uniqueness a requirement for shortname.
+ * 
+ * - Translations
+ * 
+ * - Admin  
  */
-#define MODULE_DATA 0
-
-/**
- * Define the block size of the modules' data array.  Only 1 block is used, and it's for an array.
- */
-#define MM_DATA_MAX_LENGTH 64
 
 /**
  * This is a macro that turns a module ID into the handle to it's data array.
@@ -41,9 +48,35 @@
 #define MM_HANDLE_FROM_ID(%1) GetArrayCell(g_adtModuleList, %1)
 
 /**
+ * Defines the block of data in the module data arrays that contains module-defined data.
+ */
+#define MODULE_DATA g_iMMAllocatedIndexes[0]
+
+/**
+ * The max number of cells needed for the module manager's allocated index.
+ */
+#define MM_DATA_MAX_CELLS MODULE_DATA_CELL_COUNT
+// The number of max cells needed is equal to the number of cells needed to store all data for enum ModuleData.
+
+/**
  * Base array that contains all module data array handles.
  */
 new Handle:g_adtModuleList;
+
+/**
+ * Global variable that indicates the next module data array index available.
+ */
+new g_iModuleArrayNextIndex;
+
+/**
+ * Array to store the index of the allocated space in the module data arrays for the module manager.
+ */
+new g_iMMAllocatedIndexes[1];
+
+/**
+ * The max number of cells needed per block of data in the module data array.
+ */
+new g_iMMMaxBlockSize;
 
 // **********************************************
 //                 Forwards
@@ -52,11 +85,37 @@ new Handle:g_adtModuleList;
 /**
  * Plugin has loaded.
  */
-public ModuleManager_OnPluginStart()
+ModuleMgr_OnPluginStart()
 {
     // Create the adt array used to store module data array handles.
     if (g_adtModuleList == INVALID_HANDLE)
         g_adtModuleList = CreateArray();
+    
+    // The next open index is 0, the first one.
+    g_iModuleArrayNextIndex = 0;
+    
+    // Allocate 1 index for the data we want to store for each module.
+    ModuleMgr_Allocate(1, g_iMMAllocatedIndexes);
+    
+    // Initialize the max block size to the number of cells needed for the module manager.
+    g_iMMMaxBlockSize = MM_DATA_MAX_CELLS;
+    
+    // Now check each of the other base project files if they need more cells, and set the max to that if true.
+    
+    #if defined TRANSLATIONS_MANAGER
+        if (TM_DATA_MAX_CELLS > g_iMMMaxBlockSize)
+            g_iMMMaxBlockSize = TM_DATA_MAX_CELLS;
+    #endif
+    
+    #if defined EVENT_MANAGER
+        if (EM_DATA_MAX_CELLS > g_iMMMaxBlockSize)
+            g_iMMMaxBlockSize = EM_DATA_MAX_CELLS;
+    #endif
+    
+    #if defined LOG_MANAGER
+        if (LM_DATA_MAX_CELLS > g_iMMMaxBlockSize)
+            g_iMMMaxBlockSize = LM_DATA_MAX_CELLS;
+    #endif
 }
 
 // **********************************************
@@ -70,19 +129,31 @@ public ModuleManager_OnPluginStart()
  * 
  * @return              The unique module ID.
  */
-stock ModuleManager_Register(moduledata[ModuleData])
+stock ModuleMgr_Register(moduledata[ModuleData])
 {
     // This is the array that will hold all the actual module data.
-    new Handle:adtModule = CreateArray(MM_DATA_MAX_LENGTH);
+    new Handle:adtModule = CreateArray(g_iMMMaxBlockSize);
     
     // Push all the given module data to the new array.
+    // This is being pushed into our allocated space for module data.
     PushArrayArray(adtModule, moduledata[0]);
+    
+    // Forward event to other base project files.
+    
+    #if defined TRANSLATIONS_MANAGER
+        TransMgr_OnModuleRegister(adtModule);
+    #endif
+    
+    #if defined EVENT_MANAGER
+        EventMgr_OnModuleRegister(adtModule);
+    #endif
+    
+    #if defined LOG_MANAGER
+        LogMgr_OnModuleRegister(adtModule);
+    #endif
     
     // Store the handle in the global module list.
     new moduleID = PushArrayCell(g_adtModuleList, adtModule);
-    
-    // Forward event to other base project files.
-    EventManager_OnModuleRegister(adtModule);
     
     // Return the module ID.
     return moduleID;
@@ -94,10 +165,10 @@ stock ModuleManager_Register(moduledata[ModuleData])
  * 
  * @param moduleID  The module ID of the module to disable.
  */
-stock ModuleManager_Disable(moduleID)
+stock ModuleMgr_Disable(moduleID)
 {
     // Set the ModuleData_Disabled data to 'true'.
-    ModuleManager_WriteCell(moduleID, ModuleData_Disabled, true);
+    ModuleMgr_WriteCell(moduleID, ModuleData_Disabled, true);
 }
 
 /**
@@ -106,10 +177,10 @@ stock ModuleManager_Disable(moduleID)
  * 
  * @param moduleID  The module ID of the module to enable.
  */
-stock ModuleManager_Enable(moduleID)
+stock ModuleMgr_Enable(moduleID)
 {
     // Set the ModuleData_Disabled data to 'false'.
-    ModuleManager_WriteCell(moduleID, ModuleData_Disabled, false);
+    ModuleMgr_WriteCell(moduleID, ModuleData_Disabled, false);
 }
 
 /**
@@ -119,10 +190,83 @@ stock ModuleManager_Enable(moduleID)
  * 
  * @return          True if the module is disabled, false if enabled.
  */
-stock bool:ModuleManager_IsDisabled(moduleID)
+stock bool:ModuleMgr_IsDisabled(moduleID)
 {
     // Read the value in ModuleData_Disabled and return the cell as a bool.
-    return bool:ModuleManager_ReadCell(moduleID, ModuleData_Disabled);
+    return bool:ModuleMgr_ReadCell(moduleID, ModuleData_Disabled);
+}
+
+/**
+ * Finds any modules matching the given information.
+ * 
+ * @param data      The data to match the value with.
+ * @param value     The value of the data that must match.
+ * @param modules   Output array containing a list of module IDs that match. (optional)
+ * @param matched   The number of modules that matched. (optional)
+ * 
+ * @return          The first module whose data value matches the given value.  -1 if no modules matched.
+ */
+stock ModuleMgr_Find(ModuleData:data, any:value, modules[] = {0}, &matched = 0)
+{
+    new matchcount;
+    
+    // Loop through all the modules.
+    for (new moduleID = 0; moduleID < MODULE_COUNT; moduleID++)
+    {
+        // If the data matches, then add the module ID to the output array.
+        if (ModuleMgr_ReadCell(moduleID, data) == value)
+        {
+            modules[matchcount] = moduleID;
+            matchcount++;
+        }
+    }
+    
+    // Return the first module that matched.
+    if (matchcount > 0)
+    {
+        return modules[0];
+    }
+    
+    // No modules matched.
+    return -1;
+}
+
+/**
+ * Finds any modules matching the given information.
+ * 
+ * @param data          The data to match the string with.
+ * @param value         The string value of the data that must match.
+ * @param casesensitive True if the strings must also match case.
+ * @param modules       Output array containing a list of module IDs that match. (optional)
+ * @param matched       The number of modules that matched. (optional)
+ * 
+ * @return              The first module whose data value matches the given value.  -1 if no modules matched.
+ */
+stock ModuleMgr_FindByString(ModuleData:data, const String:value[], bool:casesensitive = false, modules[] = {0}, &matched = 0)
+{
+    decl String:datastring[MODULE_DATA_LONGEST_STRING];
+    new matchcount;
+    
+    // Loop through all the modules.
+    for (new moduleID = 0; moduleID < MODULE_COUNT; moduleID++)
+    {
+        // If the string matches, then add the module ID to the output array.
+        ModuleMgr_ReadString(moduleID, data, datastring, sizeof(datastring));
+        if (StrEqual(datastring, value, casesensitive))
+        {
+            modules[matchcount] = moduleID;
+            matchcount++;
+        }
+    }
+    
+    // Return the first module that matched.
+    if (matchcount > 0)
+    {
+        return modules[0];
+    }
+    
+    // No modules matched.
+    return -1;
 }
 
 /**
@@ -132,7 +276,7 @@ stock bool:ModuleManager_IsDisabled(moduleID)
  * @param moduleID      The unique ID given to the registered module.
  * @param moduledata    Output array for all module data.  See enum ModuleData.
  */
-stock ModuleManager_ReadAll(moduleID, moduledata[ModuleData])
+stock ModuleMgr_ReadAll(moduleID, moduledata[ModuleData])
 {
     GetArrayArray(MM_HANDLE_FROM_ID(moduleID), MODULE_DATA, moduledata[0], sizeof(moduledata));
 }
@@ -146,13 +290,13 @@ stock ModuleManager_ReadAll(moduleID, moduledata[ModuleData])
  * 
  * @return          The integer value of the desired module data.
  */
-stock ModuleManager_ReadCell(moduleID, ModuleData:data)
+stock ModuleMgr_ReadCell(moduleID, ModuleData:data)
 {
     new moduledata[ModuleData];
     GetArrayArray(MM_HANDLE_FROM_ID(moduleID), MODULE_DATA, moduledata[0], sizeof(moduledata));
     
     // Return the value.
-    return _:moduledata[ModuleData_Disabled];
+    return _:moduledata[data];
 }
 
 /**
@@ -164,7 +308,7 @@ stock ModuleManager_ReadCell(moduleID, ModuleData:data)
  * @param output    Output variable for the data read.
  * @param maxlen    The max length of the output string.
  */
-stock ModuleManager_ReadString(moduleID, ModuleData:data, String:output[], maxlen)
+stock ModuleMgr_ReadString(moduleID, ModuleData:data, String:output[], maxlen)
 {
     new moduledata[ModuleData];
     GetArrayArray(MM_HANDLE_FROM_ID(moduleID), MODULE_DATA, moduledata[0], sizeof(moduledata));
@@ -178,28 +322,50 @@ stock ModuleManager_ReadString(moduleID, ModuleData:data, String:output[], maxle
 // **********************************************
 
 /**
+ * Reserve space in the module data array.
+ * This is meant for other base project files to use, modules shouldn't need this.
+ * 
+ * @param count     The number of indexes per module that's needed.
+ * @param indexes   The indexes within the array that have been allocated to you.  (number of elements = param count)
+ */
+stock ModuleMgr_Allocate(count, indexes[])
+{
+    // While the count is above 0, allocate each index until the count has been reduced to 0.
+    new index = 0;
+    while (count > 0)
+    {
+        count--;
+        indexes[index] = g_iModuleArrayNextIndex;
+        g_iModuleArrayNextIndex++;
+        index++;
+    }
+}
+
+/**
  * Module data writer that overwrites all data for a module with the given data.
+ * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param moduleID      The unique ID given to the registered module.
  * @param moduledata    New data to replace the old data.  See enum ModuleData.
  */
-stock ModuleManager_WriteAll(moduleID, moduledata[ModuleData])
+stock ModuleMgr_WriteAll(moduleID, moduledata[ModuleData])
 {
     SetArrayArray(MM_HANDLE_FROM_ID(moduleID), MODULE_DATA, moduledata[0], sizeof(moduledata));
 }
 
 /**
  * Module data writer that writes a specified non-string data value.
+ * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param moduleID  The unique ID given to the registered module.
  * @param data      Data to write new value to.  See enum ModuleData.
  * @param value     Any cell value to write as the new data.
  */
-stock ModuleManager_WriteCell(moduleID, ModuleData:data, any:value)
+stock ModuleMgr_WriteCell(moduleID, ModuleData:data, any:value)
 {
     // Read all the module data.
     new moduledata[ModuleData];
-    ModuleManager_ReadAll(moduleID, moduledata);
+    ModuleMgr_ReadAll(moduleID, moduledata);
     
     // Change the value of the specified module data.
     moduledata[data] = value;
@@ -210,17 +376,18 @@ stock ModuleManager_WriteCell(moduleID, ModuleData:data, any:value)
 
 /**
  * Module data writer that writes a specified string data value.
+ * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param moduleID  The unique ID given to the registered module.
  * @param data      Data to write new string to.  See enum ModuleData.
  * @param maxlen    The max length of the data value.  See enum ModuleData.
  * @param value     A string to write as the new data value.
  */
-stock ModuleManager_WriteString(moduleID, ModuleData:data, maxlen, const String:value[])
+stock ModuleMgr_WriteString(moduleID, ModuleData:data, maxlen, const String:value[])
 {
     // Read all the module data.
     new moduledata[ModuleData];
-    ModuleManager_ReadAll(moduleID, moduledata);
+    ModuleMgr_ReadAll(moduleID, moduledata);
     
     // Change the value of the specified module data.
     strcopy(String:moduledata[data], maxlen, value);
@@ -231,13 +398,13 @@ stock ModuleManager_WriteString(moduleID, ModuleData:data, maxlen, const String:
 
 /**
  * Returns a module's handle given it's module ID.
- * This is meant for other base project files to use, modules shouln't need this. 
+ * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param moduleID  The module ID to get the handle for.
  * 
  * @return          The array handle to the module.
  */ 
-stock Handle:ModuleManager_GetModuleArray(moduleID)
+stock Handle:ModuleMgr_GetModuleArray(moduleID)
 {
     // Return the module's array handle.
     return MM_HANDLE_FROM_ID(moduleID);
@@ -245,21 +412,21 @@ stock Handle:ModuleManager_GetModuleArray(moduleID)
 
 /**
  * Returns a module's ID given it's array handle.
- * This is meant for other base project files to use, modules shouln't need this. 
+ * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param adtModule The module's array handle to get he module ID for.
  * 
  * @return          The module's module ID, -1 if no module matched the handle.
  */
-stock ModuleManager_GetModuleID(Handle:adtModule)
+stock ModuleMgr_GetModuleID(Handle:adtModule)
 {
     // Loop through all the modules.
     // x = module ID
-    for (new x = 0; x < MODULE_COUNT; x++)
+    for (new moduleID = 0; moduleID < MODULE_COUNT; moduleID++)
     {
         // If the handle's match, then return the current index, which is the module ID.
-        if (adtModule == MM_HANDLE_FROM_ID(x))
-            return x;
+        if (adtModule == MM_HANDLE_FROM_ID(moduleID))
+            return moduleID;
     }
     
     return -1;
@@ -267,11 +434,11 @@ stock ModuleManager_GetModuleID(Handle:adtModule)
 
 /**
  * Allows other modules to get the handle of the main array to manipulate data.
- * This is meant for other base project files to use, modules shouln't need this.
+ * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @return  The handle to the array with all module data handles.
  */
-stock Handle:ModuleManager_GetList()
+stock Handle:ModuleMgr_GetList()
 {
     return g_adtModuleList;
 }

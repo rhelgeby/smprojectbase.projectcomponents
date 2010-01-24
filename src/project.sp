@@ -38,16 +38,19 @@
 
 // Base project includes.
 
+#include "project/project"
+#include "project/translationsmanager"
+#include "project/eventmanager"
+//#include "project/logmanager"
+#include "project/modulemanager"
+
+// Module includes
+
+// Special "dual" module.  hgversion is generated automatically and versioninfo uses it.
 #if defined ADD_VERSION_INFO
 #include "project/hgversion"
 #include "project/versioninfo"
 #endif
-
-#include "project/project"
-#include "project/modulemanager"
-#include "project/eventmanager"
-
-// Module includes
 
 #include "project/testmodule"
 
@@ -83,16 +86,34 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
  */
 public OnPluginStart()
 {
-    // Forward event to other project base modules.
+    // Forward event to other project base files.
+    ModuleMgr_OnPluginStart();
+    
+    #if defined TRANSLATIONS_MANAGER
+        TransMgr_OnPluginStart();
+    #endif
+    
+    #if defined EVENT_MANAGER
+        EventMgr_OnPluginStart();
+    #endif
+    
+    #if defined LOG_MANAGER
+        LogMgr_OnPluginStart();
+    #endif
+    
+    // Register modules here.
     #if defined ADD_VERSION_INFO
         VersionInfo_OnPluginStart();
     #endif
-    
-    ModuleManager_OnPluginStart();
-    EventManager_OnPluginStart();
-    
-    // Register modules here.
     TestModule_OnPluginStart();
+    
+    
+    // All modules should be registered by this point!
+    
+    // Forward event to other project base files.
+    #if defined TRANSLATIONS_MANAGER
+        TransMgr_OnModulesRegistered();
+    #endif
 }
 
 /**
