@@ -30,8 +30,6 @@
 
 #include <sourcemod>
 
-#define VERSION "1.0"
-
 // Comment this line to exclude version info command. Enable this if you have
 // the repository and HG installed (Mercurial or TortoiseHG).
 #define ADD_VERSION_INFO
@@ -40,8 +38,8 @@
 
 #include "project/project"
 #include "project/translationsmanager"
+#include "project/logmanager"
 #include "project/eventmanager"
-//#include "project/logmanager"
 #include "project/modulemanager"
 
 // Module includes
@@ -59,11 +57,11 @@
  */
 public Plugin:myinfo =
 {
-    name = "Project",
-    author = "Author",
-    description = "Project description",
-    version = VERSION,
-    url = ""
+    name = PROJECT_FULLNAME,
+    author = PROJECT_AUTHOR,
+    description = PROJECT_DESCRIPTION,
+    version = PROJECT_VERSION,
+    url = PROJECT_URL
 };
 
 /**

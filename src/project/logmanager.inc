@@ -39,7 +39,7 @@
  */
 enum LogTypes
 {
-    LogType_Normal = 0,     // Normal log message.  Printed in SourceMod logs.
+    LogType_Normal,         // Normal log message.  Printed in SourceMod logs.
     LogType_Error,          // Error message.  Printed in SourceMod error logs.
     LogType_Fatal_Module,   // Error message.  Disables the module that prints it.
     LogType_Fatal_Plugin    // Error message.  Kills the entire plugin.
@@ -92,14 +92,10 @@ new Handle:cvarLogPrintPublic;
 /**
  * Plugin has loaded.
  */
-LogManager_OnPluginStart()
+LogMgr_OnPluginStart()
 {
     // Allocate 1 index for the data we want to store for each module.
-    ModuleManager_Allocate(1, g_iLMAllocatedIndexes);
-    
-    // Create the log filter.
-    if (g_hLogModuleFilter == INVALID_HANDLE)
-        g_hLogModuleFilter = CreateArray(16); // 16 because thats the max length of the module's shortname.
+    ModuleMgr_Allocate(1, g_iLMAllocatedIndexes);
     
     // Create log cvars.
     cvarLog =               CreateConVar("project_log", "1", "Enable logging in the plugin.  Error messages will always be logged.");
@@ -117,7 +113,7 @@ LogManager_OnPluginStart()
  * 
  * @param adtModule The adt array of the module being registered.
  */
-LogManager_OnModuleRegister(Handle:adtModule)
+LogMgr_OnModuleRegister(Handle:adtModule)
 {
     // Push the 'false' into our allocated space to signify if this module is in the module filter or not.
     PushArrayCell(adtModule, false);
@@ -136,21 +132,21 @@ LogManager_OnModuleRegister(Handle:adtModule)
  * @param text          The log message.
  * @param ...           Formatting parameters.
  */
-stock LogManager_Print(moduleID, LogTypes:logtype, const String:description[], const String:text[], any:...)
+stock LogMgr_Print(moduleID, LogTypes:logtype, const String:description[], const String:text[], any:...)
 {
     // If the module is disabled, then don't print the log.
-    if (ModuleManager_IsDisabled(moduleID))
+    if (ModuleMgr_IsDisabled(moduleID))
         return;
     
     // If the log manager is disabled, and this is a normal log, then don't print the log.
-    if (!LogManager_CvarLog() && logtype == LogType_Normal)
+    if (!LogMgr_CvarLog() && logtype == LogType_Normal)
         return;
     
     // Check if module filtering is enabled.
-    if (LogManager_CvarLogModuleFilter())
+    if (LogMgr_CvarModuleFilter())
     {
-        // Check if the specified module is enabled.
-        if (!LogCheckModuleFilter(moduleID))
+        // Check if the module is in the filter.
+        if (!LogMgr_IsModuleInFilter(moduleID))
             return;
     }
     
@@ -159,11 +155,11 @@ stock LogManager_Print(moduleID, LogTypes:logtype, const String:description[], c
     VFormat(logbuffer, sizeof(logbuffer), text, 5);
     
     // Get the module's full name.
-    decl String:fullname[32]; // 32 because that's the max length of the module's fullname,
-    ModuleManager_ReadString(moduleID, ModuleData_FullName, fullname, fullname);
+    decl String:fullname[32]; // 32 because that's the max length of the module's fullname.
+    ModuleMgr_ReadString(moduleID, ModuleData_FullName, fullname, sizeof(fullname));
     
     // Format the text string.
-    Format(logbuffer, sizeof(logbuffer), "[%s] [%s] %s", fullname, description, logbuffer);
+    Format(logbuffer, sizeof(logbuffer), LM_FORMAT, fullname, description, logbuffer);
     
     // Format other parameters onto the log text.
     switch (logtype)
@@ -182,7 +178,7 @@ stock LogManager_Print(moduleID, LogTypes:logtype, const String:description[], c
         case LogType_Fatal_Module:
         {
             LogError(logbuffer);
-            ModuleManager_Disable(moduleID);
+            ModuleMgr_Disable(moduleID);
         }
         // Log an error message and kill the plugin.
         case LogType_Fatal_Plugin:
@@ -191,21 +187,19 @@ stock LogManager_Print(moduleID, LogTypes:logtype, const String:description[], c
         }
     }
     
-    // Note: The phrase "Literal text" is a blank phrase to pass any string we want into it.
-    
-    // Check if printing log events to admins is enabled.
-    //if (GetConVarBool(g_hCvarsList[CVAR_LOG_PRINT_ADMINS]))
-    //{
+    // Print log to all in-game admins if the cvar is enabled.
+    if (LogMgr_CvarPrintAdmins())
+    {
         // Print text to admins.
-        //TranslationPrintToChatAll(false, true, "Literal text", logbuffer);
-    //}
+        TransMgr_PrintTextAll(false, true, MsgFormat_None, MsgType_Chat, _, true, logbuffer);
+    }
     
-    // Check if printing log events to public chat is enabled.
-    //if (GetConVarBool(g_hCvarsList[CVAR_LOG_PRINT_CHAT]))
-    //{
+    // Print log to all in-game clients if the cvar is enabled.
+    if (LogMgr_CvarPrintPublic())
+    {
         // Print text to public chat.
-        //TranslationPrintToChatAll(false, false, "Literal text", logbuffer);
-    //}
+        TransMgr_PrintTextAll(false, false, MsgFormat_None, MsgType_Chat, _, true, logbuffer);
+    }
 }
 
 // **********************************************
@@ -220,9 +214,9 @@ stock LogManager_Print(moduleID, LogTypes:logtype, const String:description[], c
  * 
  * @return              True if enabled, false otherwise. 
  */
-stock bool:LogManager_IsModuleInFilter(moduleID)
+stock bool:LogMgr_IsModuleInFilter(moduleID)
 {
-    return bool:GetArrayCell(ModuleManager_GetModuleArray(moduleID), LOG_DATA_FILTER);
+    return bool:GetArrayCell(ModuleMgr_GetModuleArray(moduleID), LOG_DATA_FILTER);
 }
 
 /**
@@ -232,9 +226,9 @@ stock bool:LogManager_IsModuleInFilter(moduleID)
  * @param moduleID      The module ID of the module to change.
  * @param enable        True to enable the module in the filter, false to disable.
  */
-stock LogManager_ModuleFilterSet(moduleID, bool:enable)
+stock LogMgr_ModuleFilterSet(moduleID, bool:enable)
 {
-    SetArrayCell(ModuleManager_GetModuleArray(moduleID), LOG_DATA_FILTER, _:enable);
+    SetArrayCell(ModuleMgr_GetModuleArray(moduleID), LOG_DATA_FILTER, _:enable);
 }
 
 /**
@@ -245,13 +239,13 @@ stock LogManager_ModuleFilterSet(moduleID, bool:enable)
  * 
  * @return          True if added, false if it's already in the filter.
  */
-stock bool:LogManager_ModuleFilterAdd(moduleID)
+stock bool:LogMgr_ModuleFilterAdd(moduleID)
 {
     // Check if the module isn't already is listed.
-    if (!LogManager_IsModuleInFilter(moduleID))
+    if (!LogMgr_IsModuleInFilter(moduleID))
     {
         // Add module to filter.
-        LogManager_ModuleFilterSet(moduleID, true);
+        LogMgr_ModuleFilterSet(moduleID, true);
         return true;
     }
     
@@ -266,13 +260,13 @@ stock bool:LogManager_ModuleFilterAdd(moduleID)
  * 
  * @return          True if removed, false if it's not in the filter.
  */
-stock bool:LogManager_ModuleFilterRemove(moduleID)
+stock bool:LogMgr_ModuleFilterRemove(moduleID)
 {
     // Check if the module isn't already is listed.
-    if (LogManager_IsModuleInFilter(moduleID))
+    if (LogMgr_IsModuleInFilter(moduleID))
     {
         // Add module to filter.
-        LogManager_ModuleFilterSet(moduleID, false);
+        LogMgr_ModuleFilterSet(moduleID, false);
         return true;
     }
     
@@ -280,109 +274,48 @@ stock bool:LogManager_ModuleFilterRemove(moduleID)
 }
 
 /**
- * Handles the zr_log_list command. Displays flags and module filter cache.
- *
- * @param client    The client that executed the command.
- * @param argc      Number of arguments passed.
- */
-/*public Action:Command_LogList(client, argc)
-{
-    decl String:buffer[2048];
-    decl String:linebuffer[96];
-    decl String:modulename[64];
-    decl String:modulenameshort[64];
-    
-    new modulecount;
-    
-    // Strings to store translated phrases. Because formatting width settings
-    // doesn't work with "%t", but "%s".
-    decl String:phrasegenericflag[32];
-    decl String:phrasevalue[32];
-    decl String:phrasemodule[32];
-    decl String:phraseshortname[32];
-    
-    // Quick initialize string buffer.
-    buffer[0] = 0;
-    
-    // Set language.
-    SetGlobalTransTarget(client);
-    
-    // Module filtering status:
-    Format(linebuffer, sizeof(linebuffer), "%t %t\n\n", "Log Module Filtering", LogManager_LogModuleFilter() ? "On" : "Off");
-    StrCat(buffer, sizeof(buffer), linebuffer);
-    
-    Format(linebuffer, sizeof(linebuffer), "%-23s %-19s %t\n", phrasemodule, phraseshortname, "Log Status");
-    StrCat(buffer, sizeof(buffer), linebuffer);
-    StrCat(buffer, sizeof(buffer), "--------------------------------------------------------------------------------");
-    
-    ReplyToCommand(client, buffer);
-    buffer[0] = 0;
-    
-    // Module status:
-    modulecount = sizeof(LogModuleFilterCache);
-    for (new module = 1; module < modulecount; module++)
-    {
-        LogGetModuleNameString(modulename, sizeof(modulename), LogModules:module);
-        LogGetModuleNameString(modulenameshort, sizeof(modulenameshort), LogModules:module, true);
-        Format(linebuffer, sizeof(linebuffer), "%-23s %-19s %t", modulename, modulenameshort, LogModuleFilterCache[LogModules:module] ? "On" : "Off");
-        ReplyToCommand(client, linebuffer);
-    }
-    
-    return Plugin_Handled;
-}*/
-
-/**
  * Command callback: project_log_add_module
  * Add one or modules to module filter.
  * TODO: Translations
  * 
- * @param client    The client index.
+ * @param client    The client index.  Or SERVER_INDEX if coming from the server.
  * @param argc      The number of arguments that the client sent with the command.
  */
-public Action:Command_LogAddModule(client, argc)
+public Action:Command_LogModuleAdd(client, argc)
 {
-    decl String:shortname[32];
-    new moduleID;
-    
     // Check if privileged.
     /**
      * Check if the client has access
      */
     
-    new LogModules:logmodule;
-    
     // Check if no arguments.
     if (argc < 1)
     {
-        decl String:buffer[256];
-        buffer[0] = 0;
-        
-        // Display syntax info.
-        //StrCat(buffer, sizeof(buffer), "Add one or more modules to the module filter. Usage: zr_log_add_module <module> [module] ...\n");
-        //StrCat(buffer, sizeof(buffer), "See zr_log_list to list available module names (short names).");
-        //ReplyToCommand(client, buffer);
-        
-        return;
+        // Display usage info.
+        TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "LogMgr cmd moduleadd usage");
+        return Plugin_Handled;
     }
+    
+    decl String:shortname[16];
+    new moduleID;
     
     // Loop through each argument.
     for (new arg = 1; arg <= argc; arg++)
     {
         // Get argument string.
         GetCmdArg(arg, shortname, sizeof(shortname));
-        moduleID = ModuleManager_FindByString(ModuleData_ShortName, shortname);
+        moduleID = ModuleMgr_FindByString(ModuleData_ShortName, shortname);
         
         // If -1 was returned, then the module is invalid.
         if (moduleID == -1)
         {
-            //ReplyToCommand(client, "Invalid module name: \"%s\"", argument);
-            
-            // Skip to next argument.
+            // Reply with an error and skip to next argument.
+            TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "ModuleMgr invalid module", shortname);
             continue;
         }
         
-        LogManager_ModuleFilterAdd(moduleID);
-        //ReplyToCommand(client, "Added \"%s\" to module filter.", argument);
+        LogMgr_ModuleFilterAdd(moduleID);
+        TransMgr_PrintText(client, MsgFormat_Both, MsgType_Reply, moduleID, false, "LogMgr cmd moduleadd");
     }
     
     // Say that we handled the command so CS:S doesn't see it and print "Unknown command"
@@ -394,10 +327,10 @@ public Action:Command_LogAddModule(client, argc)
  * Remove one or modules from module filter.
  * TODO: Translations
  * 
- * @param client    The client index.
+ * @param client    The client index.  Or SERVER_INDEX if coming from the server.
  * @param argc      The number of arguments that the client sent with the command.
  */
-public Action:Command_LogRemoveModule(client, argc)
+public Action:Command_LogModuleRemove(client, argc)
 {
     decl String:shortname[32];
     new moduleID;
@@ -407,20 +340,12 @@ public Action:Command_LogRemoveModule(client, argc)
      * Check if the client has access
      */
     
-    new LogModules:logmodule;
-    
     // Check if no arguments.
     if (argc < 1)
     {
-        decl String:buffer[256];
-        buffer[0] = 0;
-        
-        // Display syntax info.
-        //StrCat(buffer, sizeof(buffer), "Add one or more modules to the module filter. Usage: zr_log_add_module <module> [module] ...\n");
-        //StrCat(buffer, sizeof(buffer), "See zr_log_list to list available module names (short names).");
-        //ReplyToCommand(client, buffer);
-        
-        return;
+        // Display usage info.
+        TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "LogMgr cmd moduleremove usage");
+        return Plugin_Handled;
     }
     
     // Loop through each argument.
@@ -428,19 +353,18 @@ public Action:Command_LogRemoveModule(client, argc)
     {
         // Get argument string.
         GetCmdArg(arg, shortname, sizeof(shortname));
-        moduleID = ModuleManager_FindByString(ModuleData_ShortName, shortname);
+        moduleID = ModuleMgr_FindByString(ModuleData_ShortName, shortname);
         
         // If -1 was returned, then the module is invalid.
         if (moduleID == -1)
         {
-            //ReplyToCommand(client, "Invalid module name: \"%s\"", argument);
-            
-            // Skip to next argument.
+            // Reply with an error and skip to next argument.
+            TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "ModuleMgr invalid module", shortname);
             continue;
         }
         
-        LogManager_ModuleFilterRemove(moduleID);
-        //ReplyToCommand(client, "Added \"%s\" to module filter.", argument);
+        LogMgr_ModuleFilterRemove(moduleID);
+        TransMgr_PrintText(client, MsgFormat_Both, MsgType_Reply, moduleID, false, "LogMgr cmd moduleremove");
     }
     
     // Say that we handled the command so CS:S doesn't see it and print "Unknown command"
@@ -452,22 +376,22 @@ public Action:Command_LogRemoveModule(client, argc)
  * This allows other base files/modules to read log cvars.
  */
 
-stock bool:LogManager_CvarLog()
+stock bool:LogMgr_CvarLog()
 {
     return GetConVarBool(cvarLog);
 }
 
-stock bool:LogManager_CvarModuleFilter()
+stock bool:LogMgr_CvarModuleFilter()
 {
     return GetConVarBool(cvarLogModuleFilter);
 }
 
-stock bool:LogManager_CvarPrintAdmins()
+stock bool:LogMgr_CvarPrintAdmins()
 {
     return GetConVarBool(cvarLogPrintAdmins);
 }
 
-stock bool:LogManager_CvarPrintPublic()
+stock bool:LogMgr_CvarPrintPublic()
 {
     return GetConVarBool(cvarLogPrintPublic);
 }

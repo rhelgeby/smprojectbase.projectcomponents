@@ -42,6 +42,7 @@ enum MsgTypes
     MsgType_Server,     /** Text printed to the server's console */
     MsgType_Console,    /** Text printed in client's console. */
     MsgType_Chat,       /** Text printed at the bottom of the screen. */
+    MsgType_Reply,      /** Replies with the same msg type as the client used to trigger a command */
     MsgType_Center,     /** Small, white text printed in the center of the screen. */
     MsgType_Hint        /** Translucent grey box containing white text at the bottom center of the screen. */
 }
@@ -64,9 +65,13 @@ enum MsgFormatting
 }
 
 /**
- * Use this in the print stock as the client when printing to the server.
+ * Different options for translating bools into phrases.
  */
-#define PRINT_SERVER 0
+enum BoolPhrases
+{
+    BoolPhrase_YesNo,   /** Translates boolean values 1/0 into "yes/no" phrases. */
+    BoolPhrase_OnOff    /** Translates boolean values 1/0 into "on/off" phrases. */
+}
 
 // ---------------
 //     Private
@@ -142,14 +147,14 @@ stock TransMgr_Register(moduleID)
 /**
  * Print text to a client with special formatting and translated text.
  * 
- * @param client    The client index.  Use PRINT_SERVER when printing to the server.
+ * @param client    The client index.  Use SERVER_INDEX when printing to the server.
  * @param msgformat How to format the text before sending.  See enum MsgFormatting.
  * @param msgtype   The type of message to print to the client.  See enum MsgTypes.
  * @param moduleID  The module ID of the module this is coming from.  Needed for MsgFormat_Module or MsgFormat_Both.
- * @param literal   True to print the last variable as a string, instead of translating it.  This is used in PrintTextAll because '...' can't be passed through.
+ * @param literal   True to print the last variable as a string, instead of translating it.
  * @param any       The translations phrase or literal string followed by formatting parameters.
  */
-stock TransMsg_PrintText(client, MsgFormatting:msgformat, MsgTypes:msgtype, moduleID = -1, bool:literal = false, any:...)
+stock TransMgr_PrintText(client, MsgFormatting:msgformat, MsgTypes:msgtype, moduleID = -1, bool:literal = false, any:...)
 {
     // Tells SourceMod's translations system to translate to this client's (or server's) language.
     SetGlobalTransTarget(client);
@@ -176,9 +181,9 @@ stock TransMsg_PrintText(client, MsgFormatting:msgformat, MsgTypes:msgtype, modu
     {
         switch(msgformat)
         {
-            case MsgFormat_Plugin:  Format(translated, sizeof(translated), MSGFORMAT_PLUGIN_COLOR, PROJECT_FULLNAME, translated);
-            case MsgFormat_Module:  Format(translated, sizeof(translated), MSGFORMAT_MODULE_COLOR, fullname, translated);
-            case MsgFormat_Both:    Format(translated, sizeof(translated), MSGFORMAT_BOTH_COLOR, PROJECT_FULLNAME, fullname, translated);
+            case MsgFormat_Plugin:  Format(translated, sizeof(translated), TM_MSGFORMAT_PLUGIN_COLOR, PROJECT_FULLNAME, translated);
+            case MsgFormat_Module:  Format(translated, sizeof(translated), TM_MSGFORMAT_MODULE_COLOR, fullname, translated);
+            case MsgFormat_Both:    Format(translated, sizeof(translated), TM_MSGFORMAT_BOTH_COLOR, PROJECT_FULLNAME, fullname, translated);
         }
     }
     // This type of message doesn't support color.
@@ -186,25 +191,21 @@ stock TransMsg_PrintText(client, MsgFormatting:msgformat, MsgTypes:msgtype, modu
     {
         switch(msgformat)
         {
-            case MsgFormat_Plugin:  Format(translated, sizeof(translated), MSGFORMAT_PLUGIN_NOCOLOR, PROJECT_FULLNAME, translated);
-            case MsgFormat_Module:  Format(translated, sizeof(translated), MSGFORMAT_MODULE_NOCOLOR, fullname, translated);
-            case MsgFormat_Both:    Format(translated, sizeof(translated), MSGFORMAT_BOTH_NOCOLOR, PROJECT_FULLNAME, fullname, translated);
+            case MsgFormat_Plugin:  Format(translated, sizeof(translated), TM_MSGFORMAT_PLUGIN_NOCOLOR, PROJECT_FULLNAME, translated);
+            case MsgFormat_Module:  Format(translated, sizeof(translated), TM_MSGFORMAT_MODULE_NOCOLOR, fullname, translated);
+            case MsgFormat_Both:    Format(translated, sizeof(translated), TM_MSGFORMAT_BOTH_NOCOLOR, PROJECT_FULLNAME, fullname, translated);
         }
     }
     
     // Now print the text to the client.
     switch(msgtype)
     {
-        case MsgType_Server:
-            PrintToServer(translated);
-        case MsgType_Console:
-            PrintToConsole(client, translated);
-        case MsgType_Chat:
-            PrintToChat(client, translated);
-        case MsgType_Center:
-            PrintCenterText(client, translated);
-        case MsgType_Hint:
-            PrintHintText(client, translated);
+        case MsgType_Server:    PrintToServer(translated);
+        case MsgType_Console:   PrintToConsole(client, translated);
+        case MsgType_Chat:      PrintToChat(client, translated);
+        case MsgType_Reply:     ReplyToCommand(client, translated);
+        case MsgType_Center:    PrintCenterText(client, translated);
+        case MsgType_Hint:      PrintHintText(client, translated);
     }
 }
 
@@ -215,16 +216,23 @@ stock TransMsg_PrintText(client, MsgFormatting:msgformat, MsgTypes:msgtype, modu
  * @param admin     True to only print to 
  * @param msgformat How to format the text before sending.  See enum MsgFormatting.
  * @param msgtype   The type of message to print to the clients.  See enum MsgTypes.
+ * @param literal   True to print the last variable as a string, instead of translating it.
  * @param any       The translations phrase follow by formatting parameters.
  * 
  * TODO: CLIENT ACCESS
  */
-stock TransMsg_PrintTextAll(bool:server, bool:admin, MsgFormatting:msgformat, MsgTypes:msgtype, moduleID = -1, any:...)
+stock TransMgr_PrintTextAll(bool:server, bool:admin, MsgFormatting:msgformat, MsgTypes:msgtype, moduleID = -1, bool:literal = false, any:...)
 {
     // There's only 1 server.
     if (msgtype == MsgType_Server)
     {
-        ThrowError("TransMsg_PrintTextAll doesn't support MsgType_Server.");
+        ThrowError("TransMgr_PrintTextAll doesn't support MsgType_Server.");
+    }
+    
+    // Can't reply to all clients simultaneously.
+    if (msgtype == MsgType_Reply)
+    {
+        ThrowError("TransMgr_PrintTextAll doesn't support MsgType_Reply.");
     }
     
     decl String:translated[512]; // Give plenty of room for long messages, better too much than not enough.
@@ -233,8 +241,14 @@ stock TransMsg_PrintTextAll(bool:server, bool:admin, MsgFormatting:msgformat, Ms
     if (server)
     {
         SetGlobalTransTarget(LANG_SERVER);
-        VFormat(translated, sizeof(translated), "%t", 6);
-        TransMsg_PrintText(PRINT_SERVER, msgformat, MsgType_Server, moduleID, true, translated);
+        
+        // Method for getting text from the ... param depends on if literal is true or false.
+        if (literal)
+            VFormat(translated, sizeof(translated), "%s", 7);
+        else
+            VFormat(translated, sizeof(translated), "%t", 7);
+        
+        TransMgr_PrintText(SERVER_INDEX, msgformat, MsgType_Server, moduleID, true, translated);
     }
     
     for (new client = 1; client <= MaxClients; client++)
@@ -252,9 +266,37 @@ stock TransMsg_PrintTextAll(bool:server, bool:admin, MsgFormatting:msgformat, Ms
         
         // Print the phrase in the client's language.
         SetGlobalTransTarget(client);
-        VFormat(translated, sizeof(translated), "%t", 6);
         
-        TransMsg_PrintText(client, msgformat, msgtype, moduleID, true, translated);
+        // Method for getting text from the ... param depends on if literal is true or false.
+        if (literal)
+            VFormat(translated, sizeof(translated), "%s", 7);
+        else
+            VFormat(translated, sizeof(translated), "%t", 7);
+        
+        TransMgr_PrintText(client, msgformat, msgtype, moduleID, true, translated);
+    }
+}
+
+/**
+ * Translates a boolean value into a text phrase.
+ * 
+ * @param target        The client to translate phrase to.  LANG_SERVER to use server's language.
+ * @param boolean       The boolean value to translate.
+ * @param boolphrase    The boolean phrase pair to translate to.
+ * @param phrase        The output string with the translated prase.
+ * @param maxlen        The max length of the output string.
+ */
+stock TransMgr_TranslateBool(target, bool:boolean, BoolPhrases:boolphrase, String:phrase[], maxlen)
+{
+    SetGlobalTransTarget(target);
+    
+    switch (boolphrase)
+    {
+        case BoolPhrase_YesNo:
+            boolean ? Format(phrase, maxlen, "%t", "Yes") : Format(phrase, maxlen, "%t", "No");
+        
+        case BoolPhrase_OnOff:
+            boolean ? Format(phrase, maxlen, "%t", "On") : Format(phrase, maxlen, "%t", "Off");
     }
 }
 
@@ -292,11 +334,16 @@ stock TransMgr_SetEnabled(moduleID, bool:enable)
  */
 stock TransMgr_LoadTranslations()
 {
-    // Load the project base translations.
-    LoadTranslations("project/base.phrases");
+    // Loads extra translations from the main project.inc file.
+    TransMgr_LoadExtraTranslations();
+    
+    decl String:translationfile[PLATFORM_MAX_PATH];
+    
+    // Load base file translations.
+    Format(translationfile, sizeof(translationfile), "%s/%s.phrases", PROJECT_SHORTNAME, PROJECT_SHORTNAME);
+    LoadTranslations(translationfile);
     
     decl String:shortname[16];
-    decl String:translationfile[PLATFORM_MAX_PATH];
     
     // Loop through all the modules.
     for (new moduleID = 0; moduleID < MODULE_COUNT; moduleID++)
@@ -308,7 +355,7 @@ stock TransMgr_LoadTranslations()
         // Get the module's shortname to use as the translations name.
         ModuleMgr_ReadString(moduleID, ModuleData_ShortName, shortname, sizeof(shortname));
         
-        Format(translationfile, sizeof(translationfile), "project/%s.phrases", shortname);
+        Format(translationfile, sizeof(translationfile), "%s/%s.phrases", PROJECT_SHORTNAME, shortname);
         LoadTranslations(translationfile);
     }
 }
@@ -317,7 +364,7 @@ stock TransMgr_LoadTranslations()
  * Command callback: project_reload_translations
  * Reloads all translations files used in the project.
  * 
- * @param client    The client index.
+ * @param client    The client index.  Or SERVER_INDEX if coming from the server.
  * @param argc      The number of arguments that the client sent with the command.
  */
 public Action:Command_ReloadTranslations(client, arc)
@@ -327,5 +374,6 @@ public Action:Command_ReloadTranslations(client, arc)
      */
     
     TransMgr_LoadTranslations();
-}
     
+    TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "TransMgr cmd reloadtranslations");
+}

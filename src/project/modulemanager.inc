@@ -109,6 +109,10 @@ ModuleMgr_OnPluginStart()
         if (LM_DATA_MAX_CELLS > g_iMMMaxBlockSize)
             g_iMMMaxBlockSize = LM_DATA_MAX_CELLS;
     #endif
+    
+    
+    // Create a module information print command.
+    RegConsoleCmd("project_module_info", Command_ModuleInfo, "Print all module data for a specific module, or all modules. Usage: project_module_info [moduleshortname]");
 }
 
 // **********************************************
@@ -446,4 +450,51 @@ stock ModuleMgr_GetModuleID(Handle:adtModule)
 stock Handle:ModuleMgr_GetList()
 {
     return g_adtModuleList;
+}
+
+/**
+ * Command callback: project_module_info
+ * Print all module data for a specific module, or all modules.
+ * 
+ * @param client    The client index.  Or SERVER_INDEX if coming from the server.
+ * @param argc      The number of arguments that the client sent with the command.
+ */
+public Action:Command_ModuleInfo(client, argc)
+{
+    // This will send a message to a client's console.
+    new MsgTypes:msgtype = MsgType_Console;
+    
+    // If the caller is the server, then change some translation vars.
+    if (client == SERVER_INDEX)
+        msgtype = MsgType_Server;
+    
+    decl String:separator[64] = "***************************************";
+    decl String:modulefullname[32];
+    decl String:moduleshortname[16];
+    decl String:moduledesc[256];
+    new bool:bModuleDisabled;
+    decl String:strModuleEnabled[8];
+    
+    TransMgr_PrintText(client, MsgFormat_None, msgtype, _, true, separator);
+    TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "ModuleMgr cmd moduleinfo plugin name", PROJECT_FULLNAME);
+    TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "ModuleMgr cmd moduleinfo plugin desc", PROJECT_DESCRIPTION);
+    
+    // Loop through all modules.
+    for (new moduleID = 0; moduleID < MODULE_COUNT; moduleID++)
+    {
+        ModuleMgr_ReadString(moduleID, ModuleData_FullName, modulefullname, sizeof(modulefullname));
+        ModuleMgr_ReadString(moduleID, ModuleData_ShortName, moduleshortname, sizeof(moduleshortname));
+        ModuleMgr_ReadString(moduleID, ModuleData_Description, moduledesc, sizeof(moduledesc));
+        bModuleDisabled = bool:ModuleMgr_ReadCell(moduleID, ModuleData_Disabled);
+        
+        // Translate the opposite value of bModuleDisabled into a language "yes/no" string.
+        TransMgr_TranslateBool(client, !bModuleDisabled, BoolPhrase_YesNo, strModuleEnabled, sizeof(strModuleEnabled));
+        
+        TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "ModuleMgr cmd moduleinfo module fullname", modulefullname);
+        TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "ModuleMgr cmd moduleinfo module shortname", moduleshortname);
+        TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "ModuleMgr cmd moduleinfo module desc", moduledesc);
+        TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "ModuleMgr cmd moduleinfo module enabled", strModuleEnabled);
+    }
+    
+    TransMgr_PrintText(client, MsgFormat_None, msgtype, _, true, separator);
 }

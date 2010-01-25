@@ -1,0 +1,94 @@
+"Phrases"
+{
+	// **********************************
+	//          Module Manager
+	// **********************************
+
+	// {1}: the invalid module reference.
+	"ModuleMgr invalid module"
+	{
+		"#format"	"{1:s}"
+		"en"		"Invalid module: \"{1}\""
+	}
+
+	// Command: project_module_info
+
+	// {1}: the name of the plugin.
+	"ModuleMgr cmd moduleinfo plugin name"
+	{
+		"#format"	"{1:s}"
+		"en"		"{1}"
+	}
+
+	// {1}: the description of the plugin.
+	"ModuleMgr cmd moduleinfo plugin desc"
+	{
+		"#format"	"{1:s}"
+		"en"		"{1}"
+	}
+
+	// {1}: the full name of the module
+	"ModuleMgr cmd moduleinfo module fullname"
+	{
+		"#format"	"{1:s}"
+		"en"		"Module: {1}"
+	}
+
+	// {1}: the short name of the module
+	"ModuleMgr cmd moduleinfo module shortname"
+	{
+		"#format"	"{1:s}"
+		"en"		"Short Name: {1} (used for commands/cvars)"
+	}
+
+	// {1}: the description of the module
+	"ModuleMgr cmd moduleinfo module desc"
+	{
+		"#format"	"{1:s}"
+		"en"		"Description: {1}"
+	}
+
+	// {1}: yes if the module is enabled, no if not
+	"ModuleMgr cmd moduleinfo module enabled"
+	{
+		"#format"	"{1:s}"
+		"en"		"Enabled: {1}"
+	}
+
+	// **********************************
+	//            Log Manager
+	// **********************************
+
+	// Command: project_log_module_add
+
+	"LogMgr cmd moduleadd usage"
+	{
+		"en"		"Adds one or more modules to the module filter.  Usage: project_log_module_add <moduleshortname [module2] ...\nUse project_module_list to see a list of modules and current statuses."
+	}
+
+	"LogMgr cmd moduleadd"
+	{
+		"en"		"Module has been added to the module filter."
+	}
+
+	// Command: project_log_module_remove
+
+	"LogMgr cmd moduleremove usage"
+	{
+		"en"		"Removes one or more modules from the module filter.  Usage: project_log_module_remove <moduleshortname [module2] ...\nUse project_module_list to see a list of modules and current statuses."
+	}
+
+	"LogMgr cmd moduleremove"
+	{
+		"en"		"Module has been removed from the module filter."
+	}
+
+	// **********************************
+	//       Translations Manager
+	// **********************************
+
+	"TransMgr cmd reloadtranslations"
+	{
+		"en"		"All translation files have been reloaded."
+	}
+}

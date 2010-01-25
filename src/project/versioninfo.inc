@@ -40,14 +40,14 @@ public VersionInfo_OnPluginStart()
     // Done registering module.
     // ************************
     
-    // Create the command to display version information.
+    // Create a version information print command.
     RegConsoleCmd("project_version", Command_Version, "Prints version info about this project.");
 }
 
 /**
  * Command callback: project_version
  * 
- * @param client    The client index.
+ * @param client    The client index.  Or SERVER_INDEX if coming from the server.
  * @param argc      The number of arguments that the client sent with the command.
  */
 public Action:Command_Version(client, argc)

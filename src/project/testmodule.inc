@@ -60,8 +60,9 @@ public TestModule_OnPluginStart()
  */
 public TestModule_OnRoundStart()
 {
-    //TransMsg_PrintText(PRINT_SERVER, MsgFormat_Both, MsgType_Server, g_iTestModuleID, false, "Event round_start");
-    TransMsg_PrintTextAll(true, false, MsgFormat_Both, MsgType_Chat, g_iTestModuleID, "Event round_start");
+    //TransMgr_PrintText(SERVER_INDEX, MsgFormat_Both, MsgType_Server, g_iTestModuleID, false, "Event round_start");
+    TransMgr_PrintTextAll(true, false, MsgFormat_Both, MsgType_Chat, g_iTestModuleID, false, "Event round_start");
+    LogMgr_Print(g_iTestModuleID, LogType_Normal, "Round_Start", "The round has started.");
     
     // Switching event forward.
     EventMgr_SetEventForward(g_iTestModuleID, Event_RoundStart, "TestModule_OnRoundStart2");
@@ -72,10 +73,13 @@ public TestModule_OnRoundStart()
  */
 public TestModule_OnRoundStart2()
 {
-    //TransMsg_PrintText(PRINT_SERVER, MsgFormat_Plugin, MsgType_Server, -1, false, "Event round_start alternate");
-    TransMsg_PrintTextAll(true, false, MsgFormat_Both, MsgType_Chat, g_iTestModuleID, "Event round_start alternate");
-    TransMsg_PrintTextAll(false, false, MsgFormat_None, MsgType_Center, _, "Event round_start alternate");
-    TransMsg_PrintTextAll(false, false, MsgFormat_Plugin, MsgType_Hint, _, "Event round_start alternate");
+    //TransMgr_PrintText(SERVER_INDEX, MsgFormat_Plugin, MsgType_Server, _, false, "Event round_start alternate");
+    TransMgr_PrintTextAll(true, false, MsgFormat_Both, MsgType_Chat, g_iTestModuleID, false, "Event round_start alternate");
+    TransMgr_PrintTextAll(false, false, MsgFormat_None, MsgType_Center, _, false, "Event round_start alternate");
+    TransMgr_PrintTextAll(false, false, MsgFormat_Plugin, MsgType_Hint, _, false, "Event round_start alternate");
+    
+    LogMgr_Print(g_iTestModuleID, LogType_Normal, "Round_Start", "Alternate round_start event.");
+    //LogMgr_Print(g_iTestModuleID, LogType_Fatal_Module, "Round_Start", "Fatal error!  Disabling module.");
     
     // Disable event.
     //EventMgr_Disable(g_iTestModuleID, Event_RoundStart);
