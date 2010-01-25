@@ -30,6 +30,25 @@
  */
 #define LOG_MANAGER
 
+// ---------------
+//     Public
+// ---------------
+
+/**
+ * Log format types.
+ */
+enum LogTypes
+{
+    LogType_Normal = 0,     // Normal log message.  Printed in SourceMod logs.
+    LogType_Error,          // Error message.  Printed in SourceMod error logs.
+    LogType_Fatal_Module,   // Error message.  Disables the module that prints it.
+    LogType_Fatal_Plugin    // Error message.  Kills the entire plugin.
+}
+
+// ---------------
+//     Private
+// ---------------
+
 /**
  * The max number of cells needed for the log manager's allocated index.
  */
@@ -49,29 +68,6 @@
 /**
  * @endsection
  */
-
-/**
- * @section Log flags.
- */
-#define LOG_CORE_EVENTS             (1 << 0)    /** Log events from the plugin core like config validation and other messages. */
-#define LOG_GAME_EVENTS             (1 << 1)    /** Log admin commands, console commands, and game related events from modules like suicide attempts and weapon restrictions. */
-#define LOG_PLAYER_COMMANDS         (1 << 2)    /** Log events that are triggered by players, like chat triggers, teleporting and class change. */
-#define LOG_DEBUG                   (1 << 3)    /** Log debug messages, if any. Usually only developers enable this log flag. */
-#define LOG_DEBUG_DETAIL            (1 << 4)    /** Log additional debug messages with more detail. May cause spam depending on filter settings. Usually only developers enable this log flag. */
-/**
- * @endsection
- */
-
-/**
- * Log format types.
- */
-enum LogTypes
-{
-    LogType_Normal = 0,     // Normal log message.  Printed in SourceMod logs.
-    LogType_Error,          // Error message.  Printed in SourceMod error logs.
-    LogType_Fatal_Module,   // Error message.  Disables the module that prints it.
-    LogType_Fatal_Plugin    // Error message.  Kills the entire plugin.
-}
 
 /**
  * Array to store the index of the allocated space in the module data arrays for the log manager.

@@ -30,21 +30,9 @@
  */
 #define EVENT_MANAGER
 
-/**
- * The max number of cells needed for each of the event manager's allocated indexes.
- */
-#define EM_DATA_MAX_CELLS EVENT_DATA_CELL_COUNT
-// The number of max cells needed is equal to the number of cells needed to store all data for enum ProjectEvents.
-
-/**
- * Defines the block of data in the module data arrays that contains event enable data.
- */
-#define EVENT_DATA_ENABLE g_iEMAllocatedIndexes[0]
-
-/**
- * Defines the block of data in the module data arrays that contains event function data.
- */
-#define EVENT_DATA_FUNCTION g_iEMAllocatedIndexes[1]
+// ---------------
+//     Public
+// ---------------
 
 /**
  * This is a collection of ALL game and event custom events.
@@ -60,6 +48,26 @@ enum ProjectEvents
     Event_PlayerJump,
     Event_PlayerFire
 }
+
+// ---------------
+//     Private
+// ---------------
+
+/**
+ * The max number of cells needed for each of the event manager's allocated indexes.
+ */
+#define EM_DATA_MAX_CELLS EVENT_DATA_CELL_COUNT
+// The number of max cells needed is equal to the number of cells needed to store all data for enum ProjectEvents.
+
+/**
+ * Defines the block of data in the module data arrays that contains event enable data.
+ */
+#define EVENT_DATA_ENABLE g_iEMAllocatedIndexes[0]
+
+/**
+ * Defines the block of data in the module data arrays that contains event function data.
+ */
+#define EVENT_DATA_FUNCTION g_iEMAllocatedIndexes[1]
 
 /**
  * The number of cells used to store all the event enable data in enum ProjectEvents.

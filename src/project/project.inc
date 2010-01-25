@@ -25,15 +25,18 @@
  * ============================================================================
  */
 
+// ---------------
+//    Reference
+// ---------------
+
 /**
  * The amount of registered modules.
- * All integers list than this (and greater than or equal to zero) are valid module IDs.
+ * All integers less than this (and greater than or equal to zero) are valid module IDs.
  */
 #define MODULE_COUNT GetArraySize(ModuleMgr_GetList())
 
 /**
  * All the data modules need to register.
- * See ModuleMgr_Register()
  */
 enum ModuleData
 {
@@ -42,6 +45,10 @@ enum ModuleData
     String:ModuleData_ShortName[16],    /** Probably going to be used for client interaction. */
     // gunna need more than this..
 }
+
+// ---------------
+//     Private
+// ---------------
 
 /**
  * The number of cells used to store all the data in enum ModuleData.
@@ -52,3 +59,30 @@ enum ModuleData
  * The longest string that can be stored in the module's data. (Cell size of ModuleData_FullName)
  */
 #define MODULE_DATA_LONGEST_STRING 32
+
+// ---------------
+//    Editable
+// ---------------
+
+/**
+ * @section Basic project name information.
+ */
+#define PROJECT_FULLNAME    "Project"   // Used when printing the plugin name anywhere.
+#define PROJECT_SHORTNAME   "project"   // Used for filenames, etc.
+/**
+ * @endsection
+ */
+
+/**
+ * @section The formatting string for each option in enum MsgFormatting.
+ * Note: These are only used if translationsmanager.inc is included. 
+ */
+#define MSGFORMAT_PLUGIN_COLOR      "\x04[%s] \x01%s"          // 1st %s = Plugin name - 2nd %s = Text
+#define MSGFORMAT_PLUGIN_NOCOLOR    "[%s] %s"                  // 1st %s = Plugin name - 2nd %s = Text
+#define MSGFORMAT_MODULE_COLOR      "\x03[%s] \x01%s"          // 1st %s = Module name - 2nd %s = Text
+#define MSGFORMAT_MODULE_NOCOLOR    "[%s] %s"                  // 1st %s = Module name - 2nd %s = Text
+#define MSGFORMAT_BOTH_COLOR        "\x04[%s::\x03%s] \x01%s"    // 1st %s = Plugin name - 2nd %s = Module name - 3rd %s = Text
+#define MSGFORMAT_BOTH_NOCOLOR      "[%s::%s] %s"                // 1st %s = Plugin name - 2nd %s = Module name - 3rd %s = Text
+/**
+ * @endsection
+ */

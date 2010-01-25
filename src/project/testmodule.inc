@@ -60,9 +60,8 @@ public TestModule_OnPluginStart()
  */
 public TestModule_OnRoundStart()
 {
-    decl String:fullname[32];
-    ModuleMgr_ReadString(g_iTestModuleID, ModuleData_FullName, fullname, sizeof(fullname));
-    PrintToServer("[%s] Round started!  Switching event to new function.", fullname);
+    //TransMsg_PrintText(PRINT_SERVER, MsgFormat_Both, MsgType_Server, g_iTestModuleID, false, "Event round_start");
+    TransMsg_PrintTextAll(true, false, MsgFormat_Both, MsgType_Chat, g_iTestModuleID, "Event round_start");
     
     // Switching event forward.
     EventMgr_SetEventForward(g_iTestModuleID, Event_RoundStart, "TestModule_OnRoundStart2");
@@ -73,10 +72,11 @@ public TestModule_OnRoundStart()
  */
 public TestModule_OnRoundStart2()
 {
-    decl String:fullname[32];
-    ModuleMgr_ReadString(g_iTestModuleID, ModuleData_FullName, fullname, sizeof(fullname));
-    PrintToServer("[%s] Round started! (Alternate Function)  Disabling event.", fullname);
+    //TransMsg_PrintText(PRINT_SERVER, MsgFormat_Plugin, MsgType_Server, -1, false, "Event round_start alternate");
+    TransMsg_PrintTextAll(true, false, MsgFormat_Both, MsgType_Chat, g_iTestModuleID, "Event round_start alternate");
+    TransMsg_PrintTextAll(false, false, MsgFormat_None, MsgType_Center, _, "Event round_start alternate");
+    TransMsg_PrintTextAll(false, false, MsgFormat_Plugin, MsgType_Hint, _, "Event round_start alternate");
     
     // Disable event.
-    EventMgr_Disable(g_iTestModuleID, Event_RoundStart);
+    //EventMgr_Disable(g_iTestModuleID, Event_RoundStart);
 }

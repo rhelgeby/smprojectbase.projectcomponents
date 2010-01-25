@@ -30,6 +30,48 @@
  */
 #define TRANSLATIONS_MANAGER
 
+// ---------------
+//     Public
+// ---------------
+
+/**
+ * All available methods of sending text to clients.
+ */
+enum MsgTypes
+{
+    MsgType_Server,     /** Text printed to the server's console */
+    MsgType_Console,    /** Text printed in client's console. */
+    MsgType_Chat,       /** Text printed at the bottom of the screen. */
+    MsgType_Center,     /** Small, white text printed in the center of the screen. */
+    MsgType_Hint        /** Translucent grey box containing white text at the bottom center of the screen. */
+}
+
+/**
+ * An array to know which msg types be colored.
+ */
+new const g_bMsgTypeColor[MsgTypes] = {false, false, true, false, false};
+
+/**
+ * The types of automatic message formatting.
+ * Look in project.inc for editable defines regarding these options.
+ */
+enum MsgFormatting
+{
+    MsgFormat_None = -1,    /** Don't add anything to the text. */
+    MsgFormat_Plugin,       /** Prepend the plugin name to the text. */
+    MsgFormat_Module,       /** Prepend the module name to the text. */
+    MsgFormat_Both          /** Prepend the both the plugin name and module name to the text. */
+}
+
+/**
+ * Use this in the print stock as the client when printing to the server.
+ */
+#define PRINT_SERVER 0
+
+// ---------------
+//     Private
+// ---------------
+
 /**
  * The max number of cells needed for the translations manager's allocated index.
  */
@@ -97,6 +139,125 @@ stock TransMgr_Register(moduleID)
     TransMgr_SetEnabled(moduleID, true);
 }
 
+/**
+ * Print text to a client with special formatting and translated text.
+ * 
+ * @param client    The client index.  Use PRINT_SERVER when printing to the server.
+ * @param msgformat How to format the text before sending.  See enum MsgFormatting.
+ * @param msgtype   The type of message to print to the client.  See enum MsgTypes.
+ * @param moduleID  The module ID of the module this is coming from.  Needed for MsgFormat_Module or MsgFormat_Both.
+ * @param literal   True to print the last variable as a string, instead of translating it.  This is used in PrintTextAll because '...' can't be passed through.
+ * @param any       The translations phrase or literal string followed by formatting parameters.
+ */
+stock TransMsg_PrintText(client, MsgFormatting:msgformat, MsgTypes:msgtype, moduleID = -1, bool:literal = false, any:...)
+{
+    // Tells SourceMod's translations system to translate to this client's (or server's) language.
+    SetGlobalTransTarget(client);
+    
+    decl String:translated[512]; // Give plenty of room for long messages, better too much than not enough.
+    
+    // Method for getting text from the ... param depends on if literal is true or false.
+    if (literal)
+        VFormat(translated, sizeof(translated), "%s", 6);
+    else
+        VFormat(translated, sizeof(translated), "%t", 6);
+    
+    // Format the message.
+    
+    // Get the name of the module if a module ID was given.
+    new String:fullname[32] = "Invalid Module ID";
+    if (ModuleMgr_IsModuleValid(moduleID))
+    {
+        ModuleMgr_ReadString(moduleID, ModuleData_FullName, fullname, sizeof(fullname));
+    }
+    
+    // If this type of message supports color, then use the color formatting defines.
+    if (g_bMsgTypeColor[msgtype])
+    {
+        switch(msgformat)
+        {
+            case MsgFormat_Plugin:  Format(translated, sizeof(translated), MSGFORMAT_PLUGIN_COLOR, PROJECT_FULLNAME, translated);
+            case MsgFormat_Module:  Format(translated, sizeof(translated), MSGFORMAT_MODULE_COLOR, fullname, translated);
+            case MsgFormat_Both:    Format(translated, sizeof(translated), MSGFORMAT_BOTH_COLOR, PROJECT_FULLNAME, fullname, translated);
+        }
+    }
+    // This type of message doesn't support color.
+    else
+    {
+        switch(msgformat)
+        {
+            case MsgFormat_Plugin:  Format(translated, sizeof(translated), MSGFORMAT_PLUGIN_NOCOLOR, PROJECT_FULLNAME, translated);
+            case MsgFormat_Module:  Format(translated, sizeof(translated), MSGFORMAT_MODULE_NOCOLOR, fullname, translated);
+            case MsgFormat_Both:    Format(translated, sizeof(translated), MSGFORMAT_BOTH_NOCOLOR, PROJECT_FULLNAME, fullname, translated);
+        }
+    }
+    
+    // Now print the text to the client.
+    switch(msgtype)
+    {
+        case MsgType_Server:
+            PrintToServer(translated);
+        case MsgType_Console:
+            PrintToConsole(client, translated);
+        case MsgType_Chat:
+            PrintToChat(client, translated);
+        case MsgType_Center:
+            PrintCenterText(client, translated);
+        case MsgType_Hint:
+            PrintHintText(client, translated);
+    }
+}
+
+/**
+ * Print text to all clients with special formatting and translated text.
+ * 
+ * @param server    True to print this phrase to server, along with all clients in the game.
+ * @param admin     True to only print to 
+ * @param msgformat How to format the text before sending.  See enum MsgFormatting.
+ * @param msgtype   The type of message to print to the clients.  See enum MsgTypes.
+ * @param any       The translations phrase follow by formatting parameters.
+ * 
+ * TODO: CLIENT ACCESS
+ */
+stock TransMsg_PrintTextAll(bool:server, bool:admin, MsgFormatting:msgformat, MsgTypes:msgtype, moduleID = -1, any:...)
+{
+    // There's only 1 server.
+    if (msgtype == MsgType_Server)
+    {
+        ThrowError("TransMsg_PrintTextAll doesn't support MsgType_Server.");
+    }
+    
+    decl String:translated[512]; // Give plenty of room for long messages, better too much than not enough.
+    
+    // Print the phrase in the server's language.
+    if (server)
+    {
+        SetGlobalTransTarget(LANG_SERVER);
+        VFormat(translated, sizeof(translated), "%t", 6);
+        TransMsg_PrintText(PRINT_SERVER, msgformat, MsgType_Server, moduleID, true, translated);
+    }
+    
+    for (new client = 1; client <= MaxClients; client++)
+    {
+        if (!IsClientInGame(client))
+            continue;
+        
+        /**
+         * TODO: Check if client has permissions
+         */
+        
+        if (admin)
+        {
+        }
+        
+        // Print the phrase in the client's language.
+        SetGlobalTransTarget(client);
+        VFormat(translated, sizeof(translated), "%t", 6);
+        
+        TransMsg_PrintText(client, msgformat, msgtype, moduleID, true, translated);
+    }
+}
+
 // **********************************************
 //   Private API (For base project files only)
 // **********************************************
@@ -129,7 +290,7 @@ stock TransMgr_SetEnabled(moduleID, bool:enable)
 /**
  * (Re)loads all project translations files.
  */
-TransMgr_LoadTranslations()
+stock TransMgr_LoadTranslations()
 {
     // Load the project base translations.
     LoadTranslations("project/base.phrases");

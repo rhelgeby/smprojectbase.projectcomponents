@@ -25,22 +25,15 @@
  * ============================================================================
  */
 
-/**
- * TODO:
- * - Forwarding event code should be generic-itized and done through a call to a function.
- * Ex: EventMgr_ForwardEvent(ProjectEvents:event, eventinfo1, ...)
- * 
- * - A command to list all modules and it's info.
- * project_moduleinfo [module shortname]
- * 
- * - Have the logmanager print changes to the modules status (register, disabled, enabled, etc)
- * 
- * - Make uniqueness a requirement for shortname.
- * 
- * - Translations
- * 
- * - Admin  
- */
+// ---------------
+//     Public
+// ---------------
+
+// See project.inc
+
+// ---------------
+//     Private
+// ---------------
 
 /**
  * This is a macro that turns a module ID into the handle to it's data array.
@@ -194,6 +187,18 @@ stock bool:ModuleMgr_IsDisabled(moduleID)
 {
     // Read the value in ModuleData_Disabled and return the cell as a bool.
     return bool:ModuleMgr_ReadCell(moduleID, ModuleData_Disabled);
+}
+
+/**
+ * Returns if a module ID is valid or not.
+ * 
+ * @param moduleID  The module ID to check validity of.
+ * 
+ * @return          True if the module ID is valid, false if not.
+ */
+stock bool:ModuleMgr_IsModuleValid(moduleID)
+{
+    return (moduleID > -1 && moduleID < MODULE_COUNT);
 }
 
 /**
