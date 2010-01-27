@@ -41,6 +41,14 @@
 #define MODULE_COUNT GetArraySize(ModuleMgr_GetList())
 
 /**
+ * Module ID tag.
+ */
+enum Module
+{
+    INVALID_MODULE = -1     /** Used as an invalid module. */
+}
+
+/**
  * All the data modules need to register.
  */
 enum ModuleData

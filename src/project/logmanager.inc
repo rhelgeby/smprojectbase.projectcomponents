@@ -126,14 +126,14 @@ LogMgr_OnModuleRegister(Handle:adtModule)
  * isn't working due to required base files not being included.
  * 
  * @param client    The client index the text is being printed to.
- * @param moduleID  The module to print info for.
+ * @param module    The module to print info for.
  * @param msgtype   The type of message to tell Translations Manager to print.
  */
-stock LogMgr_OnCommandModuleInfo(client, moduleID, MsgTypes:msgtype)
+stock LogMgr_OnCommandModuleInfo(client, Module:module, MsgTypes:msgtype)
 {
     // Translate a bool into a text phrase.
     decl String:strWhiteList[8];
-    new bool:bWhiteList = LogMgr_IsModuleInFilter(moduleID);
+    new bool:bWhiteList = LogMgr_IsModuleInFilter(module);
     TransMgr_TranslateBool(client, bWhiteList, BoolPhrase_YesNo, strWhiteList, sizeof(strWhiteList));
     
     // Print the module event info.
@@ -147,16 +147,16 @@ stock LogMgr_OnCommandModuleInfo(client, moduleID, MsgTypes:msgtype)
 /**
  * Print a formatted message to logs depending on log settings.
  * 
- * @param moduleID      The module ID of the module sending the log.
+ * @param module        The module sending the log.
  * @param logtype       The type of the log being processed.
  * @param description   Short description of the log, like a function name.
  * @param text          The log message.
  * @param ...           Formatting parameters.
  */
-stock LogMgr_Print(moduleID, LogTypes:logtype, const String:description[], const String:text[], any:...)
+stock LogMgr_Print(Module:module, LogTypes:logtype, const String:description[], const String:text[], any:...)
 {
     // If the module is disabled, then don't print the log.
-    if (ModuleMgr_IsDisabled(moduleID))
+    if (ModuleMgr_IsDisabled(module))
         return;
     
     // If the log manager is disabled, and this is a normal log, then don't print the log.
@@ -167,7 +167,7 @@ stock LogMgr_Print(moduleID, LogTypes:logtype, const String:description[], const
     if (LogMgr_CvarModuleFilter())
     {
         // Check if the module is in the filter.
-        if (!LogMgr_IsModuleInFilter(moduleID))
+        if (!LogMgr_IsModuleInFilter(module))
             return;
     }
     
@@ -177,7 +177,7 @@ stock LogMgr_Print(moduleID, LogTypes:logtype, const String:description[], const
     
     // Get the module's full name.
     decl String:fullname[32]; // 32 because that's the max length of the module's fullname.
-    ModuleMgr_ReadString(moduleID, ModuleData_FullName, fullname, sizeof(fullname));
+    ModuleMgr_ReadString(module, ModuleData_FullName, fullname, sizeof(fullname));
     
     // Format the text string.
     Format(logbuffer, sizeof(logbuffer), LM_FORMAT, fullname, description, logbuffer);
@@ -199,7 +199,7 @@ stock LogMgr_Print(moduleID, LogTypes:logtype, const String:description[], const
         case LogType_Fatal_Module:
         {
             LogError(logbuffer);
-            ModuleMgr_Disable(moduleID);
+            ModuleMgr_Disable(module);
         }
         // Log an error message and kill the plugin.
         case LogType_Fatal_Plugin:
@@ -231,42 +231,42 @@ stock LogMgr_Print(moduleID, LogTypes:logtype, const String:description[], const
  * Check if the specified module is enabled in the module filter.
  * This is meant for other base project files to use, modules shouldn't need this.
  * 
- * @param moduleID      The module ID of the module to check.
+ * @param module        The module to check.
  * 
  * @return              True if enabled, false otherwise. 
  */
-stock bool:LogMgr_IsModuleInFilter(moduleID)
+stock bool:LogMgr_IsModuleInFilter(Module:module)
 {
-    return bool:GetArrayCell(ModuleMgr_GetModuleArray(moduleID), LOG_DATA_FILTER);
+    return bool:GetArrayCell(ModuleMgr_GetModuleArray(module), LOG_DATA_FILTER);
 }
 
 /**
  * Change if a module is enabled in the module filter.
  * This is meant for other base project files to use, modules shouldn't need this.
  * 
- * @param moduleID      The module ID of the module to change.
+ * @param module        The module to change.
  * @param enable        True to enable the module in the filter, false to disable.
  */
-stock LogMgr_ModuleFilterSet(moduleID, bool:enable)
+stock LogMgr_ModuleFilterSet(Module:module, bool:enable)
 {
-    SetArrayCell(ModuleMgr_GetModuleArray(moduleID), LOG_DATA_FILTER, _:enable);
+    SetArrayCell(ModuleMgr_GetModuleArray(module), LOG_DATA_FILTER, _:enable);
 }
 
 /**
  * Adds a module to the module filter.
  * This is meant for other base project files to use, modules shouldn't need this.
  *
- * @param moduleID  The module ID of the module being add to the filter.
+ * @param module    The module being add to the filter.
  * 
  * @return          True if added, false if it's already in the filter.
  */
-stock bool:LogMgr_ModuleFilterAdd(moduleID)
+stock bool:LogMgr_ModuleFilterAdd(Module:module)
 {
     // Check if the module isn't already is listed.
-    if (!LogMgr_IsModuleInFilter(moduleID))
+    if (!LogMgr_IsModuleInFilter(module))
     {
         // Add module to filter.
-        LogMgr_ModuleFilterSet(moduleID, true);
+        LogMgr_ModuleFilterSet(module, true);
         return true;
     }
     
@@ -277,17 +277,17 @@ stock bool:LogMgr_ModuleFilterAdd(moduleID)
  * Removes a module from the module filter.
  * This is meant for other base project files to use, modules shouldn't need this.
  *
- * @param moduleID  The module ID of the module being removed from the filter.
+ * @param module    The module being removed from the filter.
  * 
  * @return          True if removed, false if it's not in the filter.
  */
-stock bool:LogMgr_ModuleFilterRemove(moduleID)
+stock bool:LogMgr_ModuleFilterRemove(Module:module)
 {
     // Check if the module isn't already is listed.
-    if (LogMgr_IsModuleInFilter(moduleID))
+    if (LogMgr_IsModuleInFilter(module))
     {
         // Add module to filter.
-        LogMgr_ModuleFilterSet(moduleID, false);
+        LogMgr_ModuleFilterSet(module, false);
         return true;
     }
     
@@ -318,25 +318,24 @@ public Action:Command_LogModuleAdd(client, argc)
     }
     
     decl String:shortname[16];
-    new moduleID;
+    new module;
     
     // Loop through each argument.
     for (new arg = 1; arg <= argc; arg++)
     {
         // Get argument string.
         GetCmdArg(arg, shortname, sizeof(shortname));
-        moduleID = ModuleMgr_FindByString(ModuleData_ShortName, shortname);
+        module = ModuleMgr_FindByString(ModuleData_ShortName, shortname);
         
-        // If -1 was returned, then the module is invalid.
-        if (moduleID == -1)
+        if (module == MODULE_INVALID)
         {
             // Reply with an error and skip to next argument.
             TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "ModuleMgr invalid module", shortname);
             continue;
         }
         
-        LogMgr_ModuleFilterAdd(moduleID);
-        TransMgr_PrintText(client, MsgFormat_Both, MsgType_Reply, moduleID, false, "LogMgr cmd moduleadd");
+        LogMgr_ModuleFilterAdd(module);
+        TransMgr_PrintText(client, MsgFormat_Both, MsgType_Reply, module, false, "LogMgr cmd moduleadd");
     }
     
     // Say that we handled the command so CS:S doesn't see it and print "Unknown command"
@@ -354,7 +353,7 @@ public Action:Command_LogModuleAdd(client, argc)
 public Action:Command_LogModuleRemove(client, argc)
 {
     decl String:shortname[32];
-    new moduleID;
+    new module;
     
     // Check if privileged.
     /**
@@ -374,18 +373,17 @@ public Action:Command_LogModuleRemove(client, argc)
     {
         // Get argument string.
         GetCmdArg(arg, shortname, sizeof(shortname));
-        moduleID = ModuleMgr_FindByString(ModuleData_ShortName, shortname);
+        module = ModuleMgr_FindByString(ModuleData_ShortName, shortname);
         
-        // If -1 was returned, then the module is invalid.
-        if (moduleID == -1)
+        if (module == MODULE_INVALID)
         {
             // Reply with an error and skip to next argument.
             TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "ModuleMgr invalid module", shortname);
             continue;
         }
         
-        LogMgr_ModuleFilterRemove(moduleID);
-        TransMgr_PrintText(client, MsgFormat_Both, MsgType_Reply, moduleID, false, "LogMgr cmd moduleremove");
+        LogMgr_ModuleFilterRemove(module);
+        TransMgr_PrintText(client, MsgFormat_Both, MsgType_Reply, module, false, "LogMgr cmd moduleremove");
     }
     
     // Say that we handled the command so CS:S doesn't see it and print "Unknown command"

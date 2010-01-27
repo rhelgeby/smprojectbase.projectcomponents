@@ -136,15 +136,15 @@ TransMgr_OnModulesRegistered()
  * isn't working due to required base files not being included.
  * 
  * @param client    The client index the text is being printed to.
- * @param moduleID  The module to print info for.
+ * @param module    The module to print info for.
  * @param msgtype   The type of message to tell Translations Manager to print.
  */
-stock TransMgr_OnCommandModuleInfo(client, moduleID, MsgTypes:msgtype)
+stock TransMgr_OnCommandModuleInfo(client, Module:module, MsgTypes:msgtype)
 {
     decl String:translationfile[PLATFORM_MAX_PATH];
     
-    if (TransMgr_IsEnabled(moduleID))
-        TransMgr_BuildTranslationPath(moduleID, translationfile, sizeof(translationfile), true);
+    if (TransMgr_IsEnabled(module))
+        TransMgr_BuildTranslationPath(module, translationfile, sizeof(translationfile), true);
     else
         Format(translationfile, sizeof(translationfile), "%t", "_None");
     
@@ -160,11 +160,11 @@ stock TransMgr_OnCommandModuleInfo(client, moduleID, MsgTypes:msgtype)
  * Register your module to use translations.
  * Your module's translation file path is defined as: project/<moduleshortname>.phrases.txt
  * 
- * @param moduleID  The module ID to register for translations.
+ * @param module    The module ID to register for translations.
  */
-stock TransMgr_Register(moduleID)
+stock TransMgr_Register(Module:module)
 {
-    TransMgr_SetEnabled(moduleID, true);
+    TransMgr_SetEnabled(module, true);
 }
 
 /**
@@ -173,11 +173,11 @@ stock TransMgr_Register(moduleID)
  * @param client    The client index.  Use SERVER_INDEX when printing to the server.
  * @param msgformat How to format the text before sending.  See enum MsgFormatting.
  * @param msgtype   The type of message to print to the client.  See enum MsgTypes.
- * @param moduleID  The module ID of the module this is coming from.  Needed for MsgFormat_Module or MsgFormat_Both.
+ * @param module    The module this is coming from.  Needed for MsgFormat_Module or MsgFormat_Both.
  * @param literal   True to print the last variable as a string, instead of translating it.
  * @param any       The translations phrase or literal string followed by formatting parameters.
  */
-stock TransMgr_PrintText(client, MsgFormatting:msgformat, MsgTypes:msgtype, moduleID = -1, bool:literal = false, any:...)
+stock TransMgr_PrintText(client, MsgFormatting:msgformat, MsgTypes:msgtype, Module:module = INVALID_MODULE, bool:literal = false, any:...)
 {
     // Tells SourceMod's translations system to translate to this client's (or server's) language.
     SetGlobalTransTarget(client);
@@ -194,9 +194,9 @@ stock TransMgr_PrintText(client, MsgFormatting:msgformat, MsgTypes:msgtype, modu
     
     // Get the name of the module if a module ID was given.
     new String:fullname[32] = "Invalid Module ID";
-    if (ModuleMgr_IsModuleValid(moduleID))
+    if (ModuleMgr_IsModuleValid(module))
     {
-        ModuleMgr_ReadString(moduleID, ModuleData_FullName, fullname, sizeof(fullname));
+        ModuleMgr_ReadString(module, ModuleData_FullName, fullname, sizeof(fullname));
     }
     
     // If this type of message supports color, then use the color formatting defines.
@@ -244,7 +244,7 @@ stock TransMgr_PrintText(client, MsgFormatting:msgformat, MsgTypes:msgtype, modu
  * 
  * TODO: CLIENT ACCESS
  */
-stock TransMgr_PrintTextAll(bool:server, bool:admin, MsgFormatting:msgformat, MsgTypes:msgtype, moduleID = -1, bool:literal = false, any:...)
+stock TransMgr_PrintTextAll(bool:server, bool:admin, MsgFormatting:msgformat, MsgTypes:msgtype, Module:module = INVALID_MODULE, bool:literal = false, any:...)
 {
     // There's only 1 server.
     if (msgtype == MsgType_Server)
@@ -271,7 +271,7 @@ stock TransMgr_PrintTextAll(bool:server, bool:admin, MsgFormatting:msgformat, Ms
         else
             VFormat(translated, sizeof(translated), "%t", 7);
         
-        TransMgr_PrintText(SERVER_INDEX, msgformat, MsgType_Server, moduleID, true, translated);
+        TransMgr_PrintText(SERVER_INDEX, msgformat, MsgType_Server, module, true, translated);
     }
     
     for (new client = 1; client <= MaxClients; client++)
@@ -296,7 +296,7 @@ stock TransMgr_PrintTextAll(bool:server, bool:admin, MsgFormatting:msgformat, Ms
         else
             VFormat(translated, sizeof(translated), "%t", 7);
         
-        TransMgr_PrintText(client, msgformat, msgtype, moduleID, true, translated);
+        TransMgr_PrintText(client, msgformat, msgtype, module, true, translated);
     }
 }
 
@@ -331,25 +331,25 @@ stock TransMgr_TranslateBool(target, bool:boolean, BoolPhrases:boolphrase, Strin
  * Check if the specified module has translations enabled.
  * This is meant for other base project files to use, modules shouldn't need this.
  * 
- * @param moduleID      The module ID of the module to check.
+ * @param module        The module to check.
  * 
  * @return              True if enabled, false otherwise. 
  */
-stock bool:TransMgr_IsEnabled(moduleID)
+stock bool:TransMgr_IsEnabled(Module:module)
 {
-    return bool:GetArrayCell(ModuleMgr_GetModuleArray(moduleID), TRANSLATIONS_DATA_ENABLED);
+    return bool:GetArrayCell(ModuleMgr_GetModuleArray(module), TRANSLATIONS_DATA_ENABLED);
 }
 
 /**
  * Change if translations is enabled for a module.
  * This is meant for other base project files to use, modules shouldn't need this.
  * 
- * @param moduleID      The module ID of the module to change.
+ * @param module        The module to change.
  * @param enable        True to enable translations in this module, false to disable.
  */
-stock TransMgr_SetEnabled(moduleID, bool:enable)
+stock TransMgr_SetEnabled(Module:module, bool:enable)
 {
-    SetArrayCell(ModuleMgr_GetModuleArray(moduleID), TRANSLATIONS_DATA_ENABLED, _:enable);
+    SetArrayCell(ModuleMgr_GetModuleArray(module), TRANSLATIONS_DATA_ENABLED, _:enable);
 }
 
 /**
@@ -366,14 +366,19 @@ stock TransMgr_LoadTranslations()
     TransMgr_BuildTranslationPath(_, translationfile, sizeof(translationfile));
     LoadTranslations(translationfile);
     
+    new Module:module;
+    
     // Loop through all the modules.
     for (new moduleID = 0; moduleID < MODULE_COUNT; moduleID++)
     {
+        // Read moduleID as a Module type.
+        module = Module:moduleID;
+        
         // If the module doesn't have translations enabled, then skip to next module ID.
-        if (!TransMgr_IsEnabled(moduleID))
+        if (!TransMgr_IsEnabled(module))
             continue;
         
-        TransMgr_BuildTranslationPath(moduleID, translationfile, sizeof(translationfile));
+        TransMgr_BuildTranslationPath(module, translationfile, sizeof(translationfile));
         LoadTranslations(translationfile);
     }
 }
@@ -381,15 +386,15 @@ stock TransMgr_LoadTranslations()
 /**
  * Return a path to the project's, or module's, translation file.
  * 
- * @param moduleID  The module ID of the translation file that is being sought.  -1 to build a path to the base translations file.
+ * @param module    The module of the translation file that is sought.  INVALID_MODULE to build a path to the base translations file.
  * @param path      The path to the translation file.
  * @param maxlen    The max length of the output string.
  * @param txt       True to return the .txt extension, false to ignore it.
  */
-stock TransMgr_BuildTranslationPath(moduleID = -1, String:path[], maxlen, bool:txt = false)
+stock TransMgr_BuildTranslationPath(Module:module = INVALID_MODULE, String:path[], maxlen, bool:txt = false)
 {
     // If no module was specified, return the base file's translation file.
-    if (moduleID == -1)
+    if (module == INVALID_MODULE)
     {
         Format(path, maxlen, "%s/projectbase.phrases", PROJECT_SHORTNAME);
     }
@@ -397,7 +402,7 @@ stock TransMgr_BuildTranslationPath(moduleID = -1, String:path[], maxlen, bool:t
     {
         // Get the module's shortname to use as the translations name.
         decl String:shortname[16];
-        ModuleMgr_ReadString(moduleID, ModuleData_ShortName, shortname, sizeof(shortname));
+        ModuleMgr_ReadString(module, ModuleData_ShortName, shortname, sizeof(shortname));
         Format(path, maxlen, "%s/%s.phrases", PROJECT_SHORTNAME, shortname);
     }
     

@@ -38,7 +38,7 @@
 /**
  * This is a macro that turns a module ID into the handle to it's data array.
  */
-#define MM_HANDLE_FROM_ID(%1) GetArrayCell(g_adtModuleList, %1)
+#define MM_HANDLE_FROM_ID(%1) GetArrayCell(g_adtModuleList, _:%1)
 
 /**
  * Defines the block of data in the module data arrays that contains module-defined data.
@@ -124,9 +124,9 @@ ModuleMgr_OnPluginStart()
  * 
  * @param moduledata    Array populated with the module's data.  See enum ModuleData.
  * 
- * @return              The unique module ID.
+ * @return              A unique module ID.
  */
-stock ModuleMgr_Register(moduledata[ModuleData])
+stock Module:ModuleMgr_Register(moduledata[ModuleData])
 {
     // This is the array that will hold all the actual module data.
     new Handle:adtModule = CreateArray(g_iMMMaxBlockSize);
@@ -150,59 +150,59 @@ stock ModuleMgr_Register(moduledata[ModuleData])
     #endif
     
     // Store the handle in the global module list.
-    new moduleID = PushArrayCell(g_adtModuleList, adtModule);
+    new module = PushArrayCell(g_adtModuleList, adtModule);
     
     // Return the module ID.
-    return moduleID;
+    return Module:module;
 }
 
 /**
  * Disables a registered module.
  * If the module is already disabled, nothing will change.
  * 
- * @param moduleID  The module ID of the module to disable.
+ * @param module    The module to disable.
  */
-stock ModuleMgr_Disable(moduleID)
+stock ModuleMgr_Disable(Module:module)
 {
     // Set the ModuleData_Disabled data to 'true'.
-    ModuleMgr_WriteCell(moduleID, ModuleData_Disabled, true);
+    ModuleMgr_WriteCell(module, ModuleData_Disabled, true);
 }
 
 /**
  * Enables a registered module.
  * If the module is already enabled, nothing will change.
  * 
- * @param moduleID  The module ID of the module to enable.
+ * @param module    The module to enable.
  */
-stock ModuleMgr_Enable(moduleID)
+stock ModuleMgr_Enable(Module:module)
 {
     // Set the ModuleData_Disabled data to 'false'.
-    ModuleMgr_WriteCell(moduleID, ModuleData_Disabled, false);
+    ModuleMgr_WriteCell(module, ModuleData_Disabled, false);
 }
 
 /**
  * Returns if a module is disabled.
  * 
- * @param moduleID  The module ID of the module to check.
+ * @param module    The module to check.
  * 
  * @return          True if the module is disabled, false if enabled.
  */
-stock bool:ModuleMgr_IsDisabled(moduleID)
+stock bool:ModuleMgr_IsDisabled(Module:module)
 {
     // Read the value in ModuleData_Disabled and return the cell as a bool.
-    return bool:ModuleMgr_ReadCell(moduleID, ModuleData_Disabled);
+    return bool:ModuleMgr_ReadCell(module, ModuleData_Disabled);
 }
 
 /**
  * Returns if a module ID is valid or not.
  * 
- * @param moduleID  The module ID to check validity of.
+ * @param module    The module ID to check validity of.
  * 
  * @return          True if the module ID is valid, false if not.
  */
-stock bool:ModuleMgr_IsModuleValid(moduleID)
+stock bool:ModuleMgr_IsModuleValid(Module:module)
 {
-    return (moduleID > -1 && moduleID < MODULE_COUNT);
+    return (_:module > -1 && _:module < MODULE_COUNT);
 }
 
 /**
@@ -210,22 +210,26 @@ stock bool:ModuleMgr_IsModuleValid(moduleID)
  * 
  * @param data      The data to match the value with.
  * @param value     The value of the data that must match.
- * @param modules   Output array containing a list of module IDs that match. (optional)
+ * @param modules   Output array containing a list of modules that match. (optional)
  * @param matched   The number of modules that matched. (optional)
  * 
- * @return          The first module whose data value matches the given value.  -1 if no modules matched.
+ * @return          The first module whose data value matches the given value.  INVALID_MODULE if no modules matched.
  */
-stock ModuleMgr_Find(ModuleData:data, any:value, modules[] = {0}, &matched = 0)
+stock Module:ModuleMgr_Find(ModuleData:data, any:value, Module:modules[] = {INVALID_MODULE}, &matched = 0)
 {
     new matchcount;
+    new Module:module;
     
     // Loop through all the modules.
     for (new moduleID = 0; moduleID < MODULE_COUNT; moduleID++)
     {
+        // Read moduleID as a Module type.
+        module = Module:moduleID;
+        
         // If the data matches, then add the module ID to the output array.
-        if (ModuleMgr_ReadCell(moduleID, data) == value)
+        if (ModuleMgr_ReadCell(module, data) == value)
         {
-            modules[matchcount] = moduleID;
+            modules[matchcount] = module;
             matchcount++;
         }
     }
@@ -237,7 +241,7 @@ stock ModuleMgr_Find(ModuleData:data, any:value, modules[] = {0}, &matched = 0)
     }
     
     // No modules matched.
-    return -1;
+    return INVALID_MODULE;
 }
 
 /**
@@ -249,21 +253,25 @@ stock ModuleMgr_Find(ModuleData:data, any:value, modules[] = {0}, &matched = 0)
  * @param modules       Output array containing a list of module IDs that match. (optional)
  * @param matched       The number of modules that matched. (optional)
  * 
- * @return              The first module whose data value matches the given value.  -1 if no modules matched.
+ * @return              The first module whose data value matches the given value.  INVALID_MODULE if no modules matched.
  */
-stock ModuleMgr_FindByString(ModuleData:data, const String:value[], bool:casesensitive = false, modules[] = {0}, &matched = 0)
+stock Module:ModuleMgr_FindByString(ModuleData:data, const String:value[], bool:casesensitive = false, Module:modules[] = {INVALID_MODULE}, &matched = 0)
 {
     decl String:datastring[MODULE_DATA_LONGEST_STRING];
     new matchcount;
+    new Module:module;
     
     // Loop through all the modules.
     for (new moduleID = 0; moduleID < MODULE_COUNT; moduleID++)
     {
+        // Read moduleID as a Module type.
+        module = Module:moduleID;
+        
         // If the string matches, then add the module ID to the output array.
-        ModuleMgr_ReadString(moduleID, data, datastring, sizeof(datastring));
+        ModuleMgr_ReadString(module, data, datastring, sizeof(datastring));
         if (StrEqual(datastring, value, casesensitive))
         {
-            modules[matchcount] = moduleID;
+            modules[matchcount] = module;
             matchcount++;
         }
     }
@@ -275,34 +283,34 @@ stock ModuleMgr_FindByString(ModuleData:data, const String:value[], bool:casesen
     }
     
     // No modules matched.
-    return -1;
+    return INVALID_MODULE;
 }
 
 /**
  * Module data reader that returns all available module data.
  * Modules can use this for communicating with other modules.
  * 
- * @param moduleID      The unique ID given to the registered module.
+ * @param module        The module whose data to read.
  * @param moduledata    Output array for all module data.  See enum ModuleData.
  */
-stock ModuleMgr_ReadAll(moduleID, moduledata[ModuleData])
+stock ModuleMgr_ReadAll(Module:module, moduledata[ModuleData])
 {
-    GetArrayArray(MM_HANDLE_FROM_ID(moduleID), MODULE_DATA, moduledata[0], sizeof(moduledata));
+    GetArrayArray(MM_HANDLE_FROM_ID(module), MODULE_DATA, moduledata[0], sizeof(moduledata));
 }
 
 /**
  * Module data reader for any data type except strings.
  * Modules can use this for communicating with other modules.
  * 
- * @param moduleID  The unique ID given to the registered module.
+ * @param module    The module whose cell data to read.
  * @param data      The data to get the value of.  See enum ModuleData.
  * 
  * @return          The integer value of the desired module data.
  */
-stock ModuleMgr_ReadCell(moduleID, ModuleData:data)
+stock ModuleMgr_ReadCell(Module:module, ModuleData:data)
 {
     new moduledata[ModuleData];
-    GetArrayArray(MM_HANDLE_FROM_ID(moduleID), MODULE_DATA, moduledata[0], sizeof(moduledata));
+    GetArrayArray(MM_HANDLE_FROM_ID(module), MODULE_DATA, moduledata[0], sizeof(moduledata));
     
     // Return the value.
     return _:moduledata[data];
@@ -312,15 +320,15 @@ stock ModuleMgr_ReadCell(moduleID, ModuleData:data)
  * Module data reader for any string typed values.
  * Modules can use this for communicating with other modules. 
  * 
- * @param moduleID  The unique ID given to the registered module.
+ * @param module    The module whose string data to read.
  * @param data      The data to get the value of.  See enum ModuleData.
  * @param output    Output variable for the data read.
  * @param maxlen    The max length of the output string.
  */
-stock ModuleMgr_ReadString(moduleID, ModuleData:data, String:output[], maxlen)
+stock ModuleMgr_ReadString(Module:module, ModuleData:data, String:output[], maxlen)
 {
     new moduledata[ModuleData];
-    GetArrayArray(MM_HANDLE_FROM_ID(moduleID), MODULE_DATA, moduledata[0], sizeof(moduledata));
+    GetArrayArray(MM_HANDLE_FROM_ID(module), MODULE_DATA, moduledata[0], sizeof(moduledata));
     
     // Copy full name to output
     strcopy(output, maxlen, String:moduledata[data]);
@@ -354,69 +362,69 @@ stock ModuleMgr_Allocate(count, indexes[])
  * Module data writer that overwrites all data for a module with the given data.
  * This is meant for other base project files to use, modules shouldn't need this.
  * 
- * @param moduleID      The unique ID given to the registered module.
+ * @param module        The module whose data to write.
  * @param moduledata    New data to replace the old data.  See enum ModuleData.
  */
-stock ModuleMgr_WriteAll(moduleID, moduledata[ModuleData])
+stock ModuleMgr_WriteAll(Module:module, moduledata[ModuleData])
 {
-    SetArrayArray(MM_HANDLE_FROM_ID(moduleID), MODULE_DATA, moduledata[0], sizeof(moduledata));
+    SetArrayArray(MM_HANDLE_FROM_ID(module), MODULE_DATA, moduledata[0], sizeof(moduledata));
 }
 
 /**
  * Module data writer that writes a specified non-string data value.
  * This is meant for other base project files to use, modules shouldn't need this.
  * 
- * @param moduleID  The unique ID given to the registered module.
+ * @param module    The module whose cell data to write.
  * @param data      Data to write new value to.  See enum ModuleData.
  * @param value     Any cell value to write as the new data.
  */
-stock ModuleMgr_WriteCell(moduleID, ModuleData:data, any:value)
+stock ModuleMgr_WriteCell(Module:module, ModuleData:data, any:value)
 {
     // Read all the module data.
     new moduledata[ModuleData];
-    ModuleMgr_ReadAll(moduleID, moduledata);
+    ModuleMgr_ReadAll(module, moduledata);
     
     // Change the value of the specified module data.
     moduledata[data] = value;
     
     // Overwrite the old array with the modified one.
-    SetArrayArray(MM_HANDLE_FROM_ID(moduleID), MODULE_DATA, moduledata[0], sizeof(moduledata));
+    SetArrayArray(MM_HANDLE_FROM_ID(module), MODULE_DATA, moduledata[0], sizeof(moduledata));
 }
 
 /**
  * Module data writer that writes a specified string data value.
  * This is meant for other base project files to use, modules shouldn't need this.
  * 
- * @param moduleID  The unique ID given to the registered module.
+ * @param module    The module whose string data to write.
  * @param data      Data to write new string to.  See enum ModuleData.
  * @param maxlen    The max length of the data value.  See enum ModuleData.
  * @param value     A string to write as the new data value.
  */
-stock ModuleMgr_WriteString(moduleID, ModuleData:data, maxlen, const String:value[])
+stock ModuleMgr_WriteString(Module:module, ModuleData:data, maxlen, const String:value[])
 {
     // Read all the module data.
     new moduledata[ModuleData];
-    ModuleMgr_ReadAll(moduleID, moduledata);
+    ModuleMgr_ReadAll(module, moduledata);
     
     // Change the value of the specified module data.
     strcopy(String:moduledata[data], maxlen, value);
     
     // Overwrite the old array with the modified one.
-    SetArrayArray(MM_HANDLE_FROM_ID(moduleID), MODULE_DATA, moduledata[0], sizeof(moduledata));
+    SetArrayArray(MM_HANDLE_FROM_ID(module), MODULE_DATA, moduledata[0], sizeof(moduledata));
 }
 
 /**
  * Returns a module's handle given it's module ID.
  * This is meant for other base project files to use, modules shouldn't need this.
  * 
- * @param moduleID  The module ID to get the handle for.
+ * @param module    The module to get the handle for.
  * 
  * @return          The array handle to the module.
  */ 
-stock Handle:ModuleMgr_GetModuleArray(moduleID)
+stock Handle:ModuleMgr_GetModuleArray(Module:module)
 {
     // Return the module's array handle.
-    return MM_HANDLE_FROM_ID(moduleID);
+    return MM_HANDLE_FROM_ID(module);
 }
 
 /**
@@ -425,20 +433,24 @@ stock Handle:ModuleMgr_GetModuleArray(moduleID)
  * 
  * @param adtModule The module's array handle to get he module ID for.
  * 
- * @return          The module's module ID, -1 if no module matched the handle.
+ * @return          The module's module ID, INVALID_MODULE if no module matched the handle.
  */
-stock ModuleMgr_GetModuleID(Handle:adtModule)
+stock Module:ModuleMgr_GetModule(Handle:adtModule)
 {
+    new Module:module;
+    
     // Loop through all the modules.
-    // x = module ID
     for (new moduleID = 0; moduleID < MODULE_COUNT; moduleID++)
     {
+        // Read moduleID as a Module type.
+        module = Module:moduleID;
+        
         // If the handle's match, then return the current index, which is the module ID.
-        if (adtModule == MM_HANDLE_FROM_ID(moduleID))
-            return moduleID;
+        if (adtModule == MM_HANDLE_FROM_ID(module))
+            return module;
     }
     
-    return -1;
+    return INVALID_MODULE;
 }
 
 /**
@@ -484,11 +496,16 @@ public Action:Command_ModuleInfo(client, argc)
     TransMgr_PrintText(client, MsgFormat_None, msgtype, _, true, divider);
     TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "ModuleMgr cmd moduleinfo plugin name", PROJECT_FULLNAME);
     
+    new Module:module;
+    
     // Loop through all modules.
     for (new moduleID = 0; moduleID < MODULE_COUNT; moduleID++)
     {
+        // Read moduleID as a Module type.
+        module = Module:moduleID;
+        
         // Get the module's short name to match to the given partial name.
-        ModuleMgr_ReadString(moduleID, ModuleData_ShortName, moduleshortname, sizeof(moduleshortname));
+        ModuleMgr_ReadString(module, ModuleData_ShortName, moduleshortname, sizeof(moduleshortname));
         
         // If the module didn't fit the given partial name, then skip to the next module.
         if (StrContains(moduleshortname, partial, false) == -1)
@@ -496,9 +513,9 @@ public Action:Command_ModuleInfo(client, argc)
         
         TransMgr_PrintText(client, MsgFormat_None, msgtype, _, true, subdivider);
         
-        ModuleMgr_ReadString(moduleID, ModuleData_FullName, modulefullname, sizeof(modulefullname));
-        ModuleMgr_ReadString(moduleID, ModuleData_Description, moduledesc, sizeof(moduledesc));
-        bModuleDisabled = bool:ModuleMgr_ReadCell(moduleID, ModuleData_Disabled);
+        ModuleMgr_ReadString(module, ModuleData_FullName, modulefullname, sizeof(modulefullname));
+        ModuleMgr_ReadString(module, ModuleData_Description, moduledesc, sizeof(moduledesc));
+        bModuleDisabled = bool:ModuleMgr_ReadCell(module, ModuleData_Disabled);
         
         // Translate the opposite value of bModuleDisabled into a language "yes/no" string.
         TransMgr_TranslateBool(client, !bModuleDisabled, BoolPhrase_YesNo, strModuleEnabled, sizeof(strModuleEnabled));
@@ -510,15 +527,15 @@ public Action:Command_ModuleInfo(client, argc)
         
         // Forward event to other project base files.
         #if defined EVENT_MANAGER
-            EventMgr_OnCommandModuleInfo(client, moduleID, msgtype);
+            EventMgr_OnCommandModuleInfo(client, module, msgtype);
         #endif
         
         #if defined TRANSLATIONS_MANAGER
-            TransMgr_OnCommandModuleInfo(client, moduleID, msgtype);
+            TransMgr_OnCommandModuleInfo(client, module, msgtype);
         #endif
         
         #if defined LOG_MANAGER
-            LogMgr_OnCommandModuleInfo(client, moduleID, msgtype);
+            LogMgr_OnCommandModuleInfo(client, module, msgtype);
         #endif
     }
     
