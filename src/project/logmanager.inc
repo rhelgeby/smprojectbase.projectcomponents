@@ -56,9 +56,9 @@ enum LogTypes
 // Log manager only needs 1 cell for a boolean value.
 
 /**
- * Defines the block of data in the module data arrays that contains module filter data.
+ * Defines the block of data in the module data arrays that contains module whitelist data.
  */
-#define LOG_DATA_FILTER g_iLMAllocatedIndexes[0]
+#define LOG_DATA_WHITELIST g_iLMAllocatedIndexes[0]
 
 /**
  * @section Log message max lengths.
@@ -78,7 +78,7 @@ new g_iLMAllocatedIndexes[1];
  * @section Log cvars.
  */
 new Handle:cvarLog;
-new Handle:cvarLogModuleFilter;
+new Handle:cvarLogWhitelist;
 new Handle:cvarLogPrintAdmins;
 new Handle:cvarLogPrintPublic;
 /**
@@ -99,13 +99,13 @@ LogMgr_OnPluginStart()
     
     // Create log cvars.
     cvarLog =               CreateConVar("project_log", "1", "Enable logging in the plugin.  Error messages will always be logged.");
-    cvarLogModuleFilter =   CreateConVar("project_log_module_filter", "0", "Only modules added to the filter (project_log_add_module) will be logged.");
+    cvarLogWhitelist =      CreateConVar("project_log_whitelist", "0", "Only modules added to the whitelist (project_log_whitelist_add) will be logged.");
     cvarLogPrintAdmins =    CreateConVar("project_log_print_admins", "0", "Logs will be printed to admin chat in addition to log files.");
     cvarLogPrintPublic =    CreateConVar("project_log_print_public", "0", "Logs will be printed to public chat in addition to log files.");
     
     // Create log commands.
-    RegConsoleCmd("project_log_module_add", Command_LogModuleAdd, "Add one or more modules to the module filter. Usage: zr_log_add_module <module> [module] ...");
-    RegConsoleCmd("project_log_module_remove", Command_LogModuleRemove, "Remove one or more modules from the module filter. Usage: zr_log_remove_module <module> [module] ...");
+    RegConsoleCmd("project_log_whitelist_add", Command_LogWhitelistAdd, "Adds one or more modules to the whitelist.  Usage: project_log_whitelist_add <moduleshortname [module2] ...");
+    RegConsoleCmd("project_log_whitelist_remove", Command_LogWhitelistRemove, "Removes one or more modules from the whitelist.  Usage: project_log_whitelist_remove <moduleshortname [module2] ...");
 }
 
 /**
@@ -115,7 +115,7 @@ LogMgr_OnPluginStart()
  */
 LogMgr_OnModuleRegister(Handle:adtModule)
 {
-    // Push the 'false' into our allocated space to signify if this module is in the module filter or not.
+    // Push the 'false' into our allocated space to signify if this module is on the whitelist or not.
     PushArrayCell(adtModule, false);
 }
 
@@ -133,7 +133,7 @@ stock LogMgr_OnCommandModuleInfo(client, Module:module, MsgTypes:msgtype)
 {
     // Translate a bool into a text phrase.
     decl String:strWhiteList[8];
-    new bool:bWhiteList = LogMgr_IsModuleInFilter(module);
+    new bool:bWhiteList = LogMgr_IsModuleOnWhitelist(module);
     TransMgr_TranslateBool(client, bWhiteList, BoolPhrase_YesNo, strWhiteList, sizeof(strWhiteList));
     
     // Print the module event info.
@@ -163,11 +163,11 @@ stock LogMgr_Print(Module:module, LogTypes:logtype, const String:description[], 
     if (!LogMgr_CvarLog() && logtype == LogType_Normal)
         return;
     
-    // Check if module filtering is enabled.
-    if (LogMgr_CvarModuleFilter())
+    // Check if whitelist is enabled.
+    if (LogMgr_CvarWhitelist())
     {
-        // Check if the module is in the filter.
-        if (!LogMgr_IsModuleInFilter(module))
+        // Check if the module is on the whitelist.
+        if (!LogMgr_IsModuleOnWhitelist(module))
             return;
     }
     
@@ -228,45 +228,45 @@ stock LogMgr_Print(Module:module, LogTypes:logtype, const String:description[], 
 // **********************************************
 
 /**
- * Check if the specified module is enabled in the module filter.
+ * Check if the specified module is on the whitelist
  * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param module        The module to check.
  * 
  * @return              True if enabled, false otherwise. 
  */
-stock bool:LogMgr_IsModuleInFilter(Module:module)
+stock bool:LogMgr_IsModuleOnWhitelist(Module:module)
 {
-    return bool:GetArrayCell(ModuleMgr_GetModuleArray(module), LOG_DATA_FILTER);
+    return bool:GetArrayCell(ModuleMgr_GetModuleArray(module), LOG_DATA_WHITELIST);
 }
 
 /**
- * Change if a module is enabled in the module filter.
+ * Change if a module is enabled on the whitelist.
  * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param module        The module to change.
- * @param enable        True to enable the module in the filter, false to disable.
+ * @param enable        True to add the module to the whitelist, false to remove.
  */
-stock LogMgr_ModuleFilterSet(Module:module, bool:enable)
+stock LogMgr_WhitelistSet(Module:module, bool:enable)
 {
-    SetArrayCell(ModuleMgr_GetModuleArray(module), LOG_DATA_FILTER, _:enable);
+    SetArrayCell(ModuleMgr_GetModuleArray(module), LOG_DATA_WHITELIST, _:enable);
 }
 
 /**
- * Adds a module to the module filter.
+ * Adds a module to the whitelist.
  * This is meant for other base project files to use, modules shouldn't need this.
  *
- * @param module    The module being add to the filter.
+ * @param module    The module being add to whitelist.
  * 
- * @return          True if added, false if it's already in the filter.
+ * @return          True if added, false if it's already in the whitelist.
  */
-stock bool:LogMgr_ModuleFilterAdd(Module:module)
+stock bool:LogMgr_WhitelistAdd(Module:module)
 {
     // Check if the module isn't already is listed.
-    if (!LogMgr_IsModuleInFilter(module))
+    if (!LogMgr_IsModuleOnWhitelist(module))
     {
-        // Add module to filter.
-        LogMgr_ModuleFilterSet(module, true);
+        // Add module to the whitelist.
+        LogMgr_WhitelistSet(module, true);
         return true;
     }
     
@@ -274,20 +274,20 @@ stock bool:LogMgr_ModuleFilterAdd(Module:module)
 }
 
 /**
- * Removes a module from the module filter.
+ * Removes a module from the whitelist.
  * This is meant for other base project files to use, modules shouldn't need this.
  *
- * @param module    The module being removed from the filter.
+ * @param module    The module being removed from the whitelist.
  * 
- * @return          True if removed, false if it's not in the filter.
+ * @return          True if removed, false if it's not on the whitelist.
  */
-stock bool:LogMgr_ModuleFilterRemove(Module:module)
+stock bool:LogMgr_WhitelistRemove(Module:module)
 {
     // Check if the module isn't already is listed.
-    if (LogMgr_IsModuleInFilter(module))
+    if (LogMgr_IsModuleOnWhitelist(module))
     {
-        // Add module to filter.
-        LogMgr_ModuleFilterSet(module, false);
+        // Remove module from the whitelist.
+        LogMgr_WhitelistSet(module, false);
         return true;
     }
     
@@ -295,14 +295,13 @@ stock bool:LogMgr_ModuleFilterRemove(Module:module)
 }
 
 /**
- * Command callback: project_log_add_module
- * Add one or modules to module filter.
- * TODO: Translations
+ * Command callback: project_log_whitelist_add
+ * Add one or modules to the whitelist.
  * 
  * @param client    The client index.  Or SERVER_INDEX if coming from the server.
  * @param argc      The number of arguments that the client sent with the command.
  */
-public Action:Command_LogModuleAdd(client, argc)
+public Action:Command_LogWhitelistAdd(client, argc)
 {
     // Check if privileged.
     /**
@@ -313,12 +312,12 @@ public Action:Command_LogModuleAdd(client, argc)
     if (argc < 1)
     {
         // Display usage info.
-        TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "LogMgr cmd moduleadd usage");
+        TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "LogMgr cmd whitelistadd usage");
         return Plugin_Handled;
     }
     
     decl String:shortname[16];
-    new module;
+    new Module:module;
     
     // Loop through each argument.
     for (new arg = 1; arg <= argc; arg++)
@@ -327,15 +326,15 @@ public Action:Command_LogModuleAdd(client, argc)
         GetCmdArg(arg, shortname, sizeof(shortname));
         module = ModuleMgr_FindByString(ModuleData_ShortName, shortname);
         
-        if (module == MODULE_INVALID)
+        if (module == INVALID_MODULE)
         {
             // Reply with an error and skip to next argument.
             TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "ModuleMgr invalid module", shortname);
             continue;
         }
         
-        LogMgr_ModuleFilterAdd(module);
-        TransMgr_PrintText(client, MsgFormat_Both, MsgType_Reply, module, false, "LogMgr cmd moduleadd");
+        LogMgr_WhitelistAdd(module);
+        TransMgr_PrintText(client, MsgFormat_Both, MsgType_Reply, module, false, "LogMgr cmd whitelistadd");
     }
     
     // Say that we handled the command so CS:S doesn't see it and print "Unknown command"
@@ -343,17 +342,16 @@ public Action:Command_LogModuleAdd(client, argc)
 }
 
 /**
- * Command callback: project_log_remove_module
- * Remove one or modules from module filter.
- * TODO: Translations
+ * Command callback: project_log_whitelist_remove
+ * Remove one or modules from the whitelist
  * 
  * @param client    The client index.  Or SERVER_INDEX if coming from the server.
  * @param argc      The number of arguments that the client sent with the command.
  */
-public Action:Command_LogModuleRemove(client, argc)
+public Action:Command_LogWhitelistRemove(client, argc)
 {
     decl String:shortname[32];
-    new module;
+    new Module:module;
     
     // Check if privileged.
     /**
@@ -364,7 +362,7 @@ public Action:Command_LogModuleRemove(client, argc)
     if (argc < 1)
     {
         // Display usage info.
-        TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "LogMgr cmd moduleremove usage");
+        TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "LogMgr cmd whitelistremove usage");
         return Plugin_Handled;
     }
     
@@ -375,15 +373,15 @@ public Action:Command_LogModuleRemove(client, argc)
         GetCmdArg(arg, shortname, sizeof(shortname));
         module = ModuleMgr_FindByString(ModuleData_ShortName, shortname);
         
-        if (module == MODULE_INVALID)
+        if (module == INVALID_MODULE)
         {
             // Reply with an error and skip to next argument.
             TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "ModuleMgr invalid module", shortname);
             continue;
         }
         
-        LogMgr_ModuleFilterRemove(module);
-        TransMgr_PrintText(client, MsgFormat_Both, MsgType_Reply, module, false, "LogMgr cmd moduleremove");
+        LogMgr_WhitelistRemove(module);
+        TransMgr_PrintText(client, MsgFormat_Both, MsgType_Reply, module, false, "LogMgr cmd whitelistremove");
     }
     
     // Say that we handled the command so CS:S doesn't see it and print "Unknown command"
@@ -400,9 +398,9 @@ stock bool:LogMgr_CvarLog()
     return GetConVarBool(cvarLog);
 }
 
-stock bool:LogMgr_CvarModuleFilter()
+stock bool:LogMgr_CvarWhitelist()
 {
-    return GetConVarBool(cvarLogModuleFilter);
+    return GetConVarBool(cvarLogWhitelist);
 }
 
 stock bool:LogMgr_CvarPrintAdmins()

@@ -34,8 +34,8 @@
 
 #include "project/project"
 #include "project/translationsmanager"
-//#include "project/logmanager"
-//#include "project/eventmanager"
+#include "project/logmanager"
+#include "project/eventmanager"
 #include "project/modulemanager"
 
 // Module includes

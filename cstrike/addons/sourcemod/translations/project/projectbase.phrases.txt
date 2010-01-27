@@ -85,28 +85,28 @@
 		"en"		"On Log Whitelist: {1} (see cvar project_log_whitelist for info on the whitelist)"
 	}
 
-	// Command: project_log_module_add
+	// Command: project_log_whitelist_add
 
-	"LogMgr cmd moduleadd usage"
+	"LogMgr cmd whitelistadd usage"
 	{
-		"en"		"Adds one or more modules to the module filter.  Usage: project_log_module_add <moduleshortname [module2] ...\nUse project_module_list to see a list of modules and current statuses."
+		"en"		"Adds one or more modules to the whitelist.  Usage: project_log_whitelist_add <moduleshortname [module2] ...\nUse project_module_info to see a list of modules and current statuses."
 	}
 
-	"LogMgr cmd moduleadd"
+	"LogMgr cmd whitelistadd"
 	{
-		"en"		"Module has been added to the module filter."
+		"en"		"Module has been added to the whitelist."
 	}
 
-	// Command: project_log_module_remove
+	// Command: project_log_whitelist_remove
 
-	"LogMgr cmd moduleremove usage"
+	"LogMgr cmd whitelistremove usage"
 	{
-		"en"		"Removes one or more modules from the module filter.  Usage: project_log_module_remove <moduleshortname [module2] ...\nUse project_module_list to see a list of modules and current statuses."
+		"en"		"Removes one or more modules from the whitelist.  Usage: project_log_whitelist_remove <moduleshortname [module2] ...\nUse project_module_info to see a list of modules and current statuses."
 	}
 
-	"LogMgr cmd moduleremove"
+	"LogMgr cmd whitelistremove"
 	{
-		"en"		"Module has been removed from the module filter."
+		"en"		"Module has been removed from the whitelist."
 	}
 
 	// **********************************
