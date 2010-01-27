@@ -5,7 +5,7 @@
  *
  *  File:          testmodule.inc
  *  Type:          Base
- *  Description:   Test module designed with no other purpose but to test the project base.
+ *  Description:   Test module designed with no other purpose other than testing the project base.
  *
  *  Copyright (C) 2009-2010  Greyscale
  *
@@ -37,13 +37,13 @@ new g_iTestModuleID;
 public TestModule_OnPluginStart()
 {
     // Define all the module's data as layed out by enum ModuleData in project.inc.
-    new moduledata[ModuleData] = {false, "Test Module", "testmodule"};
+    new moduledata[ModuleData] = {false, "Test Module", "testmodule", "Test module designed with no other purpose other than testing the project base."};
     
     // Register the module with this data.
     g_iTestModuleID = ModuleMgr_Register(moduledata);
     
     // Now register the events we're going to use.
-    EventMgr_RegisterEvent(g_iTestModuleID, Event_RoundStart, "TestModule_OnRoundStart");
+    //EventMgr_RegisterEvent(g_iTestModuleID, Event_RoundStart, "TestModule_OnRoundStart");
     
     // Register this module with the translations manager.
     // Make sure testmodule.phrase.txt exists in translations/project/
@@ -62,10 +62,10 @@ public TestModule_OnRoundStart()
 {
     //TransMgr_PrintText(SERVER_INDEX, MsgFormat_Both, MsgType_Server, g_iTestModuleID, false, "Event round_start");
     TransMgr_PrintTextAll(true, false, MsgFormat_Both, MsgType_Chat, g_iTestModuleID, false, "Event round_start");
-    LogMgr_Print(g_iTestModuleID, LogType_Normal, "Round_Start", "The round has started.");
+    //LogMgr_Print(g_iTestModuleID, LogType_Normal, "Round_Start", "The round has started.");
     
     // Switching event forward.
-    EventMgr_SetEventForward(g_iTestModuleID, Event_RoundStart, "TestModule_OnRoundStart2");
+    //EventMgr_SetEventForward(g_iTestModuleID, Event_RoundStart, "TestModule_OnRoundStart2");
 }
 
 /**
@@ -78,7 +78,7 @@ public TestModule_OnRoundStart2()
     TransMgr_PrintTextAll(false, false, MsgFormat_None, MsgType_Center, _, false, "Event round_start alternate");
     TransMgr_PrintTextAll(false, false, MsgFormat_Plugin, MsgType_Hint, _, false, "Event round_start alternate");
     
-    LogMgr_Print(g_iTestModuleID, LogType_Normal, "Round_Start", "Alternate round_start event.");
+    //LogMgr_Print(g_iTestModuleID, LogType_Normal, "Round_Start", "Alternate round_start event.");
     //LogMgr_Print(g_iTestModuleID, LogType_Fatal_Module, "Round_Start", "Fatal error!  Disabling module.");
     
     // Disable event.

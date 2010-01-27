@@ -3,7 +3,7 @@
  *
  *  Project
  *
- *  File:          version.inc
+ *  File:          versioninfo.inc
  *  Type:          Base
  *  Description:   Command to display Mercurial version information in-game.
  *
@@ -26,12 +26,19 @@
  */
 
 /**
+ * Provides the plugin a way to know if the versioninfo.inc is included in the project.
+ */
+#define PROJECT_VERSIONINFO
+
+#include "project/hgversion"
+
+/**
  * Plugin has loaded.
  */
 public VersionInfo_OnPluginStart()
 {
     // Define all the module's data as layed out by enum ModuleData in project.inc.
-    new moduledata[ModuleData] = {false, "Version Information", "versioninfo"};
+    new moduledata[ModuleData] = {false, "Version Information", "versioninfo", "Command (project_version) to display Mercurial version information in-game."};
     
     // Register the module with this data.
     ModuleMgr_Register(moduledata);

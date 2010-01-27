@@ -112,7 +112,7 @@ ModuleMgr_OnPluginStart()
     
     
     // Create a module information print command.
-    RegConsoleCmd("project_module_info", Command_ModuleInfo, "Print all module data for a specific module, or all modules. Usage: project_module_info [moduleshortname]");
+    RegConsoleCmd("project_module_info", Command_ModuleInfo, "Print all module data for a specific module, or all modules. Usage: project_module_info [module partial name]");
 }
 
 // **********************************************
@@ -137,12 +137,12 @@ stock ModuleMgr_Register(moduledata[ModuleData])
     
     // Forward event to other base project files.
     
-    #if defined TRANSLATIONS_MANAGER
-        TransMgr_OnModuleRegister(adtModule);
-    #endif
-    
     #if defined EVENT_MANAGER
         EventMgr_OnModuleRegister(adtModule);
+    #endif
+    
+    #if defined TRANSLATIONS_MANAGER
+        TransMgr_OnModuleRegister(adtModule);
     #endif
     
     #if defined LOG_MANAGER
@@ -459,6 +459,7 @@ stock Handle:ModuleMgr_GetList()
  * @param client    The client index.  Or SERVER_INDEX if coming from the server.
  * @param argc      The number of arguments that the client sent with the command.
  */
+#if defined TRANSLATIONS_MANAGER
 public Action:Command_ModuleInfo(client, argc)
 {
     // This will send a message to a client's console.
@@ -468,22 +469,34 @@ public Action:Command_ModuleInfo(client, argc)
     if (client == SERVER_INDEX)
         msgtype = MsgType_Server;
     
-    decl String:separator[64] = "***************************************";
+    decl String:partial[16];
+    GetCmdArg(1, partial, sizeof(partial));
+    
+    decl String:divider[48] =       "***********************************************";
+    decl String:subdivider[48] =    "-----------------------------------------------";
+    
     decl String:modulefullname[32];
     decl String:moduleshortname[16];
     decl String:moduledesc[256];
     new bool:bModuleDisabled;
     decl String:strModuleEnabled[8];
     
-    TransMgr_PrintText(client, MsgFormat_None, msgtype, _, true, separator);
+    TransMgr_PrintText(client, MsgFormat_None, msgtype, _, true, divider);
     TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "ModuleMgr cmd moduleinfo plugin name", PROJECT_FULLNAME);
-    TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "ModuleMgr cmd moduleinfo plugin desc", PROJECT_DESCRIPTION);
     
     // Loop through all modules.
     for (new moduleID = 0; moduleID < MODULE_COUNT; moduleID++)
     {
-        ModuleMgr_ReadString(moduleID, ModuleData_FullName, modulefullname, sizeof(modulefullname));
+        // Get the module's short name to match to the given partial name.
         ModuleMgr_ReadString(moduleID, ModuleData_ShortName, moduleshortname, sizeof(moduleshortname));
+        
+        // If the module didn't fit the given partial name, then skip to the next module.
+        if (StrContains(moduleshortname, partial, false) == -1)
+            continue;
+        
+        TransMgr_PrintText(client, MsgFormat_None, msgtype, _, true, subdivider);
+        
+        ModuleMgr_ReadString(moduleID, ModuleData_FullName, modulefullname, sizeof(modulefullname));
         ModuleMgr_ReadString(moduleID, ModuleData_Description, moduledesc, sizeof(moduledesc));
         bModuleDisabled = bool:ModuleMgr_ReadCell(moduleID, ModuleData_Disabled);
         
@@ -494,7 +507,27 @@ public Action:Command_ModuleInfo(client, argc)
         TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "ModuleMgr cmd moduleinfo module shortname", moduleshortname);
         TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "ModuleMgr cmd moduleinfo module desc", moduledesc);
         TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "ModuleMgr cmd moduleinfo module enabled", strModuleEnabled);
+        
+        // Forward event to other project base files.
+        #if defined EVENT_MANAGER
+            EventMgr_OnCommandModuleInfo(client, moduleID, msgtype);
+        #endif
+        
+        #if defined TRANSLATIONS_MANAGER
+            TransMgr_OnCommandModuleInfo(client, moduleID, msgtype);
+        #endif
+        
+        #if defined LOG_MANAGER
+            LogMgr_OnCommandModuleInfo(client, moduleID, msgtype);
+        #endif
     }
     
-    TransMgr_PrintText(client, MsgFormat_None, msgtype, _, true, separator);
+    TransMgr_PrintText(client, MsgFormat_None, msgtype, _, true, divider);
 }
+#else
+// How can we print the module information without translations to read from?
+public Action:Command_ModuleInfo(client, argc)
+{
+    ReplyToCommand(client, "Translations manager must be compiled into this project to use this command.");
+}
+#endif

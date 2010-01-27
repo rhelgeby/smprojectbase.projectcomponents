@@ -119,6 +119,27 @@ LogMgr_OnModuleRegister(Handle:adtModule)
     PushArrayCell(adtModule, false);
 }
 
+/**
+ * Command project_module_info is being called.
+ * Print the module data allocated by the log manager.
+ * Note: |stock| tag will stop this function from being compiled if the project_module_info command
+ * isn't working due to required base files not being included.
+ * 
+ * @param client    The client index the text is being printed to.
+ * @param moduleID  The module to print info for.
+ * @param msgtype   The type of message to tell Translations Manager to print.
+ */
+stock LogMgr_OnCommandModuleInfo(client, moduleID, MsgTypes:msgtype)
+{
+    // Translate a bool into a text phrase.
+    decl String:strWhiteList[8];
+    new bool:bWhiteList = LogMgr_IsModuleInFilter(moduleID);
+    TransMgr_TranslateBool(client, bWhiteList, BoolPhrase_YesNo, strWhiteList, sizeof(strWhiteList));
+    
+    // Print the module event info.
+    TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "LogMgr cmd moduleinfo on whitelist", strWhiteList);
+}
+
 // **********************************************
 //                Public API
 // **********************************************

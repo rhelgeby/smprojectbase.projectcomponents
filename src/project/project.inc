@@ -104,9 +104,9 @@ enum ModuleData
 #define LM_FORMAT "[%s] [%s] %s"    // 1st %s = Module name - 2nd %s = Short description - 3rd = Log text
 
 /**
- * Load any extra translations files here.
+ * Load any extra translation files here.
  * The base project files translation file is <projectname>/<projectname>.phrases.txt.
- * Translations files for modules should be loaded via TransMgr_Register.
+ * Translation files for modules should be loaded via TransMgr_Register.
  * Note: This is only used if translationsmanager.inc is included.
  */
 stock TransMgr_LoadExtraTranslations()

@@ -30,26 +30,20 @@
 
 #include <sourcemod>
 
-// Comment this line to exclude version info command. Enable this if you have
-// the repository and HG installed (Mercurial or TortoiseHG).
-#define ADD_VERSION_INFO
-
 // Base project includes.
 
 #include "project/project"
 #include "project/translationsmanager"
-#include "project/logmanager"
-#include "project/eventmanager"
+//#include "project/logmanager"
+//#include "project/eventmanager"
 #include "project/modulemanager"
 
 // Module includes
 
-// Special "dual" module.  hgversion is generated automatically and versioninfo uses it.
-#if defined ADD_VERSION_INFO
-#include "project/hgversion"
+/**
+ * versioninfo.inc should not be included unless compiling in the specially configured environment.
+ */
 #include "project/versioninfo"
-#endif
-
 #include "project/testmodule"
 
 /**
@@ -100,9 +94,11 @@ public OnPluginStart()
     #endif
     
     // Register modules here.
-    #if defined ADD_VERSION_INFO
+    
+    #if defined PROJECT_VERSIONINFO
         VersionInfo_OnPluginStart();
     #endif
+    
     TestModule_OnPluginStart();
     
     

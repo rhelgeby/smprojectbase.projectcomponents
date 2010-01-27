@@ -35,7 +35,7 @@
 // ---------------
 
 /**
- * This is a collection of ALL game and event custom events.
+ * This is a collection of ALL game and custom events.
  */
 enum ProjectEvents
 {
@@ -48,6 +48,19 @@ enum ProjectEvents
     Event_PlayerJump,
     Event_PlayerFire
 }
+
+/**
+ * String array of display names for project events. (above)
+ * Keep this updated as ProjectEvents is modified.
+ */
+new const String:g_ProjectEventDisplay[ProjectEvents][] = { "Round Start",
+                                                            "Round Freeze End",
+                                                            "Round End",
+                                                            "Player Spawn",
+                                                            "Player Hurt",
+                                                            "Player Death",
+                                                            "Player Jump",
+                                                            "Player Fire" };
 
 // ---------------
 //     Private
@@ -119,6 +132,50 @@ EventMgr_OnModuleRegister(Handle:adtModule)
     // This is being pushed into our allocated space for event function data.
     new Function:funcProjectEvents[ProjectEvents];  // All values default to INVALID_FUNCTION.
     PushArrayArray(adtModule, funcProjectEvents[0], sizeof(funcProjectEvents));
+}
+
+/**
+ * Command project_module_info is being called.
+ * Print the module data allocated by the event manager.
+ * Note: |stock| tag will stop this function from being compiled if the project_module_info command
+ * isn't working due to required base files not being included.
+ * 
+ * @param client    The client index the text is being printed to.
+ * @param moduleID  The module to print info for.
+ * @param msgtype   The type of message to tell Translations Manager to print.
+ */
+stock EventMgr_OnCommandModuleInfo(client, moduleID, MsgTypes:msgtype)
+{
+    decl String:registeredevents[512];
+    registeredevents[0] = 0;
+    
+    // Get all event enable data to print about the module.
+    new bool:eventenabledata[ProjectEvents];
+    EventMgr_ReadAllEnableData(moduleID, eventenabledata);
+    
+    new ProjectEvents:event;
+    for (new eindex = 0; eindex < sizeof(eventenabledata); eindex++)
+    {
+        // Read the int as a ProjectEvent data type.
+        event = ProjectEvents:eindex;
+        
+        // If the event isn't enabled, then skip the next event.
+        if (!EventMgr_ReadEnableValue(moduleID, event))
+            continue;
+        
+        // Format each event onto a string.
+        if (eindex == 0)
+            strcopy(registeredevents, sizeof(registeredevents), g_ProjectEventDisplay[event]);
+        else
+            Format(registeredevents, sizeof(registeredevents), "%s, %s", registeredevents, g_ProjectEventDisplay[event]);
+    }
+    
+    // If the module has no registered events, then format in the "_None" phrase.
+    if (registeredevents[0] == 0)
+        Format(registeredevents, sizeof(registeredevents), "%t", "_None");
+    
+    // Print the module event info.
+    TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "EventMgr cmd moduleinfo events registered", registeredevents);
 }
 
 // **********************************************

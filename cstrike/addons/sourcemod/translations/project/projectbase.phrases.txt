@@ -1,5 +1,16 @@
 "Phrases"
 {
+	// Some generic phrases not available in stock SM translation files (as of SM 1.3)
+	"_None"
+	{
+		"en"		"None"
+	}
+
+	"_Empty"
+	{
+		"en"		"Empty"
+	}
+
 	// **********************************
 	//          Module Manager
 	// **********************************
@@ -17,24 +28,17 @@
 	"ModuleMgr cmd moduleinfo plugin name"
 	{
 		"#format"	"{1:s}"
-		"en"		"{1}"
+		"en"		"Plugin Name: {1}"
 	}
 
-	// {1}: the description of the plugin.
-	"ModuleMgr cmd moduleinfo plugin desc"
-	{
-		"#format"	"{1:s}"
-		"en"		"{1}"
-	}
-
-	// {1}: the full name of the module
+	// {1}: the full name of the module.
 	"ModuleMgr cmd moduleinfo module fullname"
 	{
 		"#format"	"{1:s}"
 		"en"		"Module: {1}"
 	}
 
-	// {1}: the short name of the module
+	// {1}: the short name of the module.
 	"ModuleMgr cmd moduleinfo module shortname"
 	{
 		"#format"	"{1:s}"
@@ -48,7 +52,7 @@
 		"en"		"Description: {1}"
 	}
 
-	// {1}: yes if the module is enabled, no if not
+	// {1}: yes if the module is enabled, no if not.
 	"ModuleMgr cmd moduleinfo module enabled"
 	{
 		"#format"	"{1:s}"
@@ -56,8 +60,30 @@
 	}
 
 	// **********************************
+	//           Event Manager
+	// **********************************
+
+	// Command: project_module_info
+
+	// {1}: list of the module's registered events.
+	"EventMgr cmd moduleinfo events registered"
+	{
+		"#format"	"{1:s}"
+		"en"		"Currently Registered Events: {1}"
+	}
+
+	// **********************************
 	//            Log Manager
 	// **********************************
+
+	// Command: project_module_info
+
+	// {1}: yes if the module is on the whitelist, no if not.
+	"LogMgr cmd moduleinfo on whitelist"
+	{
+		"#format"	"{1:s}"
+		"en"		"On Log Whitelist: {1} (see cvar project_log_whitelist for info on the whitelist)"
+	}
 
 	// Command: project_log_module_add
 
@@ -86,6 +112,17 @@
 	// **********************************
 	//       Translations Manager
 	// **********************************
+
+	// Command: project_module_info
+
+	// {1}: path to translation file if registered, none if not registered.
+	"TransMgr cmd moduleinfo registered"
+	{
+		"#format"	"{1:s}"
+		"en"		"Registered translation file: {1}"
+	}
+
+	// Command: project_reload_translations
 
 	"TransMgr cmd reloadtranslations"
 	{

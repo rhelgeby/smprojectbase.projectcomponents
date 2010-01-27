@@ -106,7 +106,7 @@ TransMgr_OnPluginStart()
     ModuleMgr_Allocate(1, g_iTMAllocatedIndexes);
     
     // Create translations commands.
-    RegConsoleCmd("project_reload_translations", Command_ReloadTranslations, "Reload all project translations files.");
+    RegConsoleCmd("project_reload_translations", Command_ReloadTranslations, "Reload all project translation files.");
 }
 
 /**
@@ -129,13 +129,36 @@ TransMgr_OnModulesRegistered()
     TransMgr_LoadTranslations();
 }
 
+/**
+ * Command project_module_info is being called.
+ * Print the module data allocated by the translation manager.
+ * Note: |stock| tag will stop this function from being compiled if the project_module_info command
+ * isn't working due to required base files not being included.
+ * 
+ * @param client    The client index the text is being printed to.
+ * @param moduleID  The module to print info for.
+ * @param msgtype   The type of message to tell Translations Manager to print.
+ */
+stock TransMgr_OnCommandModuleInfo(client, moduleID, MsgTypes:msgtype)
+{
+    decl String:translationfile[PLATFORM_MAX_PATH];
+    
+    if (TransMgr_IsEnabled(moduleID))
+        TransMgr_BuildTranslationPath(moduleID, translationfile, sizeof(translationfile), true);
+    else
+        Format(translationfile, sizeof(translationfile), "%t", "_None");
+    
+    // Print the module event info.
+    TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "TransMgr cmd moduleinfo registered", translationfile);
+}
+
 // **********************************************
 //                Public API
 // **********************************************
 
 /**
  * Register your module to use translations.
- * Your module's translations file path is defined as: project/<moduleshortname>.phrases.txt
+ * Your module's translation file path is defined as: project/<moduleshortname>.phrases.txt
  * 
  * @param moduleID  The module ID to register for translations.
  */
@@ -330,7 +353,7 @@ stock TransMgr_SetEnabled(moduleID, bool:enable)
 }
 
 /**
- * (Re)loads all project translations files.
+ * (Re)loads all project translation files.
  */
 stock TransMgr_LoadTranslations()
 {
@@ -340,10 +363,8 @@ stock TransMgr_LoadTranslations()
     decl String:translationfile[PLATFORM_MAX_PATH];
     
     // Load base file translations.
-    Format(translationfile, sizeof(translationfile), "%s/%s.phrases", PROJECT_SHORTNAME, PROJECT_SHORTNAME);
+    TransMgr_BuildTranslationPath(_, translationfile, sizeof(translationfile));
     LoadTranslations(translationfile);
-    
-    decl String:shortname[16];
     
     // Loop through all the modules.
     for (new moduleID = 0; moduleID < MODULE_COUNT; moduleID++)
@@ -352,17 +373,41 @@ stock TransMgr_LoadTranslations()
         if (!TransMgr_IsEnabled(moduleID))
             continue;
         
-        // Get the module's shortname to use as the translations name.
-        ModuleMgr_ReadString(moduleID, ModuleData_ShortName, shortname, sizeof(shortname));
-        
-        Format(translationfile, sizeof(translationfile), "%s/%s.phrases", PROJECT_SHORTNAME, shortname);
+        TransMgr_BuildTranslationPath(moduleID, translationfile, sizeof(translationfile));
         LoadTranslations(translationfile);
     }
 }
 
 /**
+ * Return a path to the project's, or module's, translation file.
+ * 
+ * @param moduleID  The module ID of the translation file that is being sought.  -1 to build a path to the base translations file.
+ * @param path      The path to the translation file.
+ * @param maxlen    The max length of the output string.
+ * @param txt       True to return the .txt extension, false to ignore it.
+ */
+stock TransMgr_BuildTranslationPath(moduleID = -1, String:path[], maxlen, bool:txt = false)
+{
+    // If no module was specified, return the base file's translation file.
+    if (moduleID == -1)
+    {
+        Format(path, maxlen, "%s/projectbase.phrases", PROJECT_SHORTNAME);
+    }
+    else
+    {
+        // Get the module's shortname to use as the translations name.
+        decl String:shortname[16];
+        ModuleMgr_ReadString(moduleID, ModuleData_ShortName, shortname, sizeof(shortname));
+        Format(path, maxlen, "%s/%s.phrases", PROJECT_SHORTNAME, shortname);
+    }
+    
+    if (txt)
+        Format(path, maxlen, "%s.txt", path);
+}
+
+/**
  * Command callback: project_reload_translations
- * Reloads all translations files used in the project.
+ * Reloads all translation files used in the project.
  * 
  * @param client    The client index.  Or SERVER_INDEX if coming from the server.
  * @param argc      The number of arguments that the client sent with the command.
