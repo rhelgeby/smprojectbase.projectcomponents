@@ -11,6 +11,17 @@
 		"en"		"Empty"
 	}
 
+	"_Enabled"
+	{
+		"en"		"Enabled"
+	}
+
+	"_Disabled"
+	{
+		"en"		"Disabled"
+	}
+
+
 	// **********************************
 	//          Module Manager
 	// **********************************
@@ -22,42 +33,67 @@
 		"en"		"Invalid module: \"{1}\""
 	}
 
-	// Command: project_module_info
+	// Command: PROJECT_BASE_CMD (Defined in project.inc)
 
-	// {1}: the name of the plugin.
-	"ModuleMgr cmd moduleinfo plugin name"
+	"ModuleMgr cmd base lvl1 syntax"
 	{
-		"#format"	"{1:s}"
-		"en"		"Plugin Name: {1}"
+		"#format"	"{1:s},{2:s},{3:17s},{4:17s},{5:17s}"
+		"en"		"{1} Menu:\nUsage: {2} <command> [arguments]\n    {3}- Display credits listing\n    {4}- Manage modules\n    {5}- Display version information"
+	}
+
+	"ModuleMgr cmd base lvl2 accessor modules syntax"
+	{
+		"#format"	"{1:s},{2:17s},{3:17s},{4:17s},{5:17s},{6:17s},{7:17s},{8:17s}"
+		"en"		"{1} Modules Menu:\n    {2}- Information about a module\n    {3}- Show registered modules\n    {4}- Enable a module\n    {5}- Reloads/refreshes all registered modules in the plugin\n    {6}- Reload a module\n    {7}- Disable a module\n    {8}- Disable all enabled modules"
+	}
+
+	// {1}: PROJECT_BASE_CMD
+	// {2}: sub-command accessor.
+	// {3}: sub-command with required argument.
+	// Applies to next 4 phrases.
+	"ModuleMgr cmd base lvl2 modules info syntax"
+	{
+		"#format"	"{1:s},{2:s},{3:s}"
+		"en"		"Usage: {1} {2} {3} <# or moduleshortname>"
+	}
+
+	"ModuleMgr cmd base lvl2 modules enable syntax"
+	{
+		"#format"	"{1:s},{2:s},{3:s}"
+		"en"		"Usage: {1} {2} {3} <# or moduleshortname>"
+	}
+
+	"ModuleMgr cmd base lvl2 modules reload syntax"
+	{
+		"#format"	"{1:s},{2:s},{3:s}"
+		"en"		"Usage: {1} {2} {3} <# or moduleshortname>"
+	}
+
+	"ModuleMgr cmd base lvl2 modules disable syntax"
+	{
+		"#format"	"{1:s},{2:s},{3:s}"
+		"en"		"Usage: {1} {2} {3} <# or moduleshortname>"
 	}
 
 	// {1}: the full name of the module.
-	"ModuleMgr cmd moduleinfo module fullname"
+	// {2}: the short name of the module.
+	// {3}: the description of the module.
+	// {4}: yes if the module is enabled, no if not.
+	"ModuleMgr cmd base lvl2 modules info print"
 	{
-		"#format"	"{1:s}"
-		"en"		"Module: {1}"
+		"#format"	"{1:s},{2:s},{3:s},{4:s}"
+		"en"		"  Module Name: {1}\n  Short Name: {2}\n  Description: {3}\n  Enabled: {4}"
 	}
 
-	// {1}: the short name of the module.
-	"ModuleMgr cmd moduleinfo module shortname"
+	// {1}: the module ID of the module.
+	// {2}: the full name of the module.
+	// {3}: the short name of the module.
+	"ModuleMgr cmd base lvl2 modules list print"
 	{
-		"#format"	"{1:s}"
-		"en"		"Short Name: {1} (used for commands/cvars)"
+		"#format"	"{1:s},{2:s},{3:s}"
+		"en"		"  {1} \"{2}\" aka {3}"
 	}
 
-	// {1}: the description of the module
-	"ModuleMgr cmd moduleinfo module desc"
-	{
-		"#format"	"{1:s}"
-		"en"		"Description: {1}"
-	}
-
-	// {1}: yes if the module is enabled, no if not.
-	"ModuleMgr cmd moduleinfo module enabled"
-	{
-		"#format"	"{1:s}"
-		"en"		"Enabled: {1}"
-	}
 
 	// **********************************
 	//           Event Manager
@@ -66,11 +102,33 @@
 	// Command: project_module_info
 
 	// {1}: list of the module's registered events.
-	"EventMgr cmd moduleinfo events registered"
+	"EventMgr cmd base lvl2 modules info print"
 	{
 		"#format"	"{1:s}"
-		"en"		"Currently Registered Events: {1}"
+		"en"		"  Currently Registered Events: {1}"
 	}
+
+
+	// **********************************
+	//       Translations Manager
+	// **********************************
+
+	// Command: project_module_info
+
+	// {1}: path to translation file if registered, none if not registered.
+	"TransMgr cmd base lvl2 modules info print"
+	{
+		"#format"	"{1:s}"
+		"en"		"  Registered translation file: {1}"
+	}
+
+	// Command: project_reload_translations
+
+	"TransMgr cmd reloadtranslations"
+	{
+		"en"		"All translation files have been reloaded."
+	}
+
 
 	// **********************************
 	//            Log Manager
@@ -79,17 +137,18 @@
 	// Command: project_module_info
 
 	// {1}: yes if the module is on the whitelist, no if not.
-	"LogMgr cmd moduleinfo on whitelist"
+	"LogMgr cmd base lvl2 modules info print"
 	{
 		"#format"	"{1:s}"
-		"en"		"On Log Whitelist: {1} (see cvar project_log_whitelist for info on the whitelist)"
+		"en"		"  On Log Whitelist: {1} (see cvar project_log_whitelist)"
 	}
 
 	// Command: project_log_whitelist_add
 
 	"LogMgr cmd whitelistadd usage"
 	{
-		"en"		"Adds one or more modules to the whitelist.  Usage: project_log_whitelist_add <moduleshortname [module2] ...\nUse project_module_info to see a list of modules and current statuses."
+		"#format"	"{1:s}"
+		"en"		"Adds one or more modules to the whitelist.  Usage: project_log_whitelist_add <moduleshortname [module2] ...\nUse \"{1} modules list\" to see a list of modules and current statuses.\nRelated command(s): project_log_whitelist_remove"
 	}
 
 	"LogMgr cmd whitelistadd"
@@ -101,7 +160,8 @@
 
 	"LogMgr cmd whitelistremove usage"
 	{
-		"en"		"Removes one or more modules from the whitelist.  Usage: project_log_whitelist_remove <moduleshortname [module2] ...\nUse project_module_info to see a list of modules and current statuses."
+		"#format"	"{1:s}"
+		"en"		"Removes one or more modules from the whitelist.  Usage: project_log_whitelist_remove <moduleshortname [module2] ...\nUse \"{1} modules list\" to see a list of modules and current statuses.\nRelated command(s): project_log_whitelist_add"
 	}
 
 	"LogMgr cmd whitelistremove"
@@ -109,23 +169,4 @@
 		"en"		"Module has been removed from the whitelist."
 	}
 
-	// **********************************
-	//       Translations Manager
-	// **********************************
-
-	// Command: project_module_info
-
-	// {1}: path to translation file if registered, none if not registered.
-	"TransMgr cmd moduleinfo registered"
-	{
-		"#format"	"{1:s}"
-		"en"		"Registered translation file: {1}"
-	}
-
-	// Command: project_reload_translations
-
-	"TransMgr cmd reloadtranslations"
-	{
-		"en"		"All translation files have been reloaded."
-	}
 }

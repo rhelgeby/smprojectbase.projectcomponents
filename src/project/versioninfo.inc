@@ -28,25 +28,17 @@
 /**
  * Provides the plugin a way to know if the versioninfo.inc is included in the project.
  */
-#define PROJECT_VERSIONINFO
+#define VERSION_INFO
 
-#include "project/hgversion"
+#if defined PROJECT_MERCURIAL
+    #include "project/hgversion"
+#endif
 
 /**
  * Plugin has loaded.
  */
 public VersionInfo_OnPluginStart()
 {
-    // Define all the module's data as layed out by enum ModuleData in project.inc.
-    new moduledata[ModuleData] = {false, "Version Information", "versioninfo", "Command (project_version) to display Mercurial version information in-game."};
-    
-    // Register the module with this data.
-    ModuleMgr_Register(moduledata);
-    
-    // ************************
-    // Done registering module.
-    // ************************
-    
     // Create a version information print command.
     RegConsoleCmd("project_version", Command_Version, "Prints version info about this project.");
 }
@@ -59,6 +51,19 @@ public VersionInfo_OnPluginStart()
  */
 public Action:Command_Version(client, argc)
 {
+    VersionPrint(client);
+    
+    // Say that we handled the command so CS:S doesn't see it and print "Unknown command"
+    return Plugin_Handled;
+}
+
+/**
+ * Print available version information to a client. (SERVER_INDEX) to print to server.
+ * 
+ * @param client    The client index.
+ */
+stock VersionPrint(client)
+{
     decl String:buffer[512];
     decl String:linebuffer[128];
     buffer[0] = 0;
@@ -66,30 +71,29 @@ public Action:Command_Version(client, argc)
     // %24s is a formatting token that lines up text automatically.
     #define FORMATSTRING "%24s: %s\n"
     
-    Format(linebuffer, sizeof(linebuffer), "%s\n", PROJECT_VER_PRODUCT_NAME);
+    Format(linebuffer, sizeof(linebuffer), "%s\n", PROJECT_FULLNAME);
     StrCat(buffer, sizeof(buffer), linebuffer);
     
-    Format(linebuffer, sizeof(linebuffer), "%s\n \n", PROJECT_VER_COPYRIGHT);
+    Format(linebuffer, sizeof(linebuffer), "%s\n \n", PROJECT_COPYRIGHT);
     StrCat(buffer, sizeof(buffer), linebuffer);
     
-    Format(linebuffer, sizeof(linebuffer), FORMATSTRING, "Version", PROJECT_VER_VERSION);
+    Format(linebuffer, sizeof(linebuffer), FORMATSTRING, "License", PROJECT_LICENSE);
     StrCat(buffer, sizeof(buffer), linebuffer);
     
-    Format(linebuffer, sizeof(linebuffer), FORMATSTRING, "Compile date", PROJECT_VER_DATE);
+    Format(linebuffer, sizeof(linebuffer), FORMATSTRING, "Version", PROJECT_VERSION);
     StrCat(buffer, sizeof(buffer), linebuffer);
     
-    Format(linebuffer, sizeof(linebuffer), FORMATSTRING, "License", PROJECT_VER_LICENSE);
+    Format(linebuffer, sizeof(linebuffer), FORMATSTRING, "Development Branch", PROJECT_BRANCH);
     StrCat(buffer, sizeof(buffer), linebuffer);
     
-    Format(linebuffer, sizeof(linebuffer), FORMATSTRING, "Build", PROJECT_VER_REVISION);
-    StrCat(buffer, sizeof(buffer), linebuffer);
-    
-    Format(linebuffer, sizeof(linebuffer), FORMATSTRING, "Development branch", PROJECT_VER_BRANCH);
-    StrCat(buffer, sizeof(buffer), linebuffer);
+    #if defined PROJECT_MERCURIAL
+        Format(linebuffer, sizeof(linebuffer), FORMATSTRING, "Build", PROJECT_MERCURIAL_REVISION);
+        StrCat(buffer, sizeof(buffer), linebuffer);
+        
+        Format(linebuffer, sizeof(linebuffer), FORMATSTRING, "Compile Date", PROJECT_MERCURIAL_DATE);
+        StrCat(buffer, sizeof(buffer), linebuffer);
+    #endif
     
     // Send back reply in the correct place.  (Chat, client console, server console)
     ReplyToCommand(client, buffer);
-    
-    // Say that we handled the command so CS:S doesn't see it and print "Unknown command"
-    return Plugin_Handled;
 }

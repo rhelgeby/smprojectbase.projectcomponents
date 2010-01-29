@@ -110,9 +110,10 @@ ModuleMgr_OnPluginStart()
             g_iMMMaxBlockSize = LM_DATA_MAX_CELLS;
     #endif
     
-    
-    // Create a module information print command.
-    RegConsoleCmd("project_module_info", Command_ModuleInfo, "Print all module data for a specific module, or all modules. Usage: project_module_info [module partial name]");
+    #if defined PROJECT_BASE_CMD
+        // Register the base command of the project module system.
+        RegConsoleCmd(PROJECT_BASE_CMD, Command_Base, "Print all module data for a specific module, or all modules. Usage: project_module_info [module partial name]");
+    #endif
 }
 
 // **********************************************
@@ -203,6 +204,62 @@ stock bool:ModuleMgr_IsDisabled(Module:module)
 stock bool:ModuleMgr_IsModuleValid(Module:module)
 {
     return (_:module > -1 && _:module < MODULE_COUNT);
+}
+
+/**
+ * Process the ModuleID string before matching it to a module.
+ * 
+ * @param strModuleID   The moduleID string to process.
+ * @param strModuleID2  The processed module ID string output.
+ * @param maxlen        The max length of the output string.
+ */
+stock ModuleMgr_ProcessModuleID(const String:strModuleID[], String:strModuleID2[], maxlen)
+{
+    // Method to strip any preceding 0's for comparison.
+    // Note: For client interaction, we incremented the module ID to avoid using 0, so we have to decrement before processing.
+    new moduleID = StringToInt(strModuleID);
+    if (moduleID != 0)
+        IntToString(--moduleID, strModuleID2, maxlen);
+    else
+        strcopy(strModuleID2, maxlen, strModuleID);
+}
+
+/**
+ * Finds any modules matching the given module index or shortname.
+ * 
+ * @param value         The module index or shortname to use for finding the module.
+ * 
+ * @return              The module whose module index or shortname matched. (in that order)  INVALID_MODULE if no modules matched.
+ */
+stock Module:ModuleMgr_FindByID(const String:value[])
+{
+    decl String:strModuleID[16];
+    decl String:strModuleID2[16];
+    decl String:shortname[16];
+    new Module:module;
+    
+    // Process the module ID before comparison.
+    ModuleMgr_ProcessModuleID(value, strModuleID, sizeof(strModuleID));
+    
+    // Loop through all the modules.
+    for (new moduleID = 0; moduleID < MODULE_COUNT; moduleID++)
+    {
+        // Read moduleID as a Module type.
+        module = Module:moduleID;
+        
+        // Compare the module ID to each module.
+        
+        IntToString(moduleID, strModuleID2, sizeof(strModuleID2));
+        if (StrEqual(strModuleID, strModuleID2, false))
+            return module;
+        
+        ModuleMgr_ReadString(module, ModuleData_ShortName, shortname, sizeof(shortname));
+        if (StrEqual(shortname, value, false))
+            return module;
+    }
+    
+    // No modules matched.
+    return INVALID_MODULE;
 }
 
 /**
@@ -464,28 +521,316 @@ stock Handle:ModuleMgr_GetList()
     return g_adtModuleList;
 }
 
+// **********************************************
+//                Base Command
+// **********************************************
+
+#if defined PROJECT_BASE_CMD
+
+// Translations:
+// "ModuleMgr cmd base lvl1 syntax"
+// "ModuleMgr cmd base lvl2 accessor 2 syntax"
+//
+//
+//
+//
+
 /**
- * Command callback: project_module_info
- * Print all module data for a specific module, or all modules.
+ * Base command sub command types.
+ */
+enum BaseSubCmdType
+{
+    SubCmdType_Invalid = -1,    /** Invalid sub-command. */
+    SubCmdType_Command,         /** A command with no additional arguments. */
+    SubCmdType_CommandWithArg,  /** A command with a required argument. */
+    SubCmdType_Accessor         /** Accesses a deeper sub-section. */
+}
+
+/**
+ * First level of base's commands and section accessors.
+ * sm *<level1>* [level2] [arguments]
+ */
+new const String:g_BaseCmdsLvl1[][] = {
+    "credits",      // Command
+    "modules",      // Section Accessor
+    "version" };    // Command
+
+/**
+ * Second level of the second first level section accessor.
+ * Confused?  Rephrased: The sub-commands under the "modules" keyword.
+ * sm <level1> *[level2]* [arguments]
+ */
+//new const String:g_BaseCmdsLvl2[][][] = {   // Should use this when the compiler bug is fixed.
+new const String:g_BaseCmdsLvl2[][][32] = {
+{"", "", "", "", "", "", ""},
+{   "info",
+    "list",
+    "enable",
+    "refresh",
+    "reload",
+    "disable",
+    "disable_all" },
+{"", "", "", "", "", "", ""} };
+
+/**
+ * Macros to make accessing [0, x] indexes prettier by changing the bounds to [1, x+1]
+ */
+#define BASECMD_LEVEL(%1) %1 - 1
+#define BASECMD_ARG(%1) %1 - 1
+/**
+ * @endsection
+ */
+
+/**
+ * A list that indicates if any of the above sub-commands are commands or section accessors.
+ */
+new const BaseSubCmdType:g_BaseSubCmdType[][] = {
+    {   SubCmdType_Command,
+        SubCmdType_Accessor,
+        SubCmdType_Command,
+        SubCmdType_Invalid,
+        SubCmdType_Invalid,
+        SubCmdType_Invalid,
+        SubCmdType_Invalid },
+    {
+        SubCmdType_CommandWithArg,
+        SubCmdType_Command,
+        SubCmdType_CommandWithArg,
+        SubCmdType_Command,
+        SubCmdType_CommandWithArg,
+        SubCmdType_CommandWithArg,
+        SubCmdType_Command } };
+
+/**
+ * Finds the index the command is located at in the arrays above.
+ * 
+ * @param cmd       The command to search for.
+ * @param level     The level the command is in.
+ * @param cmdindex  If searching level 2, this is the level 1 cmd that the level 2 cmds are under.
+ * 
+ * @return      The index in the array where this command is at.  -1 if not found.
+ */
+stock ModuleMgr_BaseCmdFind(const String:cmd[], level, cmdindex = -1)
+{
+    if (level == 1)
+    {
+        // Loop through level 1 cmds.
+        for (new iCmd = 0; iCmd < sizeof(g_BaseCmdsLvl1); iCmd++)
+        {
+            if (StrEqual(cmd, g_BaseCmdsLvl1[iCmd], false))
+                return iCmd;
+        }
+    }
+    else if (level == 2)
+    {
+        // Loop through level 2 cmds.
+        for (new iCmd = 0; iCmd < sizeof(g_BaseCmdsLvl1); iCmd++)
+        {
+            if (StrEqual(cmd, g_BaseCmdsLvl2[cmdindex][iCmd], false))
+                return iCmd;
+        }
+    }
+    
+    return -1;
+}
+
+/**
+ * Command callback: <basecommand>  See define PROJECT_BASE_CMD
+ * Root command for plugin and module management.
  * 
  * @param client    The client index.  Or SERVER_INDEX if coming from the server.
  * @param argc      The number of arguments that the client sent with the command.
  */
 #if defined TRANSLATIONS_MANAGER
+public Action:Command_Base(client, argc)
+{
+    // This callback is mainly for validation before passing it off to another function.
+    
+    // Determine how to print the message to server/client.
+    new MsgTypes:msgtype = (client == SERVER_INDEX) ? MsgType_Server : MsgType_Console;
+    
+    // Get all arguments.
+    if (argc == 0) argc++;
+    new String:strArgs[argc][16];
+    for (new arg = 1; arg <= argc; arg++)
+        GetCmdArg(arg, strArgs[BASECMD_ARG(arg)], 16);
+                                                   // ^^^ SHOULD BE sizeof(strArgs[].  But compiler bug.
+    decl String:phraseformat[64];
+    
+    // Level 1 validation.
+    
+    new bool:valid_exists = false;
+    new bool:valid_arg = false;
+    new iLvl1Cmd;
+    for (new iCmd = 0; iCmd < sizeof(g_BaseCmdsLvl1); iCmd++)
+    {
+        if (StrEqual(g_BaseCmdsLvl1[iCmd], strArgs[BASECMD_ARG(1)], false))
+        {
+            valid_exists = true;
+            iLvl1Cmd = iCmd;
+            
+            // Set 'valid_arg' to true if an argument was given or if it doesn't need an argument.
+            // False if the command needs an argument and none was given.
+            if (g_BaseSubCmdType[BASECMD_LEVEL(1)][iCmd] == SubCmdType_CommandWithArg)
+                valid_arg = (argc >= 2) ? (bool:strArgs[BASECMD_ARG(2)][0]) : false;
+            else
+                valid_arg = true;
+            
+            break;
+        }
+    }
+    
+    // Print level 1 syntax.
+    if (!valid_exists)
+    {
+        TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "ModuleMgr cmd base lvl1 syntax", PROJECT_FULLNAME, PROJECT_BASE_CMD, g_BaseCmdsLvl1[0], g_BaseCmdsLvl1[1], g_BaseCmdsLvl1[2]);
+        return;
+    }
+    
+    // Print level 1 sub-command syntax.
+    if (!valid_arg)
+    {
+        // Format the phrase name, because it depends on which command is being entered.
+        Format(phraseformat, sizeof(phraseformat), "ModuleMgr cmd base lvl1 %s syntax", strArgs[BASECMD_ARG(1)]);
+        TransMgr_PrintText(client, MsgFormat_Plugin, msgtype, _, false, phraseformat);
+        return;
+    }
+    
+    // Level 2 validation.
+    
+    // If the level 1 sub-command is an accessor, then validate it's sub-command.
+    // Otherwise, validate this command string by leaving 'valid' as 'true'.
+    if (g_BaseSubCmdType[BASECMD_LEVEL(1)][iLvl1Cmd] == SubCmdType_Accessor)
+    {
+        valid_exists = false;
+        valid_arg = false;
+        for (new iSubCmd = 0; iSubCmd < sizeof(g_BaseCmdsLvl2[]); iSubCmd++)
+        {
+            if (StrEqual(g_BaseCmdsLvl2[iLvl1Cmd][iSubCmd], strArgs[BASECMD_ARG(2)], false))
+            {
+                valid_exists = true;
+                
+                // Set 'valid_arg' to true if an argument was given or if it doesn't need an argument.
+                // False if the command needs an argument and none was given.
+                if (g_BaseSubCmdType[BASECMD_LEVEL(2)][iSubCmd] == SubCmdType_CommandWithArg)
+                    valid_arg = (argc >= 3) ? (bool:strArgs[BASECMD_ARG(3)][0]) : false;
+                else
+                    valid_arg = true;
+                
+                break;
+            }
+        }
+        
+        // Print level 2 sub-command syntax.
+        if (!valid_exists)
+        {
+            // Format the phrase name, because it depends on which sub-command accessor is being used.
+            Format(phraseformat, sizeof(phraseformat), "ModuleMgr cmd base lvl2 accessor %s syntax", strArgs[BASECMD_ARG(1)]);
+            TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, phraseformat, PROJECT_FULLNAME, g_BaseCmdsLvl2[iLvl1Cmd][0], g_BaseCmdsLvl2[iLvl1Cmd][1], g_BaseCmdsLvl2[iLvl1Cmd][2], g_BaseCmdsLvl2[iLvl1Cmd][3], g_BaseCmdsLvl2[iLvl1Cmd][4], g_BaseCmdsLvl2[iLvl1Cmd][5], g_BaseCmdsLvl2[iLvl1Cmd][6]);
+            return;
+        }
+        
+        // Print level 2 sub-sub-command syntax.
+        if (!valid_arg)
+        {
+            // Format the phrase name, because it depends on which command is being entered.
+            Format(phraseformat, sizeof(phraseformat), "ModuleMgr cmd base lvl2 %s %s syntax", strArgs[BASECMD_ARG(1)], strArgs[BASECMD_ARG(2)]);
+            TransMgr_PrintText(client, MsgFormat_Plugin, msgtype, _, false, phraseformat, PROJECT_BASE_CMD, strArgs[BASECMD_ARG(1)], strArgs[BASECMD_ARG(2)]);
+            return;
+        }
+    }
+    
+    // Pass off the validified arguments to another function.
+    ModuleMgr_BaseCmdParse(client, strArgs);
+}
+#else
+// How can we print the module information without translations to read from?
 public Action:Command_ModuleInfo(client, argc)
 {
-    // This will send a message to a client's console.
-    new MsgTypes:msgtype = MsgType_Console;
+    ReplyToCommand(client, "The base command requires that the translations manager be compiled into the plugin.");
+}
+#endif
+
+/**
+ * The "control center" that redirects all commands to their respective functions.
+ * 
+ * @param client    The client calling the command.
+ * @param strArgs   The list of arguments that were validated by the base command callback.
+ */
+ModuleMgr_BaseCmdParse(client, const String:strArgs[][])
+{
+    // The "credits" sub-command.
+    if (StrEqual(strArgs[BASECMD_ARG(1)], g_BaseCmdsLvl1[0], false))
+    {
+        // Print credits.
+        TransMgr_PrintText(client, MsgFormat_None, MsgType_Reply, _, false, "Project credits", PROJECT_AUTHOR, PROJECT_SHORTNAME, PROJECT_SHORTNAME);
+    }
+    // The "modules" accessor.
+    else if (StrEqual(strArgs[BASECMD_ARG(1)], g_BaseCmdsLvl1[1], false))
+    {
+        // Find the array index that the cmd is in, to access it's sub-commands for checking.
+        new cmdindex = ModuleMgr_BaseCmdFind(strArgs[BASECMD_ARG(1)], 1);
+        
+        // The "info" sub-command.
+        if (StrEqual(strArgs[BASECMD_ARG(2)], g_BaseCmdsLvl2[cmdindex][0], false))
+        {
+            ModuleMgr_PrintModuleInfo(client, strArgs[BASECMD_ARG(3)]);
+        }
+        // The "list" sub-command.
+        else if (StrEqual(strArgs[BASECMD_ARG(2)], g_BaseCmdsLvl2[cmdindex][1], false))
+        {
+            ModuleMgr_PrintModules(client);
+        }
+        // The "enable" sub-command.
+        else if (StrEqual(strArgs[BASECMD_ARG(2)], g_BaseCmdsLvl2[cmdindex][2], false))
+        {
+        }
+        // The "refresh" sub-command.
+        else if (StrEqual(strArgs[BASECMD_ARG(2)], g_BaseCmdsLvl2[cmdindex][3], false))
+        {
+        }
+        // The "reload" sub-command.
+        else if (StrEqual(strArgs[BASECMD_ARG(2)], g_BaseCmdsLvl2[cmdindex][4], false))
+        {
+        }
+        // The "disable" sub-command.
+        else if (StrEqual(strArgs[BASECMD_ARG(2)], g_BaseCmdsLvl2[cmdindex][5], false))
+        {
+        }
+        // The "disable_all" sub-command.
+        else if (StrEqual(strArgs[BASECMD_ARG(2)], g_BaseCmdsLvl2[cmdindex][6], false))
+        {
+        }
+    }
+    // The "version" sub-command.
+    else if (StrEqual(strArgs[BASECMD_ARG(1)], g_BaseCmdsLvl1[2], false))
+    {
+        #if defined VERSION_INFO
+            VersionPrint(client);
+        #else
+            TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "Project file required", "versioninfo.inc");
+        #endif
+    }
+}
+
+/**
+ * Prints the information stored about a module.
+ * 
+ * @param client        Client to print information to.
+ * @param strModuleID   Either the module's shortname or it's module ID.
+ */
+stock ModuleMgr_PrintModuleInfo(client, const String:strModuleID[])
+{
+    // Validate the module ID.
+    new Module:module = ModuleMgr_FindByID(strModuleID);
+    if (module == INVALID_MODULE)
+    {
+        TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "ModuleMgr invalid module", strModuleID);
+        return;
+    }
     
-    // If the caller is the server, then change some translation vars.
-    if (client == SERVER_INDEX)
-        msgtype = MsgType_Server;
-    
-    decl String:partial[16];
-    GetCmdArg(1, partial, sizeof(partial));
-    
-    decl String:divider[48] =       "***********************************************";
-    decl String:subdivider[48] =    "-----------------------------------------------";
+    // Determine how to print the message to server/client.
+    new MsgTypes:msgtype = (client == SERVER_INDEX) ? MsgType_Server : MsgType_Console;
     
     decl String:modulefullname[32];
     decl String:moduleshortname[16];
@@ -493,58 +838,63 @@ public Action:Command_ModuleInfo(client, argc)
     new bool:bModuleDisabled;
     decl String:strModuleEnabled[8];
     
-    TransMgr_PrintText(client, MsgFormat_None, msgtype, _, true, divider);
-    TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "ModuleMgr cmd moduleinfo plugin name", PROJECT_FULLNAME);
+    // Get the module's short name to match to the given partial name.
+    ModuleMgr_ReadString(module, ModuleData_FullName, modulefullname, sizeof(modulefullname));
+    ModuleMgr_ReadString(module, ModuleData_ShortName, moduleshortname, sizeof(moduleshortname));
+    ModuleMgr_ReadString(module, ModuleData_Description, moduledesc, sizeof(moduledesc));
+    bModuleDisabled = bool:ModuleMgr_ReadCell(module, ModuleData_Disabled);
+    TransMgr_TranslateBool(client, !bModuleDisabled, BoolPhrase_YesNo, strModuleEnabled, sizeof(strModuleEnabled));
     
+    // Print all the data stored in the module manager itself.
+    TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "ModuleMgr cmd base lvl2 modules info print", modulefullname, moduleshortname, moduledesc, strModuleEnabled);
+    
+    // Forward event to other project base components.
+    #if defined EVENT_MANAGER
+        EventMgr_OnPrintModuleInfo(client, module, msgtype);
+    #endif
+    
+    #if defined TRANSLATIONS_MANAGER
+        TransMgr_OnPrintModuleInfo(client, module, msgtype);
+    #endif
+    
+    #if defined LOG_MANAGER
+        LogMgr_OnPrintModuleInfo(client, module, msgtype);
+    #endif
+}
+
+/**
+ * Prints all registered modules.
+ * 
+ * @param client        Client to print information to.
+ */
+stock ModuleMgr_PrintModules(client)
+{
+    // Determine how to print the message to server/client.
+    new MsgTypes:msgtype = (client == SERVER_INDEX) ? MsgType_Server : MsgType_Console;
+    
+    decl String:modulefullname[32];
+    decl String:moduleshortname[16];
+    decl String:strModuleID[8];
+    
+    // Loop through all the modules.
     new Module:module;
-    
-    // Loop through all modules.
     for (new moduleID = 0; moduleID < MODULE_COUNT; moduleID++)
     {
         // Read moduleID as a Module type.
         module = Module:moduleID;
         
-        // Get the module's short name to match to the given partial name.
-        ModuleMgr_ReadString(module, ModuleData_ShortName, moduleshortname, sizeof(moduleshortname));
+        // Get the module's information to display.
+        // Note: For client interaction, we increment the module ID to avoid using 0.
+        IntToString(++moduleID, strModuleID, sizeof(strModuleID));
         
-        // If the module didn't fit the given partial name, then skip to the next module.
-        if (StrContains(moduleshortname, partial, false) == -1)
-            continue;
-        
-        TransMgr_PrintText(client, MsgFormat_None, msgtype, _, true, subdivider);
+        // Manually pad with a 0 if it's a single digit.
+        if (strlen(strModuleID) == 1)
+            Format(strModuleID, sizeof(strModuleID), "0%s", strModuleID);
         
         ModuleMgr_ReadString(module, ModuleData_FullName, modulefullname, sizeof(modulefullname));
-        ModuleMgr_ReadString(module, ModuleData_Description, moduledesc, sizeof(moduledesc));
-        bModuleDisabled = bool:ModuleMgr_ReadCell(module, ModuleData_Disabled);
+        ModuleMgr_ReadString(module, ModuleData_ShortName, moduleshortname, sizeof(moduleshortname));
         
-        // Translate the opposite value of bModuleDisabled into a language "yes/no" string.
-        TransMgr_TranslateBool(client, !bModuleDisabled, BoolPhrase_YesNo, strModuleEnabled, sizeof(strModuleEnabled));
-        
-        TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "ModuleMgr cmd moduleinfo module fullname", modulefullname);
-        TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "ModuleMgr cmd moduleinfo module shortname", moduleshortname);
-        TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "ModuleMgr cmd moduleinfo module desc", moduledesc);
-        TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "ModuleMgr cmd moduleinfo module enabled", strModuleEnabled);
-        
-        // Forward event to other project base files.
-        #if defined EVENT_MANAGER
-            EventMgr_OnCommandModuleInfo(client, module, msgtype);
-        #endif
-        
-        #if defined TRANSLATIONS_MANAGER
-            TransMgr_OnCommandModuleInfo(client, module, msgtype);
-        #endif
-        
-        #if defined LOG_MANAGER
-            LogMgr_OnCommandModuleInfo(client, module, msgtype);
-        #endif
+        TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "ModuleMgr cmd base lvl2 modules list print", strModuleID, modulefullname, moduleshortname);
     }
-    
-    TransMgr_PrintText(client, MsgFormat_None, msgtype, _, true, divider);
-}
-#else
-// How can we print the module information without translations to read from?
-public Action:Command_ModuleInfo(client, argc)
-{
-    ReplyToCommand(client, "Translations manager must be compiled into this project to use this command.");
 }
 #endif

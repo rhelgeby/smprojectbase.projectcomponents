@@ -53,14 +53,15 @@ enum ProjectEvents
  * String array of display names for project events. (above)
  * Keep this updated as ProjectEvents is modified.
  */
-new const String:g_ProjectEventDisplay[ProjectEvents][] = { "Round Start",
-                                                            "Round Freeze End",
-                                                            "Round End",
-                                                            "Player Spawn",
-                                                            "Player Hurt",
-                                                            "Player Death",
-                                                            "Player Jump",
-                                                            "Player Fire" };
+new const String:g_ProjectEventDisplay[ProjectEvents][] = {
+    "Round Start",
+    "Round Freeze End",
+    "Round End",
+    "Player Spawn",
+    "Player Hurt",
+    "Player Death",
+    "Player Jump",
+    "Player Fire" };
 
 // ---------------
 //     Private
@@ -138,13 +139,13 @@ EventMgr_OnModuleRegister(Handle:adtModule)
  * Command project_module_info is being called.
  * Print the module data allocated by the event manager.
  * Note: |stock| tag will stop this function from being compiled if the project_module_info command
- * isn't working due to required base files not being included.
+ * isn't working due to required base components not being included.
  * 
  * @param client    The client index the text is being printed to.
  * @param module    The module to print info for.
  * @param msgtype   The type of message to tell Translations Manager to print.
  */
-stock EventMgr_OnCommandModuleInfo(client, Module:module, MsgTypes:msgtype)
+stock EventMgr_OnPrintModuleInfo(client, Module:module, MsgTypes:msgtype)
 {
     decl String:registeredevents[512];
     registeredevents[0] = 0;
@@ -175,7 +176,7 @@ stock EventMgr_OnCommandModuleInfo(client, Module:module, MsgTypes:msgtype)
         Format(registeredevents, sizeof(registeredevents), "%t", "_None");
     
     // Print the module event info.
-    TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "EventMgr cmd moduleinfo events registered", registeredevents);
+    TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "EventMgr cmd base lvl2 modules info print", registeredevents);
 }
 
 // **********************************************

@@ -33,6 +33,7 @@
 // Base project includes.
 
 #include "project/project"
+#include "project/versioninfo"
 #include "project/translationsmanager"
 #include "project/logmanager"
 #include "project/eventmanager"
@@ -40,10 +41,6 @@
 
 // Module includes
 
-/**
- * versioninfo.inc should not be included unless compiling in the specially configured environment.
- */
-#include "project/versioninfo"
 #include "project/testmodule"
 
 /**
@@ -78,33 +75,32 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
  */
 public OnPluginStart()
 {
-    // Forward event to other project base files.
+    // Forward event to other project base components.
     ModuleMgr_OnPluginStart();
-    
-    #if defined TRANSLATIONS_MANAGER
-        TransMgr_OnPluginStart();
-    #endif
     
     #if defined EVENT_MANAGER
         EventMgr_OnPluginStart();
+    #endif
+    
+    #if defined TRANSLATIONS_MANAGER
+        TransMgr_OnPluginStart();
     #endif
     
     #if defined LOG_MANAGER
         LogMgr_OnPluginStart();
     #endif
     
-    // Register modules here.
-    
-    #if defined PROJECT_VERSIONINFO
+    #if defined VERSION_INFO
         VersionInfo_OnPluginStart();
     #endif
     
+    // Register modules here.
     TestModule_OnPluginStart();
     
     
     // All modules should be registered by this point!
     
-    // Forward event to other project base files.
+    // Forward event to other project base components.
     #if defined TRANSLATIONS_MANAGER
         TransMgr_OnModulesRegistered();
     #endif

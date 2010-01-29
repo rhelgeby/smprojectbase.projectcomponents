@@ -5,7 +5,7 @@
  *
  *  File:          testmodule.inc
  *  Type:          Base
- *  Description:   Test module designed with no other purpose other than testing the project base.
+ *  Description:   Test module designed with no other purpose other than testing project base components.
  *
  *  Copyright (C) 2009-2010  Greyscale
  *
@@ -37,7 +37,7 @@ new Module:g_iTestModule;
 public TestModule_OnPluginStart()
 {
     // Define all the module's data as layed out by enum ModuleData in project.inc.
-    new moduledata[ModuleData] = {false, "Test Module", "testmodule", "Test module designed with no other purpose other than testing the project base."};
+    new moduledata[ModuleData] = {false, "Test Module", "testmodule", "Module designed to test the project base."};
     
     // Register the module with this data.
     g_iTestModule = ModuleMgr_Register(moduledata);

@@ -50,7 +50,7 @@ enum MsgTypes
 /**
  * An array to know which msg types be colored.
  */
-new const g_bMsgTypeColor[MsgTypes] = {false, false, true, false, false};
+new g_bMsgTypeColor[MsgTypes] = {false, false, true, false, false, false};
 
 /**
  * The types of automatic message formatting.
@@ -69,8 +69,9 @@ enum MsgFormatting
  */
 enum BoolPhrases
 {
-    BoolPhrase_YesNo,   /** Translates boolean values 1/0 into "yes/no" phrases. */
-    BoolPhrase_OnOff    /** Translates boolean values 1/0 into "on/off" phrases. */
+    BoolPhrase_YesNo,           /** Translates boolean values 1/0 into "yes/no" phrases. */
+    BoolPhrase_OnOff,           /** Translates boolean values 1/0 into "on/off" phrases. */
+    BoolPhrase_EnabledDisabled  /** Translates boolean values 1/0 into "enabled/disabled" phrases. */
 }
 
 // ---------------
@@ -92,6 +93,16 @@ enum BoolPhrases
  * Array to store the index of the allocated space in the module data arrays for the translations manager.
  */
 new g_iTMAllocatedIndexes[1];
+
+/**
+ * List of stock translations files that come with the project.
+ */
+enum ProjectTransFiles
+{
+    TransFile_ProjectBase,    /** projectbase.phrases.txt, contains phrases used by the base project files. */
+    TransFile_Project,        /** <projectshortname>.phrases.txt, contains phrases general translations used by the plugin. */
+    TransFile_Module,         /** User-created translation file for a module. */
+}
 
 // **********************************************
 //                 Forwards
@@ -133,23 +144,23 @@ TransMgr_OnModulesRegistered()
  * Command project_module_info is being called.
  * Print the module data allocated by the translation manager.
  * Note: |stock| tag will stop this function from being compiled if the project_module_info command
- * isn't working due to required base files not being included.
+ * isn't working due to required base components not being included.
  * 
  * @param client    The client index the text is being printed to.
  * @param module    The module to print info for.
  * @param msgtype   The type of message to tell Translations Manager to print.
  */
-stock TransMgr_OnCommandModuleInfo(client, Module:module, MsgTypes:msgtype)
+stock TransMgr_OnPrintModuleInfo(client, Module:module, MsgTypes:msgtype)
 {
     decl String:translationfile[PLATFORM_MAX_PATH];
     
     if (TransMgr_IsEnabled(module))
-        TransMgr_BuildTranslationPath(module, translationfile, sizeof(translationfile), true);
+        TransMgr_BuildTranslationPath(TransFile_Module, module, translationfile, sizeof(translationfile), true);
     else
         Format(translationfile, sizeof(translationfile), "%t", "_None");
     
     // Print the module event info.
-    TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "TransMgr cmd moduleinfo registered", translationfile);
+    TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "TransMgr cmd base lvl2 modules info print", translationfile);
 }
 
 // **********************************************
@@ -191,6 +202,9 @@ stock TransMgr_PrintText(client, MsgFormatting:msgformat, MsgTypes:msgtype, Modu
         VFormat(translated, sizeof(translated), "%t", 6);
     
     // Format the message.
+    
+    // Update the part of the array that contains the info for coloring text with the current reply source.
+    g_bMsgTypeColor[MsgType_Reply] = bool:(GetCmdReplySource() == SM_REPLY_TO_CHAT);
     
     // Get the name of the module if a module ID was given.
     new String:fullname[32] = "Invalid Module ID";
@@ -362,8 +376,12 @@ stock TransMgr_LoadTranslations()
     
     decl String:translationfile[PLATFORM_MAX_PATH];
     
-    // Load base file translations.
-    TransMgr_BuildTranslationPath(_, translationfile, sizeof(translationfile));
+    // Load project base component translations.
+    TransMgr_BuildTranslationPath(TransFile_ProjectBase, _, translationfile, sizeof(translationfile));
+    LoadTranslations(translationfile);
+    
+    // Load general plugin translations.
+    TransMgr_BuildTranslationPath(TransFile_Project, _, translationfile, sizeof(translationfile));
     LoadTranslations(translationfile);
     
     new Module:module;
@@ -378,7 +396,7 @@ stock TransMgr_LoadTranslations()
         if (!TransMgr_IsEnabled(module))
             continue;
         
-        TransMgr_BuildTranslationPath(module, translationfile, sizeof(translationfile));
+        TransMgr_BuildTranslationPath(TransFile_Module, module, translationfile, sizeof(translationfile));
         LoadTranslations(translationfile);
     }
 }
@@ -386,24 +404,26 @@ stock TransMgr_LoadTranslations()
 /**
  * Return a path to the project's, or module's, translation file.
  * 
- * @param module    The module of the translation file that is sought.  INVALID_MODULE to build a path to the base translations file.
+ * @param transfile The translation file to build path to.  See enum ProjectTransFiles.
+ * @param module    The module of the translation file that is sought.  Leave as INVALID_MODULE for a file not affiliated with any module.
  * @param path      The path to the translation file.
  * @param maxlen    The max length of the output string.
  * @param txt       True to return the .txt extension, false to ignore it.
  */
-stock TransMgr_BuildTranslationPath(Module:module = INVALID_MODULE, String:path[], maxlen, bool:txt = false)
+stock TransMgr_BuildTranslationPath(ProjectTransFiles:transfile, Module:module = INVALID_MODULE, String:path[], maxlen, bool:txt = false)
 {
-    // If no module was specified, return the base file's translation file.
-    if (module == INVALID_MODULE)
+    
+    switch (transfile)
     {
-        Format(path, maxlen, "%s/projectbase.phrases", PROJECT_SHORTNAME);
-    }
-    else
-    {
-        // Get the module's shortname to use as the translations name.
-        decl String:shortname[16];
-        ModuleMgr_ReadString(module, ModuleData_ShortName, shortname, sizeof(shortname));
-        Format(path, maxlen, "%s/%s.phrases", PROJECT_SHORTNAME, shortname);
+        case TransFile_ProjectBase: Format(path, maxlen, "%s/projectbase.phrases", PROJECT_SHORTNAME);
+        case TransFile_Project:     Format(path, maxlen, "%s/%s.phrases", PROJECT_SHORTNAME, PROJECT_SHORTNAME);
+        case TransFile_Module:
+        {
+            // Get the module's shortname to use as the translations name.
+            decl String:shortname[16];
+            ModuleMgr_ReadString(module, ModuleData_ShortName, shortname, sizeof(shortname));
+            Format(path, maxlen, "%s/%s.phrases", PROJECT_SHORTNAME, shortname);
+        }
     }
     
     if (txt)

@@ -123,13 +123,13 @@ LogMgr_OnModuleRegister(Handle:adtModule)
  * Command project_module_info is being called.
  * Print the module data allocated by the log manager.
  * Note: |stock| tag will stop this function from being compiled if the project_module_info command
- * isn't working due to required base files not being included.
+ * isn't working due to required base components not being included.
  * 
  * @param client    The client index the text is being printed to.
  * @param module    The module to print info for.
  * @param msgtype   The type of message to tell Translations Manager to print.
  */
-stock LogMgr_OnCommandModuleInfo(client, Module:module, MsgTypes:msgtype)
+stock LogMgr_OnPrintModuleInfo(client, Module:module, MsgTypes:msgtype)
 {
     // Translate a bool into a text phrase.
     decl String:strWhiteList[8];
@@ -137,7 +137,7 @@ stock LogMgr_OnCommandModuleInfo(client, Module:module, MsgTypes:msgtype)
     TransMgr_TranslateBool(client, bWhiteList, BoolPhrase_YesNo, strWhiteList, sizeof(strWhiteList));
     
     // Print the module event info.
-    TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "LogMgr cmd moduleinfo on whitelist", strWhiteList);
+    TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "LogMgr cmd base lvl2 modules info print", strWhiteList);
 }
 
 // **********************************************
@@ -312,24 +312,24 @@ public Action:Command_LogWhitelistAdd(client, argc)
     if (argc < 1)
     {
         // Display usage info.
-        TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "LogMgr cmd whitelistadd usage");
+        TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "LogMgr cmd whitelistadd usage", PROJECT_BASE_CMD);
         return Plugin_Handled;
     }
     
-    decl String:shortname[16];
+    decl String:strmoduleID[16];
     new Module:module;
     
     // Loop through each argument.
     for (new arg = 1; arg <= argc; arg++)
     {
         // Get argument string.
-        GetCmdArg(arg, shortname, sizeof(shortname));
-        module = ModuleMgr_FindByString(ModuleData_ShortName, shortname);
+        GetCmdArg(arg, strmoduleID, sizeof(strmoduleID));
+        module = ModuleMgr_FindByID(strmoduleID);
         
         if (module == INVALID_MODULE)
         {
             // Reply with an error and skip to next argument.
-            TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "ModuleMgr invalid module", shortname);
+            TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "ModuleMgr invalid module", strmoduleID);
             continue;
         }
         
@@ -350,10 +350,9 @@ public Action:Command_LogWhitelistAdd(client, argc)
  */
 public Action:Command_LogWhitelistRemove(client, argc)
 {
-    decl String:shortname[32];
+    decl String:strmoduleID[16];
     new Module:module;
     
-    // Check if privileged.
     /**
      * Check if the client has access
      */
@@ -362,7 +361,7 @@ public Action:Command_LogWhitelistRemove(client, argc)
     if (argc < 1)
     {
         // Display usage info.
-        TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "LogMgr cmd whitelistremove usage");
+        TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "LogMgr cmd whitelistremove usage", PROJECT_BASE_CMD);
         return Plugin_Handled;
     }
     
@@ -370,13 +369,13 @@ public Action:Command_LogWhitelistRemove(client, argc)
     for (new arg = 1; arg <= argc; arg++)
     {
         // Get argument string.
-        GetCmdArg(arg, shortname, sizeof(shortname));
-        module = ModuleMgr_FindByString(ModuleData_ShortName, shortname);
+        GetCmdArg(arg, strmoduleID, sizeof(strmoduleID));
+        module = ModuleMgr_FindByID(strmoduleID);
         
         if (module == INVALID_MODULE)
         {
             // Reply with an error and skip to next argument.
-            TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "ModuleMgr invalid module", shortname);
+            TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "ModuleMgr invalid module", strmoduleID);
             continue;
         }
         
@@ -390,7 +389,7 @@ public Action:Command_LogWhitelistRemove(client, argc)
 
 /**
  * These are stock functions to return the value of any of the log manager's cvars.
- * This allows other base files/modules to read log cvars.
+ * This allows other base components/modules to read log cvars.
  */
 
 stock bool:LogMgr_CvarLog()

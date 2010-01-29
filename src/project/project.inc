@@ -79,6 +79,11 @@ enum ModuleData
 // ---------------
 
 /**
+ * If this is defined, then it should be in a mercurial repository.
+ */
+#define PROJECT_MERCURIAL
+
+/**
  * @section Basic project information.  This will also be displayed in 'sm plugins *' commands.
  */
 #define PROJECT_FULLNAME    "Project"   // Used when printing the plugin name anywhere.
@@ -90,6 +95,26 @@ enum ModuleData
 /**
  * @endsection
  */
+
+/**
+ * @section Additional information displayed in the version info.
+ */
+#define PROJECT_COPYRIGHT "Copyright (C) 2010  PROJECT_AUTHOR"
+#define PROJECT_LICENSE "GNU GPL, Version 3"
+#define PROJECT_BRANCH "smprojectbase"
+
+/**
+ * Your plugin's base command for module management.
+ * This command will be very similar to the "sm" command except geared toward module management instead of plugin management.
+ * Also handles displaying plugin information.
+ * Comment out to remove command from the plugin.
+ */
+#define PROJECT_BASE_CMD PROJECT_SHORTNAME
+
+/**
+ * The string printed to clients that use the credits command.
+ */
+#define PROJECT_CREDITS "Plugin was developed by %s.\nDevelopment would not have been possible without:\nAndrew \"Greyscale\" Borba, plugin base developer\nRichard \"rhelgeby\" Helgeby, compilation environment designer
 
 /**
  * @section The formatting string for each option in enum MsgFormatting.
