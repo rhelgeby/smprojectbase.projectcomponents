@@ -74,6 +74,19 @@ enum BoolPhrases
     BoolPhrase_EnabledDisabled  /** Translates boolean values 1/0 into "enabled/disabled" phrases. */
 }
 
+/**
+ * Return results for translating phrases into a boolean.
+ * Note these can be read as bools. Ex:
+ * new PhraseToBool:ptb = TranslatePhraseToBool(...);
+ * if (ptb != PhraseToBool_Neither) new bool:b = bool:ptb;
+ */
+enum PhraseToBool
+{
+    PhraseToBool_False = 0, /** The phrase is equivalent to boolean 'false'. */
+    PhraseToBool_True = 1,  /** The phrase is equivalent to boolean 'true'. */
+    PhraseToBool_Neither    /** The phrase is equivalent to neither boolean value. */
+}
+
 // ---------------
 //     Private
 // ---------------
@@ -317,13 +330,14 @@ stock TransMgr_PrintTextAll(bool:server, bool:admin, MsgFormatting:msgformat, Ms
 /**
  * Translates a boolean value into a text phrase.
  * 
- * @param target        The client to translate phrase to.  LANG_SERVER to use server's language.
+ * @param target        The client index.  LANG_SERVER to use server's language.
  * @param boolean       The boolean value to translate.
  * @param boolphrase    The boolean phrase pair to translate to.
  * @param phrase        The output string with the translated prase.
  * @param maxlen        The max length of the output string.
+ * @param lowercase     True to force the output to lower case.
  */
-stock TransMgr_TranslateBool(target, bool:boolean, BoolPhrases:boolphrase, String:phrase[], maxlen)
+stock TransMgr_TranslateBoolToPhrase(target, bool:boolean, BoolPhrases:boolphrase, String:phrase[], maxlen, bool:lowercase = false)
 {
     SetGlobalTransTarget(target);
     
@@ -334,7 +348,60 @@ stock TransMgr_TranslateBool(target, bool:boolean, BoolPhrases:boolphrase, Strin
         
         case BoolPhrase_OnOff:
             boolean ? Format(phrase, maxlen, "%t", "On") : Format(phrase, maxlen, "%t", "Off");
+        
+        case BoolPhrase_EnabledDisabled:
+            boolean ? Format(phrase, maxlen, "%t", "_Enabled") : Format(phrase, maxlen, "%t", "_Disabled");
     }
+    
+    // Force all chars to lowercase.
+    if (lowercase)
+    {
+        for (new x = 0; x < strlen(phrase); x++)
+        {
+            phrase[x] = CharToLower(phrase[x]);
+        }
+    }
+}
+
+/**
+ * Translates a boolean value into a text phrase.
+ * 
+ * @param target        The client index.  LANG_SERVER to use server's language.
+ * @param boolphrase    The boolean phrase pair to translate from.
+ * @param phrase        The bool phrase to translate to a bool.
+ */
+stock PhraseToBool:TransMgr_TranslatePhraseToBool(target, BoolPhrases:boolphrase, const String:phrase[])
+{
+    SetGlobalTransTarget(target);
+    
+    decl String:boolphrasetrue[16];
+    decl String:boolphrasefalse[16];
+    switch (boolphrase)
+    {
+        case BoolPhrase_YesNo:
+        {
+            Format(boolphrasetrue, sizeof(boolphrasetrue), "%t", "Yes");
+            Format(boolphrasefalse, sizeof(boolphrasefalse), "%t", "No");
+        }
+        case BoolPhrase_OnOff:
+        {
+            Format(boolphrasetrue, sizeof(boolphrasetrue), "%t", "On");
+            Format(boolphrasefalse, sizeof(boolphrasefalse), "%t", "Off");
+        }
+        case BoolPhrase_EnabledDisabled:
+        {
+            Format(boolphrasetrue, sizeof(boolphrasetrue), "%t", "_Enabled");
+            Format(boolphrasefalse, sizeof(boolphrasefalse), "%t", "_Disabled");
+        }
+    }
+    
+    if (StrEqual(phrase, boolphrasetrue, false))
+        return BoolToPhrase_True;
+    
+    if (StrEqual(phrase, boolphrasefalse, false))
+        return BoolToPhrase_False;
+    
+    return BoolToPhrase_Neither;
 }
 
 // **********************************************

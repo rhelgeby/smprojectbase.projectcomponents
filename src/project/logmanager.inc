@@ -134,7 +134,7 @@ stock LogMgr_OnPrintModuleInfo(client, Module:module, MsgTypes:msgtype)
     // Translate a bool into a text phrase.
     decl String:strWhiteList[8];
     new bool:bWhiteList = LogMgr_IsModuleOnWhitelist(module);
-    TransMgr_TranslateBool(client, bWhiteList, BoolPhrase_YesNo, strWhiteList, sizeof(strWhiteList));
+    TransMgr_TranslateBoolToPhrase(client, bWhiteList, BoolPhrase_YesNo, strWhiteList, sizeof(strWhiteList));
     
     // Print the module event info.
     TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "LogMgr cmd base lvl2 modules info print", strWhiteList);

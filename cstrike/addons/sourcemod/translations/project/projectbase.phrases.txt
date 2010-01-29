@@ -90,8 +90,33 @@
 	// {3}: the short name of the module.
 	"ModuleMgr cmd base lvl2 modules list print"
 	{
-		"#format"	"{1:s},{2:s},{3:s}"
-		"en"		"  {1} \"{2}\" aka {3}"
+		"#format"	"{1:s},{2:s},{3:s},{4:s}"
+		"en"		"  {1} \"{2}\" ({3}) aka {4}"
+	}
+
+	"ModuleMgr cmd base lvl2 modules enable"
+	{
+		"en"		"Module has been enabled."
+	}
+
+	"ModuleMgr cmd base lvl2 modules refresh"
+	{
+		"en"		"All modules have been refreshed."
+	}
+
+	"ModuleMgr cmd base lvl2 modules reload"
+	{
+		"en"		"Module has been reloaded."
+	}
+
+	"ModuleMgr cmd base lvl2 modules disable"
+	{
+		"en"		"Module has been disabled."
+	}
+
+	"ModuleMgr cmd base lvl2 modules disable_all"
+	{
+		"en"		"All moduled have been disabled."
 	}
 
 

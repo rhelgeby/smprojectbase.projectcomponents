@@ -784,22 +784,76 @@ ModuleMgr_BaseCmdParse(client, const String:strArgs[][])
         // The "enable" sub-command.
         else if (StrEqual(strArgs[BASECMD_ARG(2)], g_BaseCmdsLvl2[cmdindex][2], false))
         {
+            // Validate the module ID.
+            new Module:module = ModuleMgr_FindByID(strArgs[BASECMD_ARG(3)]);
+            if (module == INVALID_MODULE)
+            {
+                TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "ModuleMgr invalid module", strArgs[BASECMD_ARG(3)]);
+                return;
+            }
+            
+            ModuleMgr_Enable(module);
+            TransMgr_PrintText(client, MsgFormat_Both, MsgType_Reply, module, false, "ModuleMgr cmd base lvl2 modules enable");
         }
         // The "refresh" sub-command.
         else if (StrEqual(strArgs[BASECMD_ARG(2)], g_BaseCmdsLvl2[cmdindex][3], false))
         {
+            // Loop through all the modules.
+            new Module:module;
+            for (new moduleID = 0; moduleID < MODULE_COUNT; moduleID++)
+            {
+                // Read moduleID as a Module type.
+                module = Module:moduleID;
+                
+                ModuleMgr_Disable(module);
+                ModuleMgr_Enable(module);
+            }
+            
+            TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "ModuleMgr cmd base lvl2 modules refresh");
         }
         // The "reload" sub-command.
         else if (StrEqual(strArgs[BASECMD_ARG(2)], g_BaseCmdsLvl2[cmdindex][4], false))
         {
+            // Validate the module ID.
+            new Module:module = ModuleMgr_FindByID(strArgs[BASECMD_ARG(3)]);
+            if (module == INVALID_MODULE)
+            {
+                TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "ModuleMgr invalid module", strArgs[BASECMD_ARG(3)]);
+                return;
+            }
+            
+            ModuleMgr_Disable(module);
+            ModuleMgr_Enable(module);
+            TransMgr_PrintText(client, MsgFormat_Both, MsgType_Reply, module, false, "ModuleMgr cmd base lvl2 modules reload");
         }
         // The "disable" sub-command.
         else if (StrEqual(strArgs[BASECMD_ARG(2)], g_BaseCmdsLvl2[cmdindex][5], false))
         {
+            // Validate the module ID.
+            new Module:module = ModuleMgr_FindByID(strArgs[BASECMD_ARG(3)]);
+            if (module == INVALID_MODULE)
+            {
+                TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "ModuleMgr invalid module", strArgs[BASECMD_ARG(3)]);
+                return;
+            }
+            
+            ModuleMgr_Disable(module);
+            TransMgr_PrintText(client, MsgFormat_Both, MsgType_Reply, module, false, "ModuleMgr cmd base lvl2 modules disable");
         }
         // The "disable_all" sub-command.
         else if (StrEqual(strArgs[BASECMD_ARG(2)], g_BaseCmdsLvl2[cmdindex][6], false))
         {
+            // Loop through all the modules.
+            new Module:module;
+            for (new moduleID = 0; moduleID < MODULE_COUNT; moduleID++)
+            {
+                // Read moduleID as a Module type.
+                module = Module:moduleID;
+                
+                ModuleMgr_Disable(module);
+            }
+            
+            TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "ModuleMgr cmd base lvl2 modules disable_all");
         }
     }
     // The "version" sub-command.
@@ -836,14 +890,14 @@ stock ModuleMgr_PrintModuleInfo(client, const String:strModuleID[])
     decl String:moduleshortname[16];
     decl String:moduledesc[256];
     new bool:bModuleDisabled;
-    decl String:strModuleEnabled[8];
+    decl String:strModuleEnabled[16];
     
     // Get the module's short name to match to the given partial name.
     ModuleMgr_ReadString(module, ModuleData_FullName, modulefullname, sizeof(modulefullname));
     ModuleMgr_ReadString(module, ModuleData_ShortName, moduleshortname, sizeof(moduleshortname));
     ModuleMgr_ReadString(module, ModuleData_Description, moduledesc, sizeof(moduledesc));
     bModuleDisabled = bool:ModuleMgr_ReadCell(module, ModuleData_Disabled);
-    TransMgr_TranslateBool(client, !bModuleDisabled, BoolPhrase_YesNo, strModuleEnabled, sizeof(strModuleEnabled));
+    TransMgr_TranslateBoolToPhrase(client, !bModuleDisabled, BoolPhrase_YesNo, strModuleEnabled, sizeof(strModuleEnabled));
     
     // Print all the data stored in the module manager itself.
     TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "ModuleMgr cmd base lvl2 modules info print", modulefullname, moduleshortname, moduledesc, strModuleEnabled);
@@ -874,6 +928,8 @@ stock ModuleMgr_PrintModules(client)
     
     decl String:modulefullname[32];
     decl String:moduleshortname[16];
+    new bool:bModuleDisabled;
+    decl String:strModuleEnabled[16];
     decl String:strModuleID[8];
     
     // Loop through all the modules.
@@ -893,8 +949,10 @@ stock ModuleMgr_PrintModules(client)
         
         ModuleMgr_ReadString(module, ModuleData_FullName, modulefullname, sizeof(modulefullname));
         ModuleMgr_ReadString(module, ModuleData_ShortName, moduleshortname, sizeof(moduleshortname));
+        bModuleDisabled = bool:ModuleMgr_ReadCell(module, ModuleData_Disabled);
+        TransMgr_TranslateBoolToPhrase(client, !bModuleDisabled, BoolPhrase_EnabledDisabled, strModuleEnabled, sizeof(strModuleEnabled), true);
         
-        TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "ModuleMgr cmd base lvl2 modules list print", strModuleID, modulefullname, moduleshortname);
+        TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "ModuleMgr cmd base lvl2 modules list print", strModuleID, modulefullname, strModuleEnabled, moduleshortname);
     }
 }
 #endif
