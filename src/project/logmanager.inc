@@ -211,15 +211,23 @@ stock LogMgr_Print(Module:module, LogTypes:logtype, const String:description[], 
     // Print log to all in-game admins if the cvar is enabled.
     if (LogMgr_CvarPrintAdmins())
     {
-        // Print text to admins.
-        TransMgr_PrintTextAll(false, true, MsgFormat_None, MsgType_Chat, _, true, logbuffer);
+        #if defined TRANSLATIONS_MANAGER
+            // Print text to admins.
+            TransMgr_PrintTextAll(false, true, MsgFormat_None, MsgType_Chat, _, true, logbuffer);
+        #else
+            PrintToChatAll("Cvar project_log_print_admins requires the translations manager.");
+        #endif
     }
     
     // Print log to all in-game clients if the cvar is enabled.
     if (LogMgr_CvarPrintPublic())
     {
-        // Print text to public chat.
-        TransMgr_PrintTextAll(false, false, MsgFormat_None, MsgType_Chat, _, true, logbuffer);
+        #if defined TRANSLATIONS_MANAGER
+            // Print text to public chat.
+            TransMgr_PrintTextAll(false, false, MsgFormat_None, MsgType_Chat, _, true, logbuffer);
+        #else
+            PrintToChatAll("Cvar project_log_print_public requires the translations manager.");
+        #endif
     }
 }
 
@@ -303,7 +311,6 @@ stock bool:LogMgr_WhitelistRemove(Module:module)
  */
 public Action:Command_LogWhitelistAdd(client, argc)
 {
-    // Check if privileged.
     /**
      * Check if the client has access
      */
@@ -311,30 +318,46 @@ public Action:Command_LogWhitelistAdd(client, argc)
     // Check if no arguments.
     if (argc < 1)
     {
-        // Display usage info.
-        TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "LogMgr cmd whitelistadd usage", PROJECT_BASE_CMD);
+        #if defined TRANSLATIONS_MANAGER
+            // Display usage info.
+            TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "LogMgr cmd whitelistadd usage", PROJECT_BASE_CMD);
+        #else
+            ReplyToCommand(client, "Bad syntax.  project_log_whitelist_add <moduleid1> [moduleid2] ...");
+        #endif
+        
         return Plugin_Handled;
     }
     
-    decl String:strmoduleID[16];
+    decl String:strModuleID[16];
     new Module:module;
     
     // Loop through each argument.
     for (new arg = 1; arg <= argc; arg++)
     {
         // Get argument string.
-        GetCmdArg(arg, strmoduleID, sizeof(strmoduleID));
-        module = ModuleMgr_FindByID(strmoduleID);
+        GetCmdArg(arg, strModuleID, sizeof(strModuleID));
+        module = ModuleMgr_FindByID(StringToInt(strModuleID), strModuleID);
         
         if (module == INVALID_MODULE)
         {
-            // Reply with an error and skip to next argument.
-            TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "ModuleMgr invalid module", strmoduleID);
+            #if defined TRANSLATIONS_MANAGER
+                // Reply with an error and skip to next argument.
+                TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "ModuleMgr invalid module", strModuleID);
+            #else
+                ReplyToCommand(client, "Invalid module: \"%s\"", strModuleID);
+            #endif
+            
             continue;
         }
         
         LogMgr_WhitelistAdd(module);
-        TransMgr_PrintText(client, MsgFormat_Both, MsgType_Reply, module, false, "LogMgr cmd whitelistadd");
+        
+        #if defined TRANSLATIONS_MANAGER
+            TransMgr_PrintText(client, MsgFormat_Both, MsgType_Reply, module, false, "LogMgr cmd whitelistadd");
+        #else
+            ReplyToCommand(client, "Module added to whitelist.");
+        #endif
+        
     }
     
     // Say that we handled the command so CS:S doesn't see it and print "Unknown command"
@@ -350,9 +373,6 @@ public Action:Command_LogWhitelistAdd(client, argc)
  */
 public Action:Command_LogWhitelistRemove(client, argc)
 {
-    decl String:strmoduleID[16];
-    new Module:module;
-    
     /**
      * Check if the client has access
      */
@@ -360,27 +380,45 @@ public Action:Command_LogWhitelistRemove(client, argc)
     // Check if no arguments.
     if (argc < 1)
     {
-        // Display usage info.
-        TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "LogMgr cmd whitelistremove usage", PROJECT_BASE_CMD);
+        #if defined TRANSLATIONS_MANAGER
+            // Display usage info.
+            TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "LogMgr cmd whitelistremove usage", PROJECT_BASE_CMD);
+        #else
+            ReplyToCommand(client, "Bad syntax.  project_log_whitelist_remove <moduleid1> [moduleid2] ...");
+        #endif
+        
         return Plugin_Handled;
     }
+    
+    decl String:strModuleID[16];
+    new Module:module;
     
     // Loop through each argument.
     for (new arg = 1; arg <= argc; arg++)
     {
         // Get argument string.
-        GetCmdArg(arg, strmoduleID, sizeof(strmoduleID));
-        module = ModuleMgr_FindByID(strmoduleID);
+        GetCmdArg(arg, strModuleID, sizeof(strModuleID));
+        module = ModuleMgr_FindByID(StringToInt(strModuleID), strModuleID);
         
         if (module == INVALID_MODULE)
         {
-            // Reply with an error and skip to next argument.
-            TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "ModuleMgr invalid module", strmoduleID);
+            #if defined TRANSLATIONS_MANAGER
+                // Reply with an error and skip to next argument.
+                TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "ModuleMgr invalid module", strModuleID);
+            #else
+                ReplyToCommand(client, "Invalid module: \"%s\"", strModuleID);
+            #endif
+            
             continue;
         }
         
         LogMgr_WhitelistRemove(module);
-        TransMgr_PrintText(client, MsgFormat_Both, MsgType_Reply, module, false, "LogMgr cmd whitelistremove");
+        
+        #if defined TRANSLATIONS_MANAGER
+            TransMgr_PrintText(client, MsgFormat_Both, MsgType_Reply, module, false, "LogMgr cmd whitelistremove");
+        #else
+            ReplyToCommand(client, "Module removed from whitelist.");
+        #endif
     }
     
     // Say that we handled the command so CS:S doesn't see it and print "Unknown command"

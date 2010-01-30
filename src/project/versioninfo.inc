@@ -83,10 +83,10 @@ stock VersionPrint(client)
     Format(linebuffer, sizeof(linebuffer), FORMATSTRING, "Version", PROJECT_VERSION);
     StrCat(buffer, sizeof(buffer), linebuffer);
     
-    Format(linebuffer, sizeof(linebuffer), FORMATSTRING, "Development Branch", PROJECT_BRANCH);
-    StrCat(buffer, sizeof(buffer), linebuffer);
-    
     #if defined PROJECT_MERCURIAL
+        Format(linebuffer, sizeof(linebuffer), FORMATSTRING, "Development Branch", PROJECT_BRANCH);
+        StrCat(buffer, sizeof(buffer), linebuffer);
+        
         Format(linebuffer, sizeof(linebuffer), FORMATSTRING, "Build", PROJECT_MERCURIAL_REVISION);
         StrCat(buffer, sizeof(buffer), linebuffer);
         

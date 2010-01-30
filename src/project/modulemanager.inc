@@ -353,56 +353,18 @@ stock ModuleMgr_ReadString(Module:module, ModuleData:data, String:output[], maxl
 // **********************************************
 
 /**
- * Returns the numerical module ID given the module identifier.
+ * Finds any modules matching the given module ID or shortname.
+ * This should only be used if input it coming from a client.  Otherwise use ModuleMgr_FindByString.
  * 
- * @param module        The module identifier to return the module ID for.
- * @param strModuleID   The output for the module ID.
- * @param maxlen        The max length of the output string.
- */
-stock ModuleMgr_GetModuleID(Module:module, String:strModuleID[], maxlen)
-{
-    // For client interaction, we increment the module ID to avoid using 0.
-    IntToString(++_:module, strModuleID, maxlen);
-    
-    // Manually pad with a 0 if it's a single digit.
-    if (strlen(strModuleID) == 1)
-        Format(strModuleID, maxlen, "0%s", strModuleID);
-}
-
-/**
- * Process the ModuleID string before matching it to a module.
- * 
- * @param strModuleID   The moduleID string to process.
- * @param strModuleID2  The processed module ID string output.
- * @param maxlen        The max length of the output string.
- */
-stock ModuleMgr_ProcessModuleID(const String:strModuleID[], String:strModuleID2[], maxlen)
-{
-    // Method to strip any preceding 0's for comparison.
-    // Note: For client interaction, we incremented the module ID to avoid using 0, so we have to decrement before processing.
-    new moduleID = StringToInt(strModuleID);
-    if (moduleID != 0)
-        IntToString(--moduleID, strModuleID2, maxlen);
-    else
-        strcopy(strModuleID2, maxlen, strModuleID);
-}
-
-/**
- * Finds any modules matching the given module index or shortname.
- * 
- * @param value         The module index or shortname to use for finding the module.
+ * @param value         The module ID to match to a module. (This will be matched first if both are inputed)
+ * @param shortname     The short name to match to a module.
  * 
  * @return              The module whose module index or shortname matched. (in that order)  INVALID_MODULE if no modules matched.
  */
-stock Module:ModuleMgr_FindByID(const String:value[])
+stock Module:ModuleMgr_FindByID(moduleID = 0, const String:moduleshortname[] = "")
 {
-    decl String:strModuleID[16];
-    decl String:strModuleID2[16];
-    decl String:shortname[16];
+    decl String:matchshortname[16];
     new Module:module;
-    
-    // Process the module ID before comparison.
-    ModuleMgr_ProcessModuleID(value, strModuleID, sizeof(strModuleID));
     
     // Loop through all the modules.
     for (new moduleindex = 0; moduleindex < MODULE_COUNT; moduleindex++)
@@ -410,14 +372,17 @@ stock Module:ModuleMgr_FindByID(const String:value[])
         // Read moduleindex as a Module type.
         module = Module:moduleindex;
         
-        // Compare the module ID to each module.
+        // If the module is hidden, then ignore it.
+        if (bool:ModuleMgr_ReadCell(module, ModuleData_Hidden))
+            continue;
         
-        IntToString(moduleindex, strModuleID2, sizeof(strModuleID2));
-        if (StrEqual(strModuleID, strModuleID2, false))
+        // Compare the module ID to each module.
+        if (moduleID == MODULE_TO_ID(module))
             return module;
         
-        ModuleMgr_ReadString(module, ModuleData_ShortName, shortname, sizeof(shortname));
-        if (StrEqual(shortname, value, false))
+        // Compare the short name to each module.
+        ModuleMgr_ReadString(module, ModuleData_ShortName, matchshortname, sizeof(matchshortname));
+        if (StrEqual(moduleshortname, matchshortname, false))
             return module;
     }
     
@@ -556,14 +521,7 @@ stock Handle:ModuleMgr_GetList()
 // **********************************************
 
 #if defined PROJECT_BASE_CMD
-
-// Translations:
-// "ModuleMgr cmd base lvl1 syntax"
-// "ModuleMgr cmd base lvl2 accessor 2 syntax"
-//
-//
-//
-//
+    #if defined TRANSLATIONS_MANAGER
 
 /**
  * Base command sub command types.
@@ -583,7 +541,8 @@ enum BaseSubCmdType
 new const String:g_BaseCmdsLvl1[][] = {
     "credits",      // Command
     "modules",      // Section Accessor
-    "version" };    // Command
+    "version"       // Command
+};
 
 /**
  * Second level of the second first level section accessor.
@@ -592,15 +551,16 @@ new const String:g_BaseCmdsLvl1[][] = {
  */
 //new const String:g_BaseCmdsLvl2[][][] = {   // Should use this when the compiler bug is fixed.
 new const String:g_BaseCmdsLvl2[][][32] = {
-{"", "", "", "", "", "", ""},
-{   "info",
-    "list",
-    "enable",
-    "refresh",
-    "reload",
-    "disable",
-    "disable_all" },
-{"", "", "", "", "", "", ""} };
+    {"", "", "", "", "", "", ""},
+    {   "info",         // Command with argument
+        "list",         // Command
+        "enable",       // Command with argument
+        "refresh",      // Command
+        "reload",       // Command with argument
+        "disable",      // Command with argument
+        "disable_all"}, // Command
+    {"", "", "", "", "", "", ""}
+};
 
 /**
  * Macros to make accessing [0, x] indexes prettier by changing the bounds to [1, x+1]
@@ -629,7 +589,8 @@ new const BaseSubCmdType:g_BaseSubCmdType[][] = {
         SubCmdType_Command,
         SubCmdType_CommandWithArg,
         SubCmdType_CommandWithArg,
-        SubCmdType_Command } };
+        SubCmdType_Command}
+};
 
 /**
  * Finds the index the command is located at in the arrays above.
@@ -671,7 +632,6 @@ stock ModuleMgr_BaseCmdFind(const String:cmd[], level, cmdindex = -1)
  * @param client    The client index.  Or SERVER_INDEX if coming from the server.
  * @param argc      The number of arguments that the client sent with the command.
  */
-#if defined TRANSLATIONS_MANAGER
 public Action:Command_Base(client, argc)
 {
     // This callback is mainly for validation before passing it off to another function.
@@ -773,9 +733,9 @@ public Action:Command_Base(client, argc)
     // Pass off the validified arguments to another function.
     ModuleMgr_BaseCmdParse(client, strArgs);
 }
-#else
+#else   // If TRANSLATIONS_MANAGER isn't defined.
 // How can we print the module information without translations to read from?
-public Action:Command_ModuleInfo(client, argc)
+public Action:Command_Base(client, argc)
 {
     ReplyToCommand(client, "The base command requires that the translations manager be compiled into the plugin.");
 }
@@ -787,7 +747,7 @@ public Action:Command_ModuleInfo(client, argc)
  * @param client    The client calling the command.
  * @param strArgs   The list of arguments that were validated by the base command callback.
  */
-ModuleMgr_BaseCmdParse(client, const String:strArgs[][])
+stock ModuleMgr_BaseCmdParse(client, const String:strArgs[][])
 {
     // The "credits" sub-command.
     if (StrEqual(strArgs[BASECMD_ARG(1)], g_BaseCmdsLvl1[0], false))
@@ -815,7 +775,7 @@ ModuleMgr_BaseCmdParse(client, const String:strArgs[][])
         else if (StrEqual(strArgs[BASECMD_ARG(2)], g_BaseCmdsLvl2[cmdindex][2], false))
         {
             // Validate the module ID/shortname.
-            new Module:module = ModuleMgr_FindByID(strArgs[BASECMD_ARG(3)]);
+            new Module:module = ModuleMgr_FindByID(StringToInt(strArgs[BASECMD_ARG(3)]), strArgs[BASECMD_ARG(3)]);
             if (module == INVALID_MODULE)
             {
                 TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "ModuleMgr invalid module", strArgs[BASECMD_ARG(3)]);
@@ -845,7 +805,7 @@ ModuleMgr_BaseCmdParse(client, const String:strArgs[][])
         else if (StrEqual(strArgs[BASECMD_ARG(2)], g_BaseCmdsLvl2[cmdindex][4], false))
         {
             // Validate the module ID/shortname.
-            new Module:module = ModuleMgr_FindByID(strArgs[BASECMD_ARG(3)]);
+            new Module:module = ModuleMgr_FindByID(StringToInt(strArgs[BASECMD_ARG(3)]), strArgs[BASECMD_ARG(3)]);
             if (module == INVALID_MODULE)
             {
                 TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "ModuleMgr invalid module", strArgs[BASECMD_ARG(3)]);
@@ -860,7 +820,7 @@ ModuleMgr_BaseCmdParse(client, const String:strArgs[][])
         else if (StrEqual(strArgs[BASECMD_ARG(2)], g_BaseCmdsLvl2[cmdindex][5], false))
         {
             // Validate the module ID/shortname.
-            new Module:module = ModuleMgr_FindByID(strArgs[BASECMD_ARG(3)]);
+            new Module:module = ModuleMgr_FindByID(StringToInt(strArgs[BASECMD_ARG(3)]), strArgs[BASECMD_ARG(3)]);
             if (module == INVALID_MODULE)
             {
                 TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "ModuleMgr invalid module", strArgs[BASECMD_ARG(3)]);
@@ -892,7 +852,7 @@ ModuleMgr_BaseCmdParse(client, const String:strArgs[][])
         #if defined VERSION_INFO
             VersionPrint(client);
         #else
-            TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "Project file required", "versioninfo.inc");
+            TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "Missing component", "versioninfo.inc");
         #endif
     }
 }
@@ -906,7 +866,7 @@ ModuleMgr_BaseCmdParse(client, const String:strArgs[][])
 stock ModuleMgr_PrintModuleInfo(client, const String:strModuleID[])
 {
     // Validate the module ID/shortname.
-    new Module:module = ModuleMgr_FindByID(strModuleID);
+    new Module:module = ModuleMgr_FindByID(StringToInt(strModuleID), strModuleID);
     if (module == INVALID_MODULE)
     {
         TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "ModuleMgr invalid module", strModuleID);
@@ -960,24 +920,28 @@ stock ModuleMgr_PrintModules(client)
     decl String:moduleshortname[16];
     new bool:bModuleDisabled;
     decl String:strModuleEnabled[16];
-    decl String:strModuleID[8];
+    
+    new Module:module;
+    new moduleID;
     
     // Loop through all the modules.
-    new Module:module;
     for (new moduleindex = 0; moduleindex < MODULE_COUNT; moduleindex++)
     {
         // Read moduleindex as a Module type.
         module = Module:moduleindex;
         
-        // Get the module's module ID for client interaction.
-        ModuleMgr_GetModuleID(module, strModuleID, sizeof(strModuleID));
+        // If the module is hidden then don't list it.
+        if (bool:ModuleMgr_ReadCell(module, ModuleData_Hidden))
+            continue;
         
+        // Get the module's module ID for client interaction.
+        moduleID = MODULE_TO_ID(module);
         ModuleMgr_ReadString(module, ModuleData_FullName, modulefullname, sizeof(modulefullname));
         ModuleMgr_ReadString(module, ModuleData_ShortName, moduleshortname, sizeof(moduleshortname));
         bModuleDisabled = bool:ModuleMgr_ReadCell(module, ModuleData_Disabled);
         TransMgr_TranslateBoolToPhrase(client, !bModuleDisabled, BoolPhrase_EnabledDisabled, strModuleEnabled, sizeof(strModuleEnabled), true);
         
-        TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "ModuleMgr cmd base lvl2 modules list print", strModuleID, modulefullname, strModuleEnabled, moduleshortname);
+        TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "ModuleMgr cmd base lvl2 modules list print", moduleID, modulefullname, strModuleEnabled, moduleshortname);
     }
 }
 #endif

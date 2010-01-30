@@ -29,6 +29,7 @@
  * A global variable to store this module's ID in.
  */
 new Module:g_iTestModule;
+new Module:g_iTestModule2;
 
 /**
  * Plugin is loading.
@@ -37,20 +38,24 @@ new Module:g_iTestModule;
 public TestModule_OnPluginStart()
 {
     // Define all the module's data as layed out by enum ModuleData in project.inc.
-    new moduledata[ModuleData] = {false, "Test Module", "testmodule", "Module designed to test the project base."};
+    new moduledata[ModuleData] = {false, false, "Test Module", "testmodule", "Module designed to test the project base."};
     
     // Register the module with this data.
     g_iTestModule = ModuleMgr_Register(moduledata);
     
-    new moduledata2[ModuleData] = {false, "Test Module", "testmodule", "Module designed to fail to load."};
+    new moduledata2[ModuleData] = {false, false, "Test Module", "testmodule", "Module designed to fail to load."};
     ModuleMgr_Register(moduledata2);
+    
+    new moduledata3[ModuleData] = {false, true, "Hidden Module", "hiddenmodule", "Hidden module."};
+    g_iTestModule2 = ModuleMgr_Register(moduledata3);
     
     // Now register the events we're going to use.
     EventMgr_RegisterEvent(g_iTestModule, Event_RoundStart, "TestModule_OnRoundStart");
+    EventMgr_RegisterEvent(g_iTestModule2, Event_RoundStart, "TestModule_OnRoundStartHidden");
     
     // Register this module with the translations manager.
     // Make sure testmodule.phrase.txt exists in translations/project/
-    TransMgr_Register(g_iTestModule);
+    //TransMgr_Register(g_iTestModule);
     
     // ************************
     // Done registering module.
@@ -64,7 +69,7 @@ public TestModule_OnPluginStart()
 public TestModule_OnRoundStart()
 {
     //TransMgr_PrintText(SERVER_INDEX, MsgFormat_Both, MsgType_Server, g_iTestModule, false, "Event round_start");
-    TransMgr_PrintTextAll(true, false, MsgFormat_Both, MsgType_Chat, g_iTestModule, false, "Event round_start");
+    //TransMgr_PrintTextAll(true, false, MsgFormat_Both, MsgType_Chat, g_iTestModule, false, "Event round_start");
     LogMgr_Print(g_iTestModule, LogType_Normal, "Round_Start", "The round has started.");
     
     // Switching event forward.
@@ -77,13 +82,21 @@ public TestModule_OnRoundStart()
 public TestModule_OnRoundStart2()
 {
     //TransMgr_PrintText(SERVER_INDEX, MsgFormat_Plugin, MsgType_Server, _, false, "Event round_start alternate");
-    TransMgr_PrintTextAll(true, false, MsgFormat_Both, MsgType_Chat, g_iTestModule, false, "Event round_start alternate");
-    TransMgr_PrintTextAll(false, false, MsgFormat_None, MsgType_Center, _, false, "Event round_start alternate");
-    TransMgr_PrintTextAll(false, false, MsgFormat_Plugin, MsgType_Hint, _, false, "Event round_start alternate");
+    //TransMgr_PrintTextAll(true, false, MsgFormat_Both, MsgType_Chat, g_iTestModule, false, "Event round_start alternate");
+    //TransMgr_PrintTextAll(false, false, MsgFormat_None, MsgType_Center, _, false, "Event round_start alternate");
+    //TransMgr_PrintTextAll(false, false, MsgFormat_Plugin, MsgType_Hint, _, false, "Event round_start alternate");
     
     LogMgr_Print(g_iTestModule, LogType_Normal, "Round_Start", "Alternate round_start event.");
     //LogMgr_Print(g_iTestModule, LogType_Fatal_Module, "Round_Start", "Fatal error!  Disabling module.");
     
     // Disable event.
     //EventMgr_Disable(g_iTestModule, Event_RoundStart);
+}
+
+/**
+ * Round has started.
+ */
+public TestModule_OnRoundStartHidden()
+{
+    //TransMgr_PrintTextAll(true, false, MsgFormat_Both, MsgType_Chat, g_iTestModule2, true, "Round started!");
 }

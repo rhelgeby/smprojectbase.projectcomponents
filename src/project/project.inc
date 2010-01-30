@@ -26,7 +26,7 @@
  */
 
 // ---------------
-//    Reference
+//     General
 // ---------------
 
 /**
@@ -34,11 +34,26 @@
  */
 #define SERVER_INDEX 0
 
+
+// --------------------------------
+//        Module Reference
+// --------------------------------
+// Note: Treat this section like a stripper.  Look, don't touch.
+
 /**
  * The amount of registered modules.
  * All integers less than this (and greater than or equal to zero) are valid module identifiers.
  */
 #define MODULE_COUNT GetArraySize(ModuleMgr_GetList())
+
+/**
+ * @section Takes either a module ID or module identifier and converts it to its respective opposite.
+ */
+#define MODULE_TO_ID(%1) _:%1 + 1
+#define ID_TO_MODULE(%1) Module:(%1 - 1)
+/**
+ * @endsection
+ */
 
 /**
  * Module identifier tag.
@@ -54,25 +69,66 @@ enum Module
 enum ModuleData
 {
     bool:ModuleData_Disabled = 0,       /** True if the module is disabled. */
+    bool:ModuleData_Hidden,             /** True to hide the module from console. (base cmd can't touch it) */
     String:ModuleData_FullName[32],     /** Used for displaying modules. */
     String:ModuleData_ShortName[16],    /** Used for client interaction with modules. */
     String:ModuleData_Description[256], /** A description of the module */
     // gunna need more than this..
 }
 
-// ---------------
-//     Private
-// ---------------
-
 /**
  * The number of cells used to store all the data in enum ModuleData.
  */
-#define MODULE_DATA_CELL_COUNT 1 + 32 + 16 + 256
+#define MODULE_DATA_CELL_COUNT 1 + 1 + 32 + 16 + 256
 
 /**
  * The longest string that can be stored in the module's data. (Cell size of ModuleData_FullName)
  */
 #define MODULE_DATA_LONGEST_STRING 256
+
+// --------------------------------
+//     Event Forwarding Stuff
+// --------------------------------
+// Note: Since event HOOKING is done here, you can touch this one ;) (you can change/add/remove stuff here)
+// Note: Ignore this section if eventmanager.inc won't be compiled into the plugin.
+/**
+ * This is a collection of ALL game and custom events.
+ * Add any custom events here to the bottom of the list, and update define EVENT_DATA_CELL_COUNT. (below)
+ * Also don't forget to add the display name of your event to g_ProjectEventDisplay. (below)
+ */
+enum ProjectEvents
+{
+    Event_RoundStart,
+    Event_RoundFreezeEnd,
+    Event_RoundEnd,
+    Event_PlayerSpawn,
+    Event_PlayerHurt,
+    Event_PlayerDeath,
+    Event_PlayerJump,
+    Event_PlayerFire
+}
+
+/**
+ * The number of cells used to store all the event enable data in enum ProjectEvents. (above)
+ * To calculate this number, simply add up the number of items in enum ProjectEvents.
+ * Keep this updated as ProjectEvents is modified. 
+ */
+#define EVENT_DATA_CELL_COUNT 8
+
+/**
+ * String array of display names for project events. (above)
+ * Keep this updated as ProjectEvents is modified.
+ */
+new const String:g_ProjectEventDisplay[ProjectEvents][] = {
+    "Round Start",
+    "Round Freeze End",
+    "Round End",
+    "Player Spawn",
+    "Player Hurt",
+    "Player Death",
+    "Player Jump",
+    "Player Fire"
+};
 
 // ---------------
 //    Editable
@@ -82,6 +138,7 @@ enum ModuleData
  * If this is defined, then it should be in a mercurial repository.
  */
 #define PROJECT_MERCURIAL
+#define PROJECT_BRANCH "smprojectbase"  // Name of the Mercurial branch this is being developed in.
 
 /**
  * @section Basic project information.  This will also be displayed in 'sm plugins *' commands.
@@ -101,24 +158,19 @@ enum ModuleData
  */
 #define PROJECT_COPYRIGHT "Copyright (C) 2010  PROJECT_AUTHOR"
 #define PROJECT_LICENSE "GNU GPL, Version 3"
-#define PROJECT_BRANCH "smprojectbase"
 
 /**
  * Your plugin's base command for module management.
  * This command will be very similar to the "sm" command except geared toward module management instead of plugin management.
- * Also handles displaying plugin information.
+ * Also handles printing plugin information like credits and version.
  * Comment out to remove command from the plugin.
  */
 #define PROJECT_BASE_CMD PROJECT_SHORTNAME
 
 /**
- * The string printed to clients that use the credits command.
- */
-#define PROJECT_CREDITS "Plugin was developed by %s.\nDevelopment would not have been possible without:\nAndrew \"Greyscale\" Borba, plugin base developer\nRichard \"rhelgeby\" Helgeby, compilation environment designer
-
-/**
  * @section The formatting string for each option in enum MsgFormatting.
  * Note: These are only used if translationsmanager.inc is included.
+ * Color chars vary from game to game. 
  */
 #define TM_MSGFORMAT_PLUGIN_COLOR      "\x04[%s] \x01%s"          // 1st %s = Plugin name - 2nd %s = Text
 #define TM_MSGFORMAT_PLUGIN_NOCOLOR    "[%s] %s"                  // 1st %s = Plugin name - 2nd %s = Text
@@ -138,7 +190,11 @@ enum ModuleData
 
 /**
  * Load any extra translation files here.
- * The base project files translation file is <projectname>/<projectname>.phrases.txt.
+ *  
+ * Automatically loaded translations files for the project are:
+ * translations/<projectshortname>/<projectshortname>.phrases.txt
+ * translations/<projectshortname>/projectbase.phrases.txt
+ *  
  * Translation files for modules should be loaded via TransMgr_Register.
  * Note: This is only used if translationsmanager.inc is included.
  */

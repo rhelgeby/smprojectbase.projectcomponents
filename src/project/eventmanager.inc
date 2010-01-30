@@ -34,34 +34,7 @@
 //     Public
 // ---------------
 
-/**
- * This is a collection of ALL game and custom events.
- */
-enum ProjectEvents
-{
-    Event_RoundStart,
-    Event_RoundFreezeEnd,
-    Event_RoundEnd,
-    Event_PlayerSpawn,
-    Event_PlayerHurt,
-    Event_PlayerDeath,
-    Event_PlayerJump,
-    Event_PlayerFire
-}
-
-/**
- * String array of display names for project events. (above)
- * Keep this updated as ProjectEvents is modified.
- */
-new const String:g_ProjectEventDisplay[ProjectEvents][] = {
-    "Round Start",
-    "Round Freeze End",
-    "Round End",
-    "Player Spawn",
-    "Player Hurt",
-    "Player Death",
-    "Player Jump",
-    "Player Fire" };
+// See project.inc
 
 // ---------------
 //     Private
@@ -82,11 +55,6 @@ new const String:g_ProjectEventDisplay[ProjectEvents][] = {
  * Defines the block of data in the module data arrays that contains event function data.
  */
 #define EVENT_DATA_FUNCTION g_iEMAllocatedIndexes[1]
-
-/**
- * The number of cells used to store all the event enable data in enum ProjectEvents.
- */
-#define EVENT_DATA_CELL_COUNT 8
 
 /**
  * Array to store the indexes of the allocated space in the module data arrays for the event manager.
