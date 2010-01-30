@@ -36,12 +36,12 @@
 
 /**
  * The amount of registered modules.
- * All integers less than this (and greater than or equal to zero) are valid module IDs.
+ * All integers less than this (and greater than or equal to zero) are valid module identifiers.
  */
 #define MODULE_COUNT GetArraySize(ModuleMgr_GetList())
 
 /**
- * Module ID tag.
+ * Module identifier tag.
  */
 enum Module
 {

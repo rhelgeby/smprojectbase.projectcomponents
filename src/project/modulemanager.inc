@@ -36,7 +36,7 @@
 // ---------------
 
 /**
- * This is a macro that turns a module ID into the handle to it's data array.
+ * This is a macro that takes a module and returns the handle to it's data array.
  */
 #define MM_HANDLE_FROM_ID(%1) GetArrayCell(g_adtModuleList, _:%1)
 
@@ -125,10 +125,23 @@ ModuleMgr_OnPluginStart()
  * 
  * @param moduledata    Array populated with the module's data.  See enum ModuleData.
  * 
- * @return              A unique module ID.
+ * @return              A unique module identifier.  INVALID_MODULE if registration failed.
+ * Note: The IDs used in the code starts from 0, while client interaction starts from 1.
+ * So "module ID" starts from 1, while "module identifier" starts from 0.  Modules shouldn't have to worry about this.
  */
 stock Module:ModuleMgr_Register(moduledata[ModuleData])
 {
+    // Shortname must be unique.
+    new Module:clashmodule = ModuleMgr_FindByString(ModuleData_ShortName, moduledata[ModuleData_ShortName]);
+    if (clashmodule != INVALID_MODULE)
+    {
+        decl String:modulefullname[32];
+        ModuleMgr_ReadString(clashmodule, ModuleData_FullName, modulefullname, sizeof(modulefullname));
+        
+        LogError("Module \"%s\" failed to register.  Its unique shortname (%s) clashes with that of module \"%s\"", moduledata[ModuleData_FullName], moduledata[ModuleData_ShortName], modulefullname);
+        return INVALID_MODULE;
+    }
+    
     // This is the array that will hold all the actual module data.
     new Handle:adtModule = CreateArray(g_iMMMaxBlockSize);
     
@@ -153,8 +166,20 @@ stock Module:ModuleMgr_Register(moduledata[ModuleData])
     // Store the handle in the global module list.
     new module = PushArrayCell(g_adtModuleList, adtModule);
     
-    // Return the module ID.
+    // Return the module identifier.
     return Module:module;
+}
+
+/**
+ * Returns if a module identifier is valid or not.
+ * 
+ * @param module    The module identifier to check validity of.
+ * 
+ * @return          True if the module identifier is valid, false if not.
+ */
+stock bool:ModuleMgr_IsModuleValid(Module:module)
+{
+    return (_:module > -1 && _:module < MODULE_COUNT);
 }
 
 /**
@@ -195,74 +220,6 @@ stock bool:ModuleMgr_IsDisabled(Module:module)
 }
 
 /**
- * Returns if a module ID is valid or not.
- * 
- * @param module    The module ID to check validity of.
- * 
- * @return          True if the module ID is valid, false if not.
- */
-stock bool:ModuleMgr_IsModuleValid(Module:module)
-{
-    return (_:module > -1 && _:module < MODULE_COUNT);
-}
-
-/**
- * Process the ModuleID string before matching it to a module.
- * 
- * @param strModuleID   The moduleID string to process.
- * @param strModuleID2  The processed module ID string output.
- * @param maxlen        The max length of the output string.
- */
-stock ModuleMgr_ProcessModuleID(const String:strModuleID[], String:strModuleID2[], maxlen)
-{
-    // Method to strip any preceding 0's for comparison.
-    // Note: For client interaction, we incremented the module ID to avoid using 0, so we have to decrement before processing.
-    new moduleID = StringToInt(strModuleID);
-    if (moduleID != 0)
-        IntToString(--moduleID, strModuleID2, maxlen);
-    else
-        strcopy(strModuleID2, maxlen, strModuleID);
-}
-
-/**
- * Finds any modules matching the given module index or shortname.
- * 
- * @param value         The module index or shortname to use for finding the module.
- * 
- * @return              The module whose module index or shortname matched. (in that order)  INVALID_MODULE if no modules matched.
- */
-stock Module:ModuleMgr_FindByID(const String:value[])
-{
-    decl String:strModuleID[16];
-    decl String:strModuleID2[16];
-    decl String:shortname[16];
-    new Module:module;
-    
-    // Process the module ID before comparison.
-    ModuleMgr_ProcessModuleID(value, strModuleID, sizeof(strModuleID));
-    
-    // Loop through all the modules.
-    for (new moduleID = 0; moduleID < MODULE_COUNT; moduleID++)
-    {
-        // Read moduleID as a Module type.
-        module = Module:moduleID;
-        
-        // Compare the module ID to each module.
-        
-        IntToString(moduleID, strModuleID2, sizeof(strModuleID2));
-        if (StrEqual(strModuleID, strModuleID2, false))
-            return module;
-        
-        ModuleMgr_ReadString(module, ModuleData_ShortName, shortname, sizeof(shortname));
-        if (StrEqual(shortname, value, false))
-            return module;
-    }
-    
-    // No modules matched.
-    return INVALID_MODULE;
-}
-
-/**
  * Finds any modules matching the given information.
  * 
  * @param data      The data to match the value with.
@@ -278,12 +235,12 @@ stock Module:ModuleMgr_Find(ModuleData:data, any:value, Module:modules[] = {INVA
     new Module:module;
     
     // Loop through all the modules.
-    for (new moduleID = 0; moduleID < MODULE_COUNT; moduleID++)
+    for (new moduleindex = 0; moduleindex < MODULE_COUNT; moduleindex++)
     {
-        // Read moduleID as a Module type.
-        module = Module:moduleID;
+        // Read moduleindex as a Module type.
+        module = Module:moduleindex;
         
-        // If the data matches, then add the module ID to the output array.
+        // If the data matches, then add the module identifier to the output array.
         if (ModuleMgr_ReadCell(module, data) == value)
         {
             modules[matchcount] = module;
@@ -307,7 +264,7 @@ stock Module:ModuleMgr_Find(ModuleData:data, any:value, Module:modules[] = {INVA
  * @param data          The data to match the string with.
  * @param value         The string value of the data that must match.
  * @param casesensitive True if the strings must also match case.
- * @param modules       Output array containing a list of module IDs that match. (optional)
+ * @param modules       Output array containing a list of module identifiers that match. (optional)
  * @param matched       The number of modules that matched. (optional)
  * 
  * @return              The first module whose data value matches the given value.  INVALID_MODULE if no modules matched.
@@ -319,12 +276,12 @@ stock Module:ModuleMgr_FindByString(ModuleData:data, const String:value[], bool:
     new Module:module;
     
     // Loop through all the modules.
-    for (new moduleID = 0; moduleID < MODULE_COUNT; moduleID++)
+    for (new moduleindex = 0; moduleindex < MODULE_COUNT; moduleindex++)
     {
-        // Read moduleID as a Module type.
-        module = Module:moduleID;
+        // Read moduleindex as a Module type.
+        module = Module:moduleindex;
         
-        // If the string matches, then add the module ID to the output array.
+        // If the string matches, then add the module identifier to the output array.
         ModuleMgr_ReadString(module, data, datastring, sizeof(datastring));
         if (StrEqual(datastring, value, casesensitive))
         {
@@ -394,6 +351,79 @@ stock ModuleMgr_ReadString(Module:module, ModuleData:data, String:output[], maxl
 // **********************************************
 //   Private API (For base project files only)
 // **********************************************
+
+/**
+ * Returns the numerical module ID given the module identifier.
+ * 
+ * @param module        The module identifier to return the module ID for.
+ * @param strModuleID   The output for the module ID.
+ * @param maxlen        The max length of the output string.
+ */
+stock ModuleMgr_GetModuleID(Module:module, String:strModuleID[], maxlen)
+{
+    // For client interaction, we increment the module ID to avoid using 0.
+    IntToString(++_:module, strModuleID, maxlen);
+    
+    // Manually pad with a 0 if it's a single digit.
+    if (strlen(strModuleID) == 1)
+        Format(strModuleID, maxlen, "0%s", strModuleID);
+}
+
+/**
+ * Process the ModuleID string before matching it to a module.
+ * 
+ * @param strModuleID   The moduleID string to process.
+ * @param strModuleID2  The processed module ID string output.
+ * @param maxlen        The max length of the output string.
+ */
+stock ModuleMgr_ProcessModuleID(const String:strModuleID[], String:strModuleID2[], maxlen)
+{
+    // Method to strip any preceding 0's for comparison.
+    // Note: For client interaction, we incremented the module ID to avoid using 0, so we have to decrement before processing.
+    new moduleID = StringToInt(strModuleID);
+    if (moduleID != 0)
+        IntToString(--moduleID, strModuleID2, maxlen);
+    else
+        strcopy(strModuleID2, maxlen, strModuleID);
+}
+
+/**
+ * Finds any modules matching the given module index or shortname.
+ * 
+ * @param value         The module index or shortname to use for finding the module.
+ * 
+ * @return              The module whose module index or shortname matched. (in that order)  INVALID_MODULE if no modules matched.
+ */
+stock Module:ModuleMgr_FindByID(const String:value[])
+{
+    decl String:strModuleID[16];
+    decl String:strModuleID2[16];
+    decl String:shortname[16];
+    new Module:module;
+    
+    // Process the module ID before comparison.
+    ModuleMgr_ProcessModuleID(value, strModuleID, sizeof(strModuleID));
+    
+    // Loop through all the modules.
+    for (new moduleindex = 0; moduleindex < MODULE_COUNT; moduleindex++)
+    {
+        // Read moduleindex as a Module type.
+        module = Module:moduleindex;
+        
+        // Compare the module ID to each module.
+        
+        IntToString(moduleindex, strModuleID2, sizeof(strModuleID2));
+        if (StrEqual(strModuleID, strModuleID2, false))
+            return module;
+        
+        ModuleMgr_ReadString(module, ModuleData_ShortName, shortname, sizeof(shortname));
+        if (StrEqual(shortname, value, false))
+            return module;
+    }
+    
+    // No modules matched.
+    return INVALID_MODULE;
+}
 
 /**
  * Reserve space in the module data array.
@@ -471,7 +501,7 @@ stock ModuleMgr_WriteString(Module:module, ModuleData:data, maxlen, const String
 }
 
 /**
- * Returns a module's handle given it's module ID.
+ * Returns a module's handle given it's module identifier.
  * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param module    The module to get the handle for.
@@ -488,21 +518,21 @@ stock Handle:ModuleMgr_GetModuleArray(Module:module)
  * Returns a module's ID given it's array handle.
  * This is meant for other base project files to use, modules shouldn't need this.
  * 
- * @param adtModule The module's array handle to get he module ID for.
+ * @param adtModule The module's array handle to get the module identifier for.
  * 
- * @return          The module's module ID, INVALID_MODULE if no module matched the handle.
+ * @return          The module's module identifier, INVALID_MODULE if no module matched the handle.
  */
 stock Module:ModuleMgr_GetModule(Handle:adtModule)
 {
     new Module:module;
     
     // Loop through all the modules.
-    for (new moduleID = 0; moduleID < MODULE_COUNT; moduleID++)
+    for (new moduleindex = 0; moduleindex < MODULE_COUNT; moduleindex++)
     {
-        // Read moduleID as a Module type.
-        module = Module:moduleID;
+        // Read moduleindex as a Module type.
+        module = Module:moduleindex;
         
-        // If the handle's match, then return the current index, which is the module ID.
+        // If the handle's match, then return the current index, which is the module identifier.
         if (adtModule == MM_HANDLE_FROM_ID(module))
             return module;
     }
@@ -784,7 +814,7 @@ ModuleMgr_BaseCmdParse(client, const String:strArgs[][])
         // The "enable" sub-command.
         else if (StrEqual(strArgs[BASECMD_ARG(2)], g_BaseCmdsLvl2[cmdindex][2], false))
         {
-            // Validate the module ID.
+            // Validate the module ID/shortname.
             new Module:module = ModuleMgr_FindByID(strArgs[BASECMD_ARG(3)]);
             if (module == INVALID_MODULE)
             {
@@ -800,10 +830,10 @@ ModuleMgr_BaseCmdParse(client, const String:strArgs[][])
         {
             // Loop through all the modules.
             new Module:module;
-            for (new moduleID = 0; moduleID < MODULE_COUNT; moduleID++)
+            for (new moduleindex = 0; moduleindex < MODULE_COUNT; moduleindex++)
             {
-                // Read moduleID as a Module type.
-                module = Module:moduleID;
+                // Read moduleindex as a Module type.
+                module = Module:moduleindex;
                 
                 ModuleMgr_Disable(module);
                 ModuleMgr_Enable(module);
@@ -814,7 +844,7 @@ ModuleMgr_BaseCmdParse(client, const String:strArgs[][])
         // The "reload" sub-command.
         else if (StrEqual(strArgs[BASECMD_ARG(2)], g_BaseCmdsLvl2[cmdindex][4], false))
         {
-            // Validate the module ID.
+            // Validate the module ID/shortname.
             new Module:module = ModuleMgr_FindByID(strArgs[BASECMD_ARG(3)]);
             if (module == INVALID_MODULE)
             {
@@ -829,7 +859,7 @@ ModuleMgr_BaseCmdParse(client, const String:strArgs[][])
         // The "disable" sub-command.
         else if (StrEqual(strArgs[BASECMD_ARG(2)], g_BaseCmdsLvl2[cmdindex][5], false))
         {
-            // Validate the module ID.
+            // Validate the module ID/shortname.
             new Module:module = ModuleMgr_FindByID(strArgs[BASECMD_ARG(3)]);
             if (module == INVALID_MODULE)
             {
@@ -845,10 +875,10 @@ ModuleMgr_BaseCmdParse(client, const String:strArgs[][])
         {
             // Loop through all the modules.
             new Module:module;
-            for (new moduleID = 0; moduleID < MODULE_COUNT; moduleID++)
+            for (new moduleindex = 0; moduleindex < MODULE_COUNT; moduleindex++)
             {
-                // Read moduleID as a Module type.
-                module = Module:moduleID;
+                // Read moduleindex as a Module type.
+                module = Module:moduleindex;
                 
                 ModuleMgr_Disable(module);
             }
@@ -875,7 +905,7 @@ ModuleMgr_BaseCmdParse(client, const String:strArgs[][])
  */
 stock ModuleMgr_PrintModuleInfo(client, const String:strModuleID[])
 {
-    // Validate the module ID.
+    // Validate the module ID/shortname.
     new Module:module = ModuleMgr_FindByID(strModuleID);
     if (module == INVALID_MODULE)
     {
@@ -934,18 +964,13 @@ stock ModuleMgr_PrintModules(client)
     
     // Loop through all the modules.
     new Module:module;
-    for (new moduleID = 0; moduleID < MODULE_COUNT; moduleID++)
+    for (new moduleindex = 0; moduleindex < MODULE_COUNT; moduleindex++)
     {
-        // Read moduleID as a Module type.
-        module = Module:moduleID;
+        // Read moduleindex as a Module type.
+        module = Module:moduleindex;
         
-        // Get the module's information to display.
-        // Note: For client interaction, we increment the module ID to avoid using 0.
-        IntToString(++moduleID, strModuleID, sizeof(strModuleID));
-        
-        // Manually pad with a 0 if it's a single digit.
-        if (strlen(strModuleID) == 1)
-            Format(strModuleID, sizeof(strModuleID), "0%s", strModuleID);
+        // Get the module's module ID for client interaction.
+        ModuleMgr_GetModuleID(module, strModuleID, sizeof(strModuleID));
         
         ModuleMgr_ReadString(module, ModuleData_FullName, modulefullname, sizeof(modulefullname));
         ModuleMgr_ReadString(module, ModuleData_ShortName, moduleshortname, sizeof(moduleshortname));

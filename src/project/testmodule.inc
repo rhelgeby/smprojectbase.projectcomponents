@@ -42,6 +42,9 @@ public TestModule_OnPluginStart()
     // Register the module with this data.
     g_iTestModule = ModuleMgr_Register(moduledata);
     
+    new moduledata2[ModuleData] = {false, "Test Module", "testmodule", "Module designed to fail to load."};
+    ModuleMgr_Register(moduledata2);
+    
     // Now register the events we're going to use.
     EventMgr_RegisterEvent(g_iTestModule, Event_RoundStart, "TestModule_OnRoundStart");
     

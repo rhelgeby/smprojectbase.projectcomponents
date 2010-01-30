@@ -184,7 +184,7 @@ stock TransMgr_OnPrintModuleInfo(client, Module:module, MsgTypes:msgtype)
  * Register your module to use translations.
  * Your module's translation file path is defined as: project/<moduleshortname>.phrases.txt
  * 
- * @param module    The module ID to register for translations.
+ * @param module    The module identifier to register for translations.
  */
 stock TransMgr_Register(Module:module)
 {
@@ -219,8 +219,8 @@ stock TransMgr_PrintText(client, MsgFormatting:msgformat, MsgTypes:msgtype, Modu
     // Update the part of the array that contains the info for coloring text with the current reply source.
     g_bMsgTypeColor[MsgType_Reply] = bool:(GetCmdReplySource() == SM_REPLY_TO_CHAT);
     
-    // Get the name of the module if a module ID was given.
-    new String:fullname[32] = "Invalid Module ID";
+    // Get the name of the module if a module identifier was given.
+    new String:fullname[32] = "Invalid Module";
     if (ModuleMgr_IsModuleValid(module))
     {
         ModuleMgr_ReadString(module, ModuleData_FullName, fullname, sizeof(fullname));
@@ -454,12 +454,12 @@ stock TransMgr_LoadTranslations()
     new Module:module;
     
     // Loop through all the modules.
-    for (new moduleID = 0; moduleID < MODULE_COUNT; moduleID++)
+    for (new moduleindex = 0; moduleindex < MODULE_COUNT; moduleindex++)
     {
-        // Read moduleID as a Module type.
-        module = Module:moduleID;
+        // Read moduleindex as a Module type.
+        module = Module:moduleindex;
         
-        // If the module doesn't have translations enabled, then skip to next module ID.
+        // If the module doesn't have translations enabled, then skip to next module identifier.
         if (!TransMgr_IsEnabled(module))
             continue;
         

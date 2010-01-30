@@ -441,10 +441,10 @@ public GameEvent_RoundStart(Handle:event, const String:name[], bool:dontBroadcas
     new Module:module;
     
     // Loop through all the modules.
-    for (new moduleID = 0; moduleID < MODULE_COUNT; moduleID++)
+    for (new moduleindex = 0; moduleindex < MODULE_COUNT; moduleindex++)
     {
-        // Read moduleID as a Module type.
-        module = Module:moduleID;
+        // Read moduleindex as a Module type.
+        module = Module:moduleindex;
         
         // If the module is disabled, then stop this iteration.
         if (ModuleMgr_IsDisabled(module))
