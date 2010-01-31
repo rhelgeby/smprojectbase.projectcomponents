@@ -320,9 +320,9 @@ public Action:Command_LogWhitelistAdd(client, argc)
     {
         #if defined TRANSLATIONS_MANAGER
             // Display usage info.
-            TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "LogMgr cmd whitelistadd usage", PROJECT_BASE_CMD);
+            TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "LogMgr cmd whitelistadd usage");
         #else
-            ReplyToCommand(client, "Bad syntax.  project_log_whitelist_add <moduleid1> [moduleid2] ...");
+            ReplyToCommand(client, "Adds one or more modules to the whitelist.  Usage: project_log_whitelist_add <moduleshortname [module2] ...\nRelated command(s): project_log_whitelist_remove");
         #endif
         
         return Plugin_Handled;
@@ -355,9 +355,8 @@ public Action:Command_LogWhitelistAdd(client, argc)
         #if defined TRANSLATIONS_MANAGER
             TransMgr_PrintText(client, MsgFormat_Both, MsgType_Reply, module, false, "LogMgr cmd whitelistadd");
         #else
-            ReplyToCommand(client, "Module added to whitelist.");
+            ReplyToCommand(client, "Module has been added to the whitelist.");
         #endif
-        
     }
     
     // Say that we handled the command so CS:S doesn't see it and print "Unknown command"
@@ -382,9 +381,9 @@ public Action:Command_LogWhitelistRemove(client, argc)
     {
         #if defined TRANSLATIONS_MANAGER
             // Display usage info.
-            TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "LogMgr cmd whitelistremove usage", PROJECT_BASE_CMD);
+            TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "LogMgr cmd whitelistremove usage");
         #else
-            ReplyToCommand(client, "Bad syntax.  project_log_whitelist_remove <moduleid1> [moduleid2] ...");
+            ReplyToCommand(client, "Removes one or more modules from the whitelist.  Usage: project_log_whitelist_remove <moduleshortname [module2] ...\nRelated command(s): project_log_whitelist_add");
         #endif
         
         return Plugin_Handled;
@@ -417,7 +416,7 @@ public Action:Command_LogWhitelistRemove(client, argc)
         #if defined TRANSLATIONS_MANAGER
             TransMgr_PrintText(client, MsgFormat_Both, MsgType_Reply, module, false, "LogMgr cmd whitelistremove");
         #else
-            ReplyToCommand(client, "Module removed from whitelist.");
+            ReplyToCommand(client, "Module has been added to the whitelist.");
         #endif
     }
     

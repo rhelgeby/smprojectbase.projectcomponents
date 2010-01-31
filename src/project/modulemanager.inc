@@ -131,17 +131,6 @@ ModuleMgr_OnPluginStart()
  */
 stock Module:ModuleMgr_Register(moduledata[ModuleData])
 {
-    // Shortname must be unique.
-    new Module:clashmodule = ModuleMgr_FindByString(ModuleData_ShortName, moduledata[ModuleData_ShortName]);
-    if (clashmodule != INVALID_MODULE)
-    {
-        decl String:modulefullname[32];
-        ModuleMgr_ReadString(clashmodule, ModuleData_FullName, modulefullname, sizeof(modulefullname));
-        
-        LogError("Module \"%s\" failed to register.  Its unique shortname (%s) clashes with that of module \"%s\"", moduledata[ModuleData_FullName], moduledata[ModuleData_ShortName], modulefullname);
-        return INVALID_MODULE;
-    }
-    
     // This is the array that will hold all the actual module data.
     new Handle:adtModule = CreateArray(g_iMMMaxBlockSize);
     
@@ -351,6 +340,49 @@ stock ModuleMgr_ReadString(Module:module, ModuleData:data, String:output[], maxl
 // **********************************************
 //   Private API (For base project files only)
 // **********************************************
+
+/**
+ * Validates all values in a ModuleData array, and prints errors for each invalid value.
+ * 
+ * @param moduledata    Array of module data to validate.
+ * @param moduleflags   0 if all values were valid.  Non-zero means there is a list of flags that failed.
+ * 
+ * @return              True if validation was successful, false if there were invalid values.
+ */
+stock ModuleMgr_Validate(moduledata[ModuleData], &moduleflags = 0)
+{
+    // ModuleData_Disabled can't be invalid.
+    // ModuleData_Hidden can't be invalid.
+    
+    // Validate ModuleData_FullName.
+    if (!moduledata[ModuleData_FullName][0])
+    {
+        moduleflags |= MODULE_DATA_FULLNAME;
+        LogError("[Module Manager] [Registration Failed] Module needs a full name.");
+    }
+    
+    // Validate ModuleData_ShortName.
+    if (!moduledata[ModuleData_ShortName][0])
+    {
+        moduleflags |= MODULE_DATA_SHORTNAME;
+        LogError("[Module Manager] [Registration Failed] Module \"%s\" needs a (unique) short name.", moduledata[ModuleData_FullName]);
+    }
+    else
+    {
+        // Shortname must be unique.
+        new Module:clashmodule = ModuleMgr_FindByString(ModuleData_ShortName, moduledata[ModuleData_ShortName]);
+        if (clashmodule != INVALID_MODULE)
+        {
+            decl String:clashmodulefullname[32];
+            ModuleMgr_ReadString(clashmodule, ModuleData_FullName, clashmodulefullname, sizeof(clashmodulefullname));
+            
+            moduleflags |= MODULE_DATA_SHORTNAME;
+            LogError("[Module Manager] [Registration Failed] Module \"%s\" short name (%s) clashes with that of module \"%s\"", moduledata[ModuleData_FullName],moduledata[ModuleData_ShortName], clashmodulefullname);
+        }
+    }
+    
+    // ModuleData_Description can't be invalid.
+}
 
 /**
  * Finds any modules matching the given module ID or shortname.

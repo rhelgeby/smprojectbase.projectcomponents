@@ -172,8 +172,7 @@
 
 	"LogMgr cmd whitelistadd usage"
 	{
-		"#format"	"{1:s}"
-		"en"		"Adds one or more modules to the whitelist.  Usage: project_log_whitelist_add <moduleshortname [module2] ...\nUse \"{1} modules list\" to see a list of modules and current statuses.\nRelated command(s): project_log_whitelist_remove"
+		"en"		"Adds one or more modules to the whitelist.  Usage: project_log_whitelist_add <moduleshortname [module2] ...\nRelated command(s): project_log_whitelist_remove"
 	}
 
 	"LogMgr cmd whitelistadd"
@@ -185,8 +184,7 @@
 
 	"LogMgr cmd whitelistremove usage"
 	{
-		"#format"	"{1:s}"
-		"en"		"Removes one or more modules from the whitelist.  Usage: project_log_whitelist_remove <moduleshortname [module2] ...\nUse \"{1} modules list\" to see a list of modules and current statuses.\nRelated command(s): project_log_whitelist_add"
+		"en"		"Removes one or more modules from the whitelist.  Usage: project_log_whitelist_remove <moduleshortname [module2] ...\nRelated command(s): project_log_whitelist_add"
 	}
 
 	"LogMgr cmd whitelistremove"
@@ -194,4 +192,9 @@
 		"en"		"Module has been removed from the whitelist."
 	}
 
+	// **********************************
+	//        Version Information
+	// **********************************
+
+	"VersionInfo base cmd version"
 }

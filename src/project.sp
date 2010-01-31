@@ -34,7 +34,7 @@
 
 #include "project/project"
 #include "project/versioninfo"
-#include "project/translationsmanager"
+//#include "project/translationsmanager"
 #include "project/logmanager"
 #include "project/eventmanager"
 #include "project/modulemanager"

@@ -39,9 +39,19 @@
  */
 public VersionInfo_OnPluginStart()
 {
+    // If neither the base cmd or translations manager is available, then create a project_version command.
+    #if !defined PROJECT_BASE_CMD
+    #elseif !defined TRANSLATIONS_MANAGER
+    
     // Create a version information print command.
     RegConsoleCmd("project_version", Command_Version, "Prints version info about this project.");
+    
+    #endif
 }
+
+// If neither the base cmd or translations manager is available, then create a project_version command.
+#if !defined PROJECT_BASE_CMD
+#elseif !defined TRANSLATIONS_MANAGER
 
 /**
  * Command callback: project_version
@@ -56,6 +66,8 @@ public Action:Command_Version(client, argc)
     // Say that we handled the command so CS:S doesn't see it and print "Unknown command"
     return Plugin_Handled;
 }
+
+#endif
 
 /**
  * Print available version information to a client. (SERVER_INDEX) to print to server.

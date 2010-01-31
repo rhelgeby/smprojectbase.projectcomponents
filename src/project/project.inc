@@ -64,6 +64,18 @@ enum Module
 }
 
 /**
+ * @section Module data flags.
+ */
+#define MODULE_DATA_DISABLED    (1 << 0)
+#define MODULE_DATA_HIDDEN      (1 << 1)
+#define MODULE_DATA_FULLNAME    (1 << 2)
+#define MODULE_DATA_SHORTNAME   (1 << 3)
+#define MODULE_DATA_DESCRIPTION (1 << 4)
+/**
+ * @endsection
+ */
+
+/**
  * All the data modules need to register.
  */
 enum ModuleData
@@ -165,7 +177,7 @@ new const String:g_ProjectEventDisplay[ProjectEvents][] = {
  * Also handles printing plugin information like credits and version.
  * Comment out to remove command from the plugin.
  */
-#define PROJECT_BASE_CMD PROJECT_SHORTNAME
+//#define PROJECT_BASE_CMD PROJECT_SHORTNAME
 
 /**
  * @section The formatting string for each option in enum MsgFormatting.
