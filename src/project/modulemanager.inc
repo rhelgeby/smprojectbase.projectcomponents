@@ -343,6 +343,7 @@ stock ModuleMgr_ReadString(Module:module, ModuleData:data, String:output[], maxl
 
 /**
  * Validates all values in a ModuleData array, and prints errors for each invalid value.
+ * This is meant for other base project files to use, modules shouldn't need this. 
  * 
  * @param moduledata    Array of module data to validate.
  * @param moduleflags   0 if all values were valid.  Non-zero means there is a list of flags that failed.
@@ -387,6 +388,7 @@ stock ModuleMgr_Validate(moduledata[ModuleData], &moduleflags = 0)
 /**
  * Finds any modules matching the given module ID or shortname.
  * This should only be used if input it coming from a client.  Otherwise use ModuleMgr_FindByString.
+ * This is meant for other base project files to use, modules shouldn't need this. 
  * 
  * @param value         The module ID to match to a module. (This will be matched first if both are inputed)
  * @param shortname     The short name to match to a module.
@@ -552,6 +554,24 @@ stock Handle:ModuleMgr_GetList()
 //                Base Command
 // **********************************************
 
+/**
+ * Returns true if the project base cmd isn't available, false means it is available.
+ */
+stock bool:ModuleMgr_CreateBackupCmd()
+{
+    new bool:create = false;
+    
+    #if !defined PROJECT_BASE_CMD
+        create = true;
+    #endif
+    
+    #if !defined TRANSLATIONS_MANAGER
+        create = true;
+    #endif
+    
+    return create;
+}
+
 #if defined PROJECT_BASE_CMD
     #if defined TRANSLATIONS_MANAGER
 
@@ -626,6 +646,7 @@ new const BaseSubCmdType:g_BaseSubCmdType[][] = {
 
 /**
  * Finds the index the command is located at in the arrays above.
+ * This is meant for other base project files to use, modules shouldn't need this. 
  * 
  * @param cmd       The command to search for.
  * @param level     The level the command is in.
@@ -666,8 +687,53 @@ stock ModuleMgr_BaseCmdFind(const String:cmd[], level, cmdindex = -1)
  */
 public Action:Command_Base(client, argc)
 {
-    // This callback is mainly for validation before passing it off to another function.
+    if (client > SERVER_INDEX)
+        ModuleMgr_BaseCmdNonAdmin(client);
+    else
+        ModuleMgr_BaseCmdAdmin(client, argc);
     
+    // Say that we handled the command so CS:S doesn't see it and print "Unknown command"
+    return Plugin_Handled;
+}
+
+/**
+ * Handle PROJECT_BASE_CMD command when a non-admin uses it.
+ * 
+ * @param client    The client index.
+ * @param argc      The number of arguments that the client sent with the command.
+ */
+ModuleMgr_BaseCmdNonAdmin(client)
+{
+    decl String:arg[sizeof(g_BaseCmdsLvl1[])];
+    GetCmdArg(1, arg, sizeof(arg));
+    
+    // The "credits" command.
+    if (StrEqual(arg, g_BaseCmdsLvl1[0], false))
+    {
+        // Print credits.
+        TransMgr_PrintText(client, MsgFormat_None, MsgType_Reply, _, false, "Project credits");
+    }
+    // The "modules" command.
+    else if (StrEqual(arg, g_BaseCmdsLvl1[1], false))
+    {
+        // List modules.
+        ModuleMgr_PrintModules(client);
+    }
+    else
+    {
+        TransMgr_PrintText(client, MsgFormat_None, MsgType_Reply, _, false, "ModuleMgr cmd base non-admin syntax", PROJECT_FULLNAME, PROJECT_VERSION, PROJECT_AUTHOR, PROJECT_BASE_CMD, PROJECT_BASE_CMD);
+        return;
+    }
+}
+
+/**
+ * Handle PROJECT_BASE_CMD command when an admin or server uses it.
+ * 
+ * @param client    The client index.
+ * @param argc      The number of arguments that the client sent with the command.
+ */
+ModuleMgr_BaseCmdAdmin(client, argc)
+{
     // Determine how to print the message to server/client.
     new MsgTypes:msgtype = (client == SERVER_INDEX) ? MsgType_Server : MsgType_Console;
     
@@ -765,27 +831,21 @@ public Action:Command_Base(client, argc)
     // Pass off the validified arguments to another function.
     ModuleMgr_BaseCmdParse(client, strArgs);
 }
-#else   // If TRANSLATIONS_MANAGER isn't defined.
-// How can we print the module information without translations to read from?
-public Action:Command_Base(client, argc)
-{
-    ReplyToCommand(client, "The base command requires that the translations manager be compiled into the plugin.");
-}
-#endif
 
 /**
  * The "control center" that redirects all commands to their respective functions.
+ * This is meant for other base project files to use, modules shouldn't need this. 
  * 
  * @param client    The client calling the command.
  * @param strArgs   The list of arguments that were validated by the base command callback.
  */
-stock ModuleMgr_BaseCmdParse(client, const String:strArgs[][])
+ModuleMgr_BaseCmdParse(client, const String:strArgs[][])
 {
     // The "credits" sub-command.
     if (StrEqual(strArgs[BASECMD_ARG(1)], g_BaseCmdsLvl1[0], false))
     {
         // Print credits.
-        TransMgr_PrintText(client, MsgFormat_None, MsgType_Reply, _, false, "Project credits", PROJECT_AUTHOR, PROJECT_SHORTNAME, PROJECT_SHORTNAME);
+        TransMgr_PrintText(client, MsgFormat_None, MsgType_Reply, _, false, "Project credits");
     }
     // The "modules" accessor.
     else if (StrEqual(strArgs[BASECMD_ARG(1)], g_BaseCmdsLvl1[1], false))
@@ -891,6 +951,7 @@ stock ModuleMgr_BaseCmdParse(client, const String:strArgs[][])
 
 /**
  * Prints the information stored about a module.
+ * This is meant for other base project files to use, modules shouldn't need this. 
  * 
  * @param client        Client to print information to.
  * @param strModuleID   Either the module's shortname or it's module ID.
@@ -940,6 +1001,7 @@ stock ModuleMgr_PrintModuleInfo(client, const String:strModuleID[])
 
 /**
  * Prints all registered modules.
+ * This is meant for other base project files to use, modules shouldn't need this. 
  * 
  * @param client        Client to print information to.
  */
@@ -952,6 +1014,7 @@ stock ModuleMgr_PrintModules(client)
     decl String:moduleshortname[16];
     new bool:bModuleDisabled;
     decl String:strModuleEnabled[16];
+    decl String:line[256];
     
     new Module:module;
     new moduleID;
@@ -973,7 +1036,22 @@ stock ModuleMgr_PrintModules(client)
         bModuleDisabled = bool:ModuleMgr_ReadCell(module, ModuleData_Disabled);
         TransMgr_TranslateBoolToPhrase(client, !bModuleDisabled, BoolPhrase_EnabledDisabled, strModuleEnabled, sizeof(strModuleEnabled), true);
         
-        TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "ModuleMgr cmd base lvl2 modules list print", moduleID, modulefullname, strModuleEnabled, moduleshortname);
+        SetGlobalTransTarget(client);
+        Format(line, sizeof(line), "%t", "ModuleMgr cmd base lvl2 modules list print", modulefullname, strModuleEnabled, moduleshortname);
+        
+        // Format on the moduleID?
+        (client == SERVER_INDEX) ?  Format(line, sizeof(line), "  %02d %s", moduleID, line) :
+                                    Format(line, sizeof(line), "  %s", line);
+        
+        TransMgr_PrintText(client, MsgFormat_None, msgtype, _, true, line);
     }
 }
+#else   // If TRANSLATIONS_MANAGER isn't defined.
+// How can we print the module information without translations to read from?
+public Action:Command_Base(client, argc)
+{
+    ReplyToCommand(client, "The base command requires that the translations manager be compiled into the plugin.");
+}
+#endif
+
 #endif

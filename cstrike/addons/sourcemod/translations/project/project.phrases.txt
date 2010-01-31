@@ -13,8 +13,7 @@
 	// {2}: project shortname PROJECT_SHORTNAME (defined in project.inc)
 	"Project credits"
 	{
-		"#format"	"{1:s},{2:s},{3:s}"
-		"en"		" Plugin was developed by {1}.\n Development would not have been possible without:\n  MODIFY CREDIT STRING IN translations/{2}/{3}.phrases.txt\n  Andrew \"Greyscale\" Borba, plugin base developer\n  Richard \"rhelgeby\" Helgeby, compilation environment designer\n http://www.sourcemod.net/"
+		"en"		" Plugin was developed by Greyscale.\n Development would not have been possible without:\n  Andrew \"Greyscale\" Borba, plugin base developer\n  Richard \"rhelgeby\" Helgeby, compilation environment designer\n http://www.sourcemod.net/"
 	}
 
 }

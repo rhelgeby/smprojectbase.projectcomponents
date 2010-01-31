@@ -35,6 +35,16 @@
 
 	// Command: PROJECT_BASE_CMD (Defined in project.inc)
 
+	// {1}: PROJECT_FULLNAME
+	// {2}: PROJECT_VERSION
+	// {3}: PROJECT_AUTHOR
+	// {4}: PROJECT_BASE_CMD
+	"ModuleMgr cmd base non-admin syntax"
+	{
+		"#format"	"{1:s},{2:s},{3:s},{4:s},{5:s}"
+		"en"		"{1} {2}, by {3}\nTo see registered plugin modules, type \"{4} modules\"\nTo see credits, type \"{5} credits\"\nVisit http://www.sourcemod.net/"
+	}
+
 	"ModuleMgr cmd base lvl1 syntax"
 	{
 		"#format"	"{1:s},{2:s},{3:17s},{4:17s},{5:17s}"
@@ -85,13 +95,13 @@
 		"en"		"  Module Name: {1}\n  Short Name: {2}\n  Description: {3}\n  Enabled: {4}"
 	}
 
-	// {1}: the module ID of the module.
-	// {2}: the full name of the module.
+	// {1}: the full name of the module.
+	// {2}: enabled/disabled.
 	// {3}: the short name of the module.
 	"ModuleMgr cmd base lvl2 modules list print"
 	{
-		"#format"	"{1:02d},{2:s},{3:s},{4:s}"
-		"en"		"  {1} \"{2}\" ({3}) aka {4}"
+		"#format"	"{1:s},{2:s},{3:s}"
+		"en"		"\"{1}\" ({2}) aka {3}"
 	}
 
 	"ModuleMgr cmd base lvl2 modules enable"
@@ -192,9 +202,4 @@
 		"en"		"Module has been removed from the whitelist."
 	}
 
-	// **********************************
-	//        Version Information
-	// **********************************
-
-	"VersionInfo base cmd version"
 }

@@ -94,7 +94,7 @@ enum ModuleData
 #define MODULE_DATA_CELL_COUNT 1 + 1 + 32 + 16 + 256
 
 /**
- * The longest string that can be stored in the module's data. (Cell size of ModuleData_FullName)
+ * The longest string that can be stored in the module's data. (Size of ModuleData_FullName)
  */
 #define MODULE_DATA_LONGEST_STRING 256
 
