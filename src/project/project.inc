@@ -177,7 +177,7 @@ new const String:g_ProjectEventDisplay[ProjectEvents][] = {
  * Also handles printing plugin information like credits and version.
  * Comment out to remove command from the plugin.
  */
-//#define PROJECT_BASE_CMD PROJECT_SHORTNAME
+#define PROJECT_BASE_CMD PROJECT_SHORTNAME
 
 /**
  * @section The formatting string for each option in enum MsgFormatting.
