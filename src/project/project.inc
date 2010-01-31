@@ -110,15 +110,52 @@ enum ModuleData
  */
 enum ProjectEvents
 {
+    Event_OnPluginStart,
+    Event_OnAllPluginsLoaded,
+    Event_OnPluginEnd,
+    Event_OnMapStart,
+    Event_OnMapEnd,
+    Event_OnAutoConfigsBuffered,
+    Event_OnConfigsExecuted,
+    Event_OnClientPutInServer,
+    Event_OnClientDisconnect,
     Event_RoundStart,
     Event_RoundFreezeEnd,
     Event_RoundEnd,
+    Event_PlayerTeam,
     Event_PlayerSpawn,
     Event_PlayerHurt,
     Event_PlayerDeath,
     Event_PlayerJump,
-    Event_PlayerFire
+    Event_WeaponFire,
+    Event_WeaponEntityFire,
 }
+
+/**
+ * Datatypes that can be passed with each event to modules.
+ * Don't touch this!
+ */
+enum EventDataTypes
+{
+    DataType_Cell,
+    DataType_Float,
+    DataType_Array,
+    DataType_String
+}
+
+/**
+ * @section Common data type info.
+ */
+
+// When forwarding custom events with no data, use this.
+new any:g_CommonEventData1[][] = {{0}};
+
+// When forwarding custom events whose data thats being passed matches these, you can use these.
+new EventDataTypes:g_CommonDataType1[] = {};
+new EventDataTypes:g_CommonDataType2[] = {DataType_Cell};
+/**
+ * @endsection
+ */
 
 /**
  * The number of cells used to store all the event enable data in enum ProjectEvents. (above)
@@ -132,14 +169,25 @@ enum ProjectEvents
  * Keep this updated as ProjectEvents is modified.
  */
 new const String:g_ProjectEventDisplay[ProjectEvents][] = {
-    "Round Start",
-    "Round Freeze End",
-    "Round End",
-    "Player Spawn",
-    "Player Hurt",
-    "Player Death",
-    "Player Jump",
-    "Player Fire"
+    "OnPluginStart",
+    "OnAllPluginsLoaded",
+    "OnPluginEnd",
+    "OnMapStart",
+    "OnMapEnd",
+    "OnAutoConfigsBuffered",
+    "OnConfigsExecuted",
+    "OnClientPutInServer",
+    "OnClientDisconnect",
+    "RoundStart",
+    "RoundFreezeEnd",
+    "RoundEnd",
+    "PlayerTeam",
+    "PlayerSpawn",
+    "PlayerHurt",
+    "PlayerDeath",
+    "PlayerJump",
+    "WeaponFire",
+    "WeaponEntityFire"
 };
 
 // ---------------

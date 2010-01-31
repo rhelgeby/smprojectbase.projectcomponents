@@ -111,6 +111,8 @@ public OnPluginStart()
  */
 public OnAllPluginsLoaded()
 {
+    // Forward event to all modules.
+    EventMgr_Forward(Event_OnAllPluginsLoaded, g_CommonEventData1, 0, 0, g_CommonDataType1);
 }
 
 /**
@@ -118,6 +120,8 @@ public OnAllPluginsLoaded()
  */
 public OnMapStart()
 {
+    // Forward event to all modules.
+    EventMgr_Forward(Event_OnMapStart, g_CommonEventData1, 0, 0, g_CommonDataType1);
 }
 
 /**
@@ -125,6 +129,8 @@ public OnMapStart()
  */
 public OnMapEnd()
 {
+    // Forward event to all modules.
+    EventMgr_Forward(Event_OnMapEnd, g_CommonEventData1, 0, 0, g_CommonDataType1);
 }
 
 /**
@@ -132,6 +138,8 @@ public OnMapEnd()
  */
 public OnAutoConfigsBuffered()
 {
+    // Forward event to all modules.
+    EventMgr_Forward(Event_OnAutoConfigsBuffered, g_CommonEventData1, 0, 0, g_CommonDataType1);
 }
 
 /**
@@ -139,6 +147,8 @@ public OnAutoConfigsBuffered()
  */
 public OnConfigsExecuted()
 {
+    // Forward event to all modules.
+    EventMgr_Forward(Event_OnConfigsExecuted, g_CommonEventData1, 0, 0, g_CommonDataType1);
 }
 
 /**
@@ -148,6 +158,12 @@ public OnConfigsExecuted()
  */
 public OnClientPutInServer(client)
 {
+    // Forward event to all modules.
+    new any:eventdata[1][1];
+    
+    eventdata[0][0] = client;
+    
+    EventMgr_Forward(Event_OnClientPutInServer, eventdata, sizeof(eventdata), sizeof(eventdata[]), g_CommonDataType2);
 }
 
 /**
@@ -157,4 +173,10 @@ public OnClientPutInServer(client)
  */
 public OnClientDisconnect(client)
 {
+    // Forward event to all modules.
+    new any:eventdata[1][1];
+    
+    eventdata[0][0] = client;
+    
+    EventMgr_Forward(Event_OnClientDisconnect, eventdata, sizeof(eventdata), sizeof(eventdata[]), g_CommonDataType2);
 }

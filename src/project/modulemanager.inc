@@ -131,6 +131,10 @@ ModuleMgr_OnPluginStart()
  */
 stock Module:ModuleMgr_Register(moduledata[ModuleData])
 {
+    // Validate the module data before storing the data.
+    if (!ModuleMgr_Validate(moduledata))
+        return INVALID_MODULE;
+    
     // This is the array that will hold all the actual module data.
     new Handle:adtModule = CreateArray(g_iMMMaxBlockSize);
     
@@ -350,7 +354,7 @@ stock ModuleMgr_ReadString(Module:module, ModuleData:data, String:output[], maxl
  * 
  * @return              True if validation was successful, false if there were invalid values.
  */
-stock ModuleMgr_Validate(moduledata[ModuleData], &moduleflags = 0)
+stock bool:ModuleMgr_Validate(moduledata[ModuleData], &moduleflags = 0)
 {
     // ModuleData_Disabled can't be invalid.
     // ModuleData_Hidden can't be invalid.
@@ -360,6 +364,7 @@ stock ModuleMgr_Validate(moduledata[ModuleData], &moduleflags = 0)
     {
         moduleflags |= MODULE_DATA_FULLNAME;
         LogError("[Module Manager] [Registration Failed] Module needs a full name.");
+        return false;
     }
     
     // Validate ModuleData_ShortName.
@@ -367,6 +372,7 @@ stock ModuleMgr_Validate(moduledata[ModuleData], &moduleflags = 0)
     {
         moduleflags |= MODULE_DATA_SHORTNAME;
         LogError("[Module Manager] [Registration Failed] Module \"%s\" needs a (unique) short name.", moduledata[ModuleData_FullName]);
+        return false;
     }
     else
     {
@@ -379,10 +385,13 @@ stock ModuleMgr_Validate(moduledata[ModuleData], &moduleflags = 0)
             
             moduleflags |= MODULE_DATA_SHORTNAME;
             LogError("[Module Manager] [Registration Failed] Module \"%s\" short name (%s) clashes with that of module \"%s\"", moduledata[ModuleData_FullName],moduledata[ModuleData_ShortName], clashmodulefullname);
+            return false;
         }
     }
     
     // ModuleData_Description can't be invalid.
+    
+    return true;
 }
 
 /**

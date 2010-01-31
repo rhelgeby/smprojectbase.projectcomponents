@@ -73,13 +73,13 @@ EventMgr_OnPluginStart()
 {
     // Hook events to manage and forward to modules.
     HookEvent("round_start", GameEvent_RoundStart);
-    //HookEvent("round_freeze_end", GameEvent_RoundFreezeEnd);
-    //HookEvent("round_end", GameEvent_RoundEnd);
-    //HookEvent("player_spawn", GameEvent_PlayerSpawn);
-    //HookEvent("player_hurt", GameEvent_PlayerHurt);
-    //HookEvent("player_death", GameEvent_PlayerDeath);
-    //HookEvent("player_jump", GameEvent_PlayerJump);
-    //HookEvent("weapon_fire", GameEvent_WeaponFire);
+    HookEvent("round_freeze_end", GameEvent_RoundFreezeEnd);
+    HookEvent("round_end", GameEvent_RoundEnd);
+    HookEvent("player_spawn", GameEvent_PlayerSpawn);
+    HookEvent("player_hurt", GameEvent_PlayerHurt);
+    HookEvent("player_death", GameEvent_PlayerDeath);
+    HookEvent("player_jump", GameEvent_PlayerJump);
+    HookEvent("weapon_fire", GameEvent_WeaponFire);
     
     // Allocate 2 indexes for the data we want to store for each module.
     ModuleMgr_Allocate(2, g_iEMAllocatedIndexes);
@@ -133,7 +133,7 @@ stock EventMgr_OnPrintModuleInfo(client, Module:module, MsgTypes:msgtype)
             continue;
         
         // Format each event onto a string.
-        if (eindex == 0)
+        if (registeredevents[0] == 0)
             strcopy(registeredevents, sizeof(registeredevents), g_ProjectEventDisplay[event]);
         else
             Format(registeredevents, sizeof(registeredevents), "%s, %s", registeredevents, g_ProjectEventDisplay[event]);
@@ -226,6 +226,77 @@ stock Function:EventMgr_SetEventForward(Module:module, ProjectEvents:event, cons
     
     // Return the function ID.
     return func;
+}
+
+/**
+ * Forwards an event and a list of data values to all modules who registered it.
+ * 
+ * @param event             The event to forward.  See enum ProjectEvents.
+ * @param eventdata         An array with all data to forward to each module.
+ * @param numValues         The number of elements in the first dimension of the eventdata array.
+ * @param size              The max size of the arrays/strings if passing them through eventdata.  Otherwise set this to 1.
+ * @param eventdatatypes    An array of datatypes for each event value.  See enum EventDataTypes.  This should line up with eventdata.
+ * @param modules           An extra filter to narrow down which modules will see the event.  This MUST end with INVALID_MODULE.
+ */
+stock EventMgr_Forward(ProjectEvents:event, any:eventdata[][], numValues, size, EventDataTypes:eventdatatypes[], Module:modules[] = {INVALID_MODULE})
+{
+    new Function:func;
+    new Module:module;
+    
+    // Loop through all the modules.
+    for (new moduleindex = 0; moduleindex < MODULE_COUNT; moduleindex++)
+    {
+        // Read moduleindex as a Module type.
+        module = Module:moduleindex;
+        
+        // If the module is disabled, then stop this iteration.
+        if (ModuleMgr_IsDisabled(module))
+            continue;
+        
+        // Check if this event is enabled for this module.
+        if (!EventMgr_ReadEnableValue(module, event))
+            continue;
+        
+        // Check if the module should see this event.
+        new bool:pass_filter = bool:(modules[0] == INVALID_MODULE);
+        for (new filter_module = 0; modules[filter_module] != INVALID_MODULE; filter_module++)
+        {
+            if (module == modules[filter_module])
+                pass_filter = true;
+        }
+        
+        if (!pass_filter)
+            continue;
+        
+        // Read the function ID.
+        func = EventMgr_ReadFuncValue(module, event);
+        
+        // If the function ID is invalid, then stop this iteration.
+        if (func == INVALID_FUNCTION)
+        {
+            LogError("INVALID FORWARD");
+            continue;
+        }
+        
+        // Call the event forward.
+        Call_StartFunction(GetMyHandle(), func);
+        
+        // Push each data value into the function parameter list.
+        // Loop through each event value.
+        for (new x = 0; x < numValues; x++)
+        {
+            switch (eventdatatypes[x])
+            {
+                case DataType_Cell:     Call_PushCell(_:eventdata[x][0]);
+                case DataType_Float:    Call_PushFloat(Float:eventdata[x][0]);
+                case DataType_Array:    Call_PushArray(eventdata[x], size);
+                case DataType_String:   Call_PushString(eventdata[x]);
+            }
+        }
+        
+        // Call the function.
+        Call_Finish();
+    }
 }
 
 // **********************************************
@@ -405,35 +476,187 @@ stock EventMgr_WriteFuncValue(Module:module, ProjectEvents:event, Function:func)
  */
 public GameEvent_RoundStart(Handle:event, const String:name[], bool:dontBroadcast)
 {
-    new Function:func;
-    new Module:module;
+    // Forward event to all modules.
+    EventMgr_Forward(Event_RoundStart, g_CommonEventData1, 0, 0, g_CommonDataType1);
+}
+
+/**
+ * Pre-round has freezetime has finished.
+ *
+ * @param event			Handle to event. This could be INVALID_HANDLE if every plugin hooking 
+ *						this event has set the hook mode EventHookMode_PostNoCopy.
+ * @param name			String containing the name of the event.
+ * @param dontBroadcast	True if event was not broadcast to clients, false otherwise.
+ */
+public GameEvent_RoundFreezeEnd(Handle:event, const String:name[], bool:dontBroadcast)
+{
+    // Forward event to all modules.
+    EventMgr_Forward(Event_RoundFreezeEnd, g_CommonEventData1, 0, 0, g_CommonDataType1);
+}
+
+/**
+ * Round has ended.
+ *
+ * @param event			Handle to event. This could be INVALID_HANDLE if every plugin hooking 
+ *						this event has set the hook mode EventHookMode_PostNoCopy.
+ * @param name			String containing the name of the event.
+ * @param dontBroadcast	True if event was not broadcast to clients, false otherwise.
+ */
+public GameEvent_RoundEnd(Handle:event, const String:name[], bool:dontBroadcast)
+{
+    // Forward event to all modules.
+    EventMgr_Forward(Event_RoundEnd, g_CommonEventData1, 0, 0, g_CommonDataType1);
+}
+
+/**
+ * Client has joined a team.
+ *
+ * @param event			Handle to event. This could be INVALID_HANDLE if every plugin hooking 
+ *						this event has set the hook mode EventHookMode_PostNoCopy.
+ * @param name			String containing the name of the event.
+ * @param dontBroadcast	True if event was not broadcast to clients, false otherwise.
+ */
+public GameEvent_PlayerTeam(Handle:event, const String:name[], bool:dontBroadcast)
+{
+    // Forward event to all modules.
+    new EventDataTypes:eventdatatypes[] = {DataType_Cell, DataType_Cell, DataType_Cell, DataType_Cell};
+    new any:eventdata[sizeof(eventdatatypes)][1];
     
-    // Loop through all the modules.
-    for (new moduleindex = 0; moduleindex < MODULE_COUNT; moduleindex++)
+    eventdata[0][0] = GetClientOfUserId(GetEventInt(event, "userid"));
+    eventdata[1][0] = GetEventInt(event, "team");
+    eventdata[2][0] = GetEventInt(event, "oldteam");
+    eventdata[3][0] = GetEventBool(event, "disconnect");
+    
+    EventMgr_Forward(Event_PlayerTeam, eventdata, sizeof(eventdata), sizeof(eventdata[]), eventdatatypes);
+}
+
+/**
+ * Client has spawned.
+ *
+ * @param event			Handle to event. This could be INVALID_HANDLE if every plugin hooking 
+ *						this event has set the hook mode EventHookMode_PostNoCopy.
+ * @param name			String containing the name of the event.
+ * @param dontBroadcast	True if event was not broadcast to clients, false otherwise.
+ */
+public GameEvent_PlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
+{
+    // Forward event to all modules.
+    new any:eventdata[1][1];
+    eventdata[0][0] = GetClientOfUserId(GetEventInt(event, "userid"));
+    EventMgr_Forward(Event_PlayerSpawn, eventdata, sizeof(eventdata), sizeof(eventdata[]), g_CommonDataType2);
+}
+
+/**
+ * Client has been damaged.
+ *
+ * @param event			Handle to event. This could be INVALID_HANDLE if every plugin hooking 
+ *						this event has set the hook mode EventHookMode_PostNoCopy.
+ * @param name			String containing the name of the event.
+ * @param dontBroadcast	True if event was not broadcast to clients, false otherwise.
+ */
+public GameEvent_PlayerHurt(Handle:event, const String:name[], bool:dontBroadcast)
+{
+    // Forward event to all modules.
+    new EventDataTypes:eventdatatypes[] = {DataType_Cell, DataType_Cell, DataType_Cell, DataType_Cell, DataType_String, DataType_Cell, DataType_Cell, DataType_Cell};
+    new any:eventdata[sizeof(eventdatatypes)][32];
+    
+    eventdata[0][0] = GetClientOfUserId(GetEventInt(event, "userid"));
+    eventdata[1][0] = GetClientOfUserId(GetEventInt(event, "attacker"));
+    eventdata[2][0] = GetEventInt(event, "health");
+    eventdata[3][0] = GetEventInt(event, "armor");
+    GetEventString(event, "weapon", eventdata[4], sizeof(eventdata[]));
+    eventdata[5][0] = GetEventInt(event, "dmg_health");
+    eventdata[6][0] = GetEventInt(event, "dmg_armor");
+    eventdata[7][0] = GetEventInt(event, "hitgroup");
+    
+    EventMgr_Forward(Event_PlayerHurt, eventdata, sizeof(eventdata), sizeof(eventdata[]), eventdatatypes);
+}
+
+/**
+ * Client has been killed.
+ *
+ * @param event			Handle to event. This could be INVALID_HANDLE if every plugin hooking 
+ *						this event has set the hook mode EventHookMode_PostNoCopy.
+ * @param name			String containing the name of the event.
+ * @param dontBroadcast	True if event was not broadcast to clients, false otherwise.
+ */
+public GameEvent_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
+{
+    // Forward event to all modules.
+    new EventDataTypes:eventdatatypes[] = {DataType_Cell, DataType_Cell, DataType_String, DataType_Cell};
+    new any:eventdata[sizeof(eventdatatypes)][32];
+    
+    eventdata[0][0] = GetClientOfUserId(GetEventInt(event, "userid"));
+    eventdata[1][0] = GetClientOfUserId(GetEventInt(event, "attacker"));
+    GetEventString(event, "weapon", eventdata[2], sizeof(eventdata[]));
+    eventdata[3][0] = GetEventInt(event, "headshot");
+    
+    EventMgr_Forward(Event_PlayerDeath, eventdata, sizeof(eventdata), sizeof(eventdata[]), eventdatatypes);
+}
+
+/**
+ * Client has jumped.
+ *
+ * @param event			Handle to event. This could be INVALID_HANDLE if every plugin hooking 
+ *						this event has set the hook mode EventHookMode_PostNoCopy.
+ * @param name			String containing the name of the event.
+ * @param dontBroadcast	True if event was not broadcast to clients, false otherwise.
+ */
+public GameEvent_PlayerJump(Handle:event, const String:name[], bool:dontBroadcast)
+{
+    // Forward event to all modules.
+    new any:eventdata[1][1];
+    
+    eventdata[0][0] = GetClientOfUserId(GetEventInt(event, "userid"));
+    
+    EventMgr_Forward(Event_PlayerJump, eventdata, 1, 1, g_CommonDataType2);
+}
+
+/**
+ * Client has fired a weapon.
+ *
+ * @param event			Handle to event. This could be INVALID_HANDLE if every plugin hooking 
+ *						this event has set the hook mode EventHookMode_PostNoCopy.
+ * @param name			String containing the name of the event.
+ * @param dontBroadcast	True if event was not broadcast to clients, false otherwise.
+ */
+public GameEvent_WeaponFire(Handle:event, const String:name[], bool:dontBroadcast)
+{
+    // Forward event to all modules. (WeaponFire)
+    new EventDataTypes:eventdatatypes[] = {DataType_Cell, DataType_String};
+    new any:eventdata[sizeof(eventdatatypes)][32];
+    
+    eventdata[0][0] = GetClientOfUserId(GetEventInt(event, "userid"));
+    GetEventString(event, "weapon", eventdata[1], sizeof(eventdata[]));
+    
+    EventMgr_Forward(Event_WeaponFire, eventdata, sizeof(eventdata), sizeof(eventdata[]), eventdatatypes);
+    
+    // Forward event to all modules. (WeaponEntityFire)
+    new eventdata2[sizeof(eventdatatypes)][1];
+    eventdatatypes[1] = DataType_Cell;
+    
+    decl String:classname[32];
+    new weaponentity;
+    
+    // Loop through all entities.
+    for (new entity = MaxClients; entity < GetMaxEntities(); entity++)
     {
-        // Read moduleindex as a Module type.
-        module = Module:moduleindex;
-        
-        // If the module is disabled, then stop this iteration.
-        if (ModuleMgr_IsDisabled(module))
+        if (!IsValidEntity(entity))
             continue;
         
-        // Check if this event is enabled for this module.
-        if (EventMgr_ReadEnableValue(module, Event_RoundStart))
+        GetEdictClassname(entity, classname, sizeof(classname));
+        if (StrContains(classname, eventdata[1], false) == -1)
+            continue;
+        
+        if (eventdata[0][0] == GetEntPropEnt(entity, Prop_Data, "m_hOwner"))
         {
-            // Read the function ID.
-            func = EventMgr_ReadFuncValue(module, Event_RoundStart);
-            
-            // If the function ID is invalid, then stop this iteration.
-            if (func == INVALID_FUNCTION)
-            {
-                LogError("NO ROUND START EVENT FORWARD");
-                continue;
-            }
-            
-            // Call the event forward.
-            Call_StartFunction(GetMyHandle(), func);
-            Call_Finish();
+            weaponentity = entity;
+            break;
         }
     }
+    
+    eventdata2[0][0] = eventdata[0][0];
+    eventdata2[1][0] = weaponentity;
+    
+    EventMgr_Forward(Event_WeaponEntityFire, eventdata2, sizeof(eventdata2), sizeof(eventdata2[]), eventdatatypes);
 }
