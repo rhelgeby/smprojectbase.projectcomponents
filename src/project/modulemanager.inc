@@ -95,14 +95,14 @@ ModuleMgr_OnPluginStart()
     
     // Now check each of the other base project files if they need more cells, and set the max to that if true.
     
-    #if defined TRANSLATIONS_MANAGER
-        if (TM_DATA_MAX_CELLS > g_iMMMaxBlockSize)
-            g_iMMMaxBlockSize = TM_DATA_MAX_CELLS;
-    #endif
-    
     #if defined EVENT_MANAGER
         if (EM_DATA_MAX_CELLS > g_iMMMaxBlockSize)
             g_iMMMaxBlockSize = EM_DATA_MAX_CELLS;
+    #endif
+    
+    #if defined TRANSLATIONS_MANAGER
+        if (TM_DATA_MAX_CELLS > g_iMMMaxBlockSize)
+            g_iMMMaxBlockSize = TM_DATA_MAX_CELLS;
     #endif
     
     #if defined LOG_MANAGER
@@ -110,9 +110,10 @@ ModuleMgr_OnPluginStart()
             g_iMMMaxBlockSize = LM_DATA_MAX_CELLS;
     #endif
     
+    // Create base command.
     #if defined PROJECT_BASE_CMD
         // Register the base command of the project module system.
-        RegConsoleCmd(PROJECT_BASE_CMD, Command_Base, "Print all module data for a specific module, or all modules. Usage: project_module_info [module partial name]");
+        RegConsoleCmd(PROJECT_BASE_CMD, Command_Base, "The plugins base command to handle modules.");
     #endif
 }
 

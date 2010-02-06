@@ -48,7 +48,7 @@ new Handle:g_hCvarRoot;
 AccessMgr_OnPluginStart()
 {
     // Create cvars.
-    g_hCvarRoot = CreateConVar("project_access_root", "z", "Admin flag(s) required for root access to the plugin.  Changing this requires a server restart.");
+    g_hCvarRoot = Project_CreateConVar("access_root", "z", "Admin flag(s) required for root access to the plugin.  Changing this requires a server restart.");
 }
 
 /**
@@ -67,7 +67,7 @@ stock AccessMgr_OnModuleRegistered(Module:module)
     AccessMgr_CvarRoot(strCvarRootFlags, sizeof(strCvarRootFlags));
     
     // Create a module-specific cvar with cvar project_access_root as the default value.
-    CreateConVar(cvarname, strCvarRootFlags, "project_access_<modulename>: Admin flag(s) required to access this module.");
+    CreateConVar(cvarname, strCvarRootFlags, "access_<modulename>: Admin flag(s) required to access this module.");
 }
 
 // **********************************************

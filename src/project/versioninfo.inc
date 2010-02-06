@@ -42,7 +42,7 @@ public VersionInfo_OnPluginStart()
     if (ModuleMgr_CreateBackupCmd())
     {
         // Create a version information print command.
-        RegConsoleCmd("project_version", Command_Version, "Prints version info about this project.");
+        Project_RegConsoleCmd("version", Command_Version, "Prints version info about this project.");
     }
 }
 

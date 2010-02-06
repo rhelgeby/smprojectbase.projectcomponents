@@ -130,7 +130,7 @@ TransMgr_OnPluginStart()
     ModuleMgr_Allocate(1, g_iTMAllocatedIndexes);
     
     // Create translations commands.
-    RegConsoleCmd("project_reload_translations", Command_ReloadTranslations, "Reload all project translation files.");
+    Project_RegServerCmd("reload_translations", Command_ReloadTranslations, "Reload all project translation files.");
 }
 
 /**
@@ -501,16 +501,11 @@ stock TransMgr_BuildTranslationPath(ProjectTransFiles:transfile, Module:module =
  * Command callback: project_reload_translations
  * Reloads all translation files used in the project.
  * 
- * @param client    The client index.  Or SERVER_INDEX if coming from the server.
- * @param argc      The number of arguments that the client sent with the command.
+ * @param argc      The number of arguments that the server sent with the command.
  */
-public Action:Command_ReloadTranslations(client, arc)
+public Action:Command_ReloadTranslations(arc)
 {
-    /**
-     * TODO: Check if the client has access.
-     */
-    
     TransMgr_LoadTranslations();
     
-    TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "TransMgr cmd reloadtranslations");
+    TransMgr_PrintText(SERVER_INDEX, MsgFormat_Plugin, MsgType_Server, _, false, "TransMgr cmd reloadtranslations");
 }

@@ -98,14 +98,14 @@ LogMgr_OnPluginStart()
     ModuleMgr_Allocate(1, g_iLMAllocatedIndexes);
     
     // Create log cvars.
-    cvarLog =               CreateConVar("project_log", "1", "Enable logging in the plugin.  Error messages will always be logged.");
-    cvarLogWhitelist =      CreateConVar("project_log_whitelist", "0", "Only modules added to the whitelist (project_log_whitelist_add) will be logged.");
-    cvarLogPrintAdmins =    CreateConVar("project_log_print_admins", "0", "Logs will be printed to admin chat in addition to log files.");
-    cvarLogPrintPublic =    CreateConVar("project_log_print_public", "0", "Logs will be printed to public chat in addition to log files.");
+    cvarLog =               Project_CreateConVar("log", "1", "Enable logging in the plugin.  Error messages will always be logged.");
+    cvarLogWhitelist =      Project_CreateConVar("log_whitelist", "0", "Only modules added to the whitelist (project_log_whitelist_add) will be logged.");
+    cvarLogPrintAdmins =    Project_CreateConVar("log_print_admins", "0", "Logs will be printed to admin chat in addition to log files.");
+    cvarLogPrintPublic =    Project_CreateConVar("log_print_public", "0", "Logs will be printed to public chat in addition to log files.");
     
     // Create log commands.
-    RegServerCmd("project_log_whitelist_add", Command_LogWhitelistAdd, "Adds one or more modules to the whitelist.  Usage: project_log_whitelist_add <moduleshortname [module2] ...");
-    RegServerCmd("project_log_whitelist_remove", Command_LogWhitelistRemove, "Removes one or more modules from the whitelist.  Usage: project_log_whitelist_remove <moduleshortname [module2] ...");
+    Project_RegServerCmd("log_whitelist_add", Command_LogWhitelistAdd, "Adds one or more modules to the whitelist.  Usage: project_log_whitelist_add <moduleshortname [module2] ...");
+    Project_RegServerCmd("log_whitelist_remove", Command_LogWhitelistRemove, "Removes one or more modules from the whitelist.  Usage: project_log_whitelist_remove <moduleshortname [module2] ...");
 }
 
 /**
@@ -306,8 +306,7 @@ stock bool:LogMgr_WhitelistRemove(Module:module)
  * Command callback: project_log_whitelist_add
  * Add one or modules to the whitelist.
  * 
- * @param client    The client index.  Or SERVER_INDEX if coming from the server.
- * @param argc      The number of arguments that the client sent with the command.
+ * @param argc      The number of arguments that the server sent with the command.
  */
 public Action:Command_LogWhitelistAdd(argc)
 {
@@ -367,8 +366,7 @@ public Action:Command_LogWhitelistAdd(argc)
  * Command callback: project_log_whitelist_remove
  * Remove one or modules from the whitelist
  * 
- * @param client    The client index.  Or SERVER_INDEX if coming from the server.
- * @param argc      The number of arguments that the client sent with the command.
+ * @param argc      The number of arguments that the server sent with the command.
  */
 public Action:Command_LogWhitelistRemove(argc)
 {

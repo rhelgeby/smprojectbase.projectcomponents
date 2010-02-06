@@ -99,9 +99,8 @@ public OnPluginStart()
         VersionInfo_OnPluginStart();
     #endif
     
-    // Register modules here.
-    TestModule_OnPluginStart();
-    
+    // Forward the OnPluginStart event to all modules.
+    ForwardOnPluginStart();
     
     // All modules should be registered by this point!
     
@@ -198,4 +197,47 @@ public OnClientDisconnect(client)
         
         EventMgr_Forward(Event_OnClientDisconnect, eventdata, sizeof(eventdata), sizeof(eventdata[]), g_CommonDataType2);
     #endif
+}
+
+// **********************************************
+//           Project Base Utilities
+// **********************************************
+
+/**
+ * Wrapper of CreateConVar to prefix the cvars with the project's shortname.
+ * 
+ * See native CreateConVar.
+ */
+stock Handle:Project_CreateConVar(const String:name[], const String:defaultValue[], const String:description[]="", flags=0, bool:hasMin=false, Float:min=0.0, bool:hasMax=false, Float:max=0.0)
+{
+    decl String:project_cvarname[64];
+    Format(project_cvarname, sizeof(project_cvarname), "%s_%s", PROJECT_CVAR_PREFIX, name);
+    
+    return CreateConVar(project_cvarname, defaultValue, description, flags, hasMin, min, hasMax, max);
+}
+
+/**
+ * Wrapper of RegServerCmd to prefix the commands with the project's shortname.
+ * 
+ * See native RegServerCmd.
+ */
+stock Project_RegServerCmd(const String:cmd[], SrvCmd:callback, const String:description[]="", flags=0)
+{
+    decl String:project_cmdname[64];
+    Format(project_cmdname, sizeof(project_cmdname), "%s_%s", PROJECT_CMD_PREFIX, cmd);
+    
+    RegServerCmd(project_cmdname, callback, description, flags);
+}
+
+/**
+ * Wrapper of RegConsoleCmd to prefix the commands with the project's shortname.
+ * 
+ * See native RegConsoleCmd.
+ */
+stock Project_RegConsoleCmd(const String:cmd[], ConCmd:callback, const String:description[]="", flags=0)
+{
+    decl String:project_cmdname[64];
+    Format(project_cmdname, sizeof(project_cmdname), "%s_%s", PROJECT_CMD_PREFIX, cmd);
+    
+    RegConsoleCmd(project_cmdname, callback, description, flags);
 }

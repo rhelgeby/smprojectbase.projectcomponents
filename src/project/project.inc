@@ -25,6 +25,16 @@
  * ============================================================================
  */
 
+/**
+ * This is where it all begins.
+ * Forward the OnPluginStart event here to all modules so they can register.
+ */
+stock ForwardOnPluginStart()
+{
+    // Forward the OnPluginStart event to all modules here.
+    TestModule_OnPluginStart();
+}
+
 // ---------------
 //     General
 // ---------------
@@ -194,6 +204,7 @@ stock String:g_ProjectEventDisplay[ProjectEvents][] = {
 //    Editable
 // ---------------
 
+
 // General
 
 /**
@@ -228,6 +239,12 @@ stock String:g_ProjectEventDisplay[ProjectEvents][] = {
  * Comment out to remove command from the plugin.
  */
 #define PROJECT_BASE_CMD PROJECT_SHORTNAME
+
+/**
+ * @section The prefixes for any base cvars/commands.
+ */
+#define PROJECT_CVAR_PREFIX PROJECT_SHORTNAME
+#define PROJECT_CMD_PREFIX  PROJECT_SHORTNAME
 
 // Translations Manager
 
@@ -267,6 +284,7 @@ stock TransMgr_LoadExtraTranslations()
     LoadTranslations("common.phrases");
 }
 
+
 // Log Manager
 
 /**
@@ -290,5 +308,5 @@ stock TransMgr_LoadExtraTranslations()
  * See AccessMgr_ModuleToGroupName and AccessMgr_ModuleToCvarName in accessmanager.inc.
  * 'moduleshortname':  The short name of the module the group/cvar name is being formatted for.
  */
-#define AM_FORMAT_GROUP "%s_access_%s", PROJECT_SHORTNAME, moduleshortname
-#define AM_FORMAT_CVAR  "%s_access_%s", PROJECT_SHORTNAME, moduleshortname
+#define AM_FORMAT_GROUP "%s_access_%s", PROJECT_CVAR_PREFIX, moduleshortname
+#define AM_FORMAT_CVAR  "%s_access_%s", PROJECT_CVAR_PREFIX, moduleshortname
