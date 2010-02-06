@@ -90,7 +90,7 @@ EventMgr_OnPluginStart()
  * 
  * @param adtModule The adt array of the module being registered.
  */
-EventMgr_OnModuleRegister(Handle:adtModule)
+stock EventMgr_OnModuleRegister(Handle:adtModule)
 {
     // Push the ProjectEvents enum as the "bool" type to the module's data array.
     // This is being pushed into our allocated space for event enable data.
@@ -631,6 +631,7 @@ public GameEvent_WeaponFire(Handle:event, const String:name[], bool:dontBroadcas
     
     EventMgr_Forward(Event_WeaponFire, eventdata, sizeof(eventdata), sizeof(eventdata[]), eventdatatypes);
     
+    /*
     // Forward event to all modules. (WeaponEntityFire)
     new eventdata2[sizeof(eventdatatypes)][1];
     eventdatatypes[1] = DataType_Cell;
@@ -659,4 +660,5 @@ public GameEvent_WeaponFire(Handle:event, const String:name[], bool:dontBroadcas
     eventdata2[1][0] = weaponentity;
     
     EventMgr_Forward(Event_WeaponEntityFire, eventdata2, sizeof(eventdata2), sizeof(eventdata2[]), eventdatatypes);
+    */
 }

@@ -113,7 +113,7 @@ LogMgr_OnPluginStart()
  * 
  * @param adtModule The adt array of the module being registered.
  */
-LogMgr_OnModuleRegister(Handle:adtModule)
+stock LogMgr_OnModuleRegister(Handle:adtModule)
 {
     // Push the 'false' into our allocated space to signify if this module is on the whitelist or not.
     PushArrayCell(adtModule, false);
@@ -176,11 +176,11 @@ stock LogMgr_Print(Module:module, LogTypes:logtype, const String:description[], 
     VFormat(logbuffer, sizeof(logbuffer), text, 5);
     
     // Get the module's full name.
-    decl String:fullname[32]; // 32 because that's the max length of the module's fullname.
-    ModuleMgr_ReadString(module, ModuleData_FullName, fullname, sizeof(fullname));
+    decl String:modulefullname[32]; // 32 because that's the max length of the module's fullname.
+    ModuleMgr_ReadString(module, ModuleData_FullName, modulefullname, sizeof(modulefullname));
     
     // Format the text string.
-    Format(logbuffer, sizeof(logbuffer), LM_FORMAT, fullname, description, logbuffer);
+    Format(logbuffer, sizeof(logbuffer), LM_FORMAT);
     
     // Format other parameters onto the log text.
     switch (logtype)

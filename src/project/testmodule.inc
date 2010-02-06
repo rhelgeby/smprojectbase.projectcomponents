@@ -58,7 +58,6 @@ public TestModule_OnPluginStart()
     EventMgr_RegisterEvent(g_iTestModule, Event_PlayerSpawn, "TestModule_OnPlayerSpawn");
     EventMgr_RegisterEvent(g_iTestModule, Event_PlayerHurt, "TestModule_OnPlayerHurt");
     EventMgr_RegisterEvent(g_iTestModule, Event_WeaponFire, "TestModule_OnWeaponFire");
-    EventMgr_RegisterEvent(g_iTestModule, Event_WeaponEntityFire, "TestModule_OnWeaponEntityFire");
     EventMgr_RegisterEvent(g_iTestModule2, Event_RoundStart, "TestModule_OnRoundStartHidden");
     
     // Register this module with the translations manager.
@@ -91,11 +90,6 @@ public TestModule_OnPlayerHurt(client, attacker, health, armor, const String:wea
 public TestModule_OnWeaponFire(client, const String:weapon[])
 {
     LogMgr_Print(g_iTestModule, LogType_Normal, "Event_OnWeaponFire", "Client %N fired weapon %s", client, weapon);
-}
-
-public TestModule_OnWeaponEntityFire(client, weaponentity)
-{
-    LogMgr_Print(g_iTestModule, LogType_Normal, "Event_OnWeaponEntityFire", "Client %N fired weapon %d", client, weaponentity);
 }
 
 /**

@@ -138,7 +138,7 @@ TransMgr_OnPluginStart()
  * 
  * @param adtModule The adt array of the module being registered.
  */
-TransMgr_OnModuleRegister(Handle:adtModule)
+stock TransMgr_OnModuleRegister(Handle:adtModule)
 {
     // Push the 'false' into our allocated space to signify if this module is using translations or not.
     PushArrayCell(adtModule, false);
@@ -220,10 +220,10 @@ stock TransMgr_PrintText(client, MsgFormatting:msgformat, MsgTypes:msgtype, Modu
     g_bMsgTypeColor[MsgType_Reply] = bool:(GetCmdReplySource() == SM_REPLY_TO_CHAT);
     
     // Get the name of the module if a module identifier was given.
-    new String:fullname[32] = "Invalid Module";
+    new String:modulefullname[32] = "Invalid Module";
     if (ModuleMgr_IsModuleValid(module))
     {
-        ModuleMgr_ReadString(module, ModuleData_FullName, fullname, sizeof(fullname));
+        ModuleMgr_ReadString(module, ModuleData_FullName, modulefullname, sizeof(modulefullname));
     }
     
     // If this type of message supports color, then use the color formatting defines.
@@ -231,9 +231,9 @@ stock TransMgr_PrintText(client, MsgFormatting:msgformat, MsgTypes:msgtype, Modu
     {
         switch(msgformat)
         {
-            case MsgFormat_Plugin:  Format(translated, sizeof(translated), TM_MSGFORMAT_PLUGIN_COLOR, PROJECT_FULLNAME, translated);
-            case MsgFormat_Module:  Format(translated, sizeof(translated), TM_MSGFORMAT_MODULE_COLOR, fullname, translated);
-            case MsgFormat_Both:    Format(translated, sizeof(translated), TM_MSGFORMAT_BOTH_COLOR, PROJECT_FULLNAME, fullname, translated);
+            case MsgFormat_Plugin:  Format(translated, sizeof(translated), TM_MSGFORMAT_PLUGIN_COLOR);
+            case MsgFormat_Module:  Format(translated, sizeof(translated), TM_MSGFORMAT_MODULE_COLOR);
+            case MsgFormat_Both:    Format(translated, sizeof(translated), TM_MSGFORMAT_BOTH_COLOR);
         }
     }
     // This type of message doesn't support color.
@@ -241,9 +241,9 @@ stock TransMgr_PrintText(client, MsgFormatting:msgformat, MsgTypes:msgtype, Modu
     {
         switch(msgformat)
         {
-            case MsgFormat_Plugin:  Format(translated, sizeof(translated), TM_MSGFORMAT_PLUGIN_NOCOLOR, PROJECT_FULLNAME, translated);
-            case MsgFormat_Module:  Format(translated, sizeof(translated), TM_MSGFORMAT_MODULE_NOCOLOR, fullname, translated);
-            case MsgFormat_Both:    Format(translated, sizeof(translated), TM_MSGFORMAT_BOTH_NOCOLOR, PROJECT_FULLNAME, fullname, translated);
+            case MsgFormat_Plugin:  Format(translated, sizeof(translated), TM_MSGFORMAT_PLUGIN_NOCOLOR);
+            case MsgFormat_Module:  Format(translated, sizeof(translated), TM_MSGFORMAT_MODULE_NOCOLOR);
+            case MsgFormat_Both:    Format(translated, sizeof(translated), TM_MSGFORMAT_BOTH_NOCOLOR);
         }
     }
     

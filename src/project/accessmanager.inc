@@ -56,7 +56,7 @@ AccessMgr_OnPluginStart()
  * 
  * @param module        The module identifer of the registered module.
  */
-AccessMgr_OnModuleRegistered(Module:module)
+stock AccessMgr_OnModuleRegistered(Module:module)
 {
     // Create a cvar to control access flags for this module.
     
@@ -93,8 +93,6 @@ stock bool:AccessMgr_HasAccess(client, Module:module = INVALID_MODULE)
     // If client is in the module's access group, then they have access.
     if (AccessMgr_HasModuleAccessGroup(client, module))
         return true;
-    
-    PrintToServer("CHIT");
     
     // If client has the flag(s) defined in the module access cvar, then they have access.
     if (AccessMgr_HasModuleAccessCvar(client, module))
@@ -164,16 +162,8 @@ stock bool:AccessMgr_HasModuleAccessGroup(client, Module:module)
     decl String:group[16 + 16]; // 16 for module's shortname and 16 for the prefix.
     AccessMgr_ModuleToGroupName(module, group, sizeof(group));
     
-    new GroupId:groupid = FindAdmGroup(group);
-    if (groupid == INVALID_GROUP_ID)
-    {
-        decl String:moduleshortname[16];
-        ModuleMgr_ReadString(module, ModuleData_ShortName, moduleshortname, sizeof(moduleshortname));
-        LogError("[Access Manager] Missing an admin group for module \"%s\"", moduleshortname);
-    }
-    
     // If client is in the group, then they have access.
-    if (AccessMgr_ClientInGroup(client, groupid))
+    if (AccessMgr_ClientInGroup(client, FindAdmGroup(group)))
         return true;
     
     return false;
@@ -203,8 +193,6 @@ stock bool:AccessMgr_HasModuleAccessCvar(client, Module:module)
     {
         if (!FindFlagByChar(strCvarModuleFlags[cindex], flag))
             continue;
-        
-        PrintToServer("%d %d", cindex, flag_count);
         
         AdminFlags[flag_count] = flag;
         flag_count++;
@@ -284,7 +272,7 @@ stock AccessMgr_ModuleToGroupName(Module:module, String:group[], maxlen)
     ModuleMgr_ReadString(module, ModuleData_ShortName, moduleshortname, sizeof(moduleshortname));
     
     // Format output.
-    Format(group, maxlen, "%s_module_%s", PROJECT_SHORTNAME, moduleshortname);
+    Format(group, maxlen, AM_FORMAT_GROUP);
 }
 
 /**
@@ -300,7 +288,7 @@ stock AccessMgr_ModuleToCvarName(Module:module, String:cvar[], maxlen)
     decl String:moduleshortname[16];
     ModuleMgr_ReadString(module, ModuleData_ShortName, moduleshortname, sizeof(moduleshortname));
     
-    Format(cvar, maxlen, "project_access_%s", moduleshortname);
+    Format(cvar, maxlen, AM_FORMAT_CVAR);
 }
 
 /**

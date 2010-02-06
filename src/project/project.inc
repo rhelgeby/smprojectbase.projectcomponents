@@ -127,9 +127,16 @@ enum ProjectEvents
     Event_PlayerHurt,
     Event_PlayerDeath,
     Event_PlayerJump,
-    Event_WeaponFire,
-    Event_WeaponEntityFire,
+    Event_WeaponFire
+    //Event_WeaponEntityFire
 }
+
+/**
+ * The number of cells used to store all the event enable data in enum ProjectEvents. (above)
+ * To calculate this number, simply add up the number of items in enum ProjectEvents.
+ * Keep this updated as ProjectEvents is modified. 
+ */
+#define EVENT_DATA_CELL_COUNT 18
 
 /**
  * Datatypes that can be passed with each event to modules.
@@ -148,27 +155,20 @@ enum EventDataTypes
  */
 
 // When forwarding custom events with no data, use this.
-new any:g_CommonEventData1[][] = {{0}};
+stock any:g_CommonEventData1[][] = {{0}};
 
 // When forwarding custom events whose data thats being passed matches these, you can use these.
-new EventDataTypes:g_CommonDataType1[] = {};
-new EventDataTypes:g_CommonDataType2[] = {DataType_Cell};
+stock EventDataTypes:g_CommonDataType1[] = {};
+stock EventDataTypes:g_CommonDataType2[] = {DataType_Cell};
 /**
  * @endsection
  */
 
 /**
- * The number of cells used to store all the event enable data in enum ProjectEvents. (above)
- * To calculate this number, simply add up the number of items in enum ProjectEvents.
- * Keep this updated as ProjectEvents is modified. 
- */
-#define EVENT_DATA_CELL_COUNT 8
-
-/**
  * String array of display names for project events. (above)
  * Keep this updated as ProjectEvents is modified.
  */
-new const String:g_ProjectEventDisplay[ProjectEvents][] = {
+stock String:g_ProjectEventDisplay[ProjectEvents][] = {
     "OnPluginStart",
     "OnAllPluginsLoaded",
     "OnPluginEnd",
@@ -186,13 +186,15 @@ new const String:g_ProjectEventDisplay[ProjectEvents][] = {
     "PlayerHurt",
     "PlayerDeath",
     "PlayerJump",
-    "WeaponFire",
-    "WeaponEntityFire"
+    "WeaponFire"
+    //"WeaponEntityFire"
 };
 
 // ---------------
 //    Editable
 // ---------------
+
+// General
 
 /**
  * If this is defined, then it should be in a mercurial repository.
@@ -227,26 +229,27 @@ new const String:g_ProjectEventDisplay[ProjectEvents][] = {
  */
 #define PROJECT_BASE_CMD PROJECT_SHORTNAME
 
+// Translations Manager
+
 /**
  * @section The formatting string for each option in enum MsgFormatting.
  * Note: These are only used if translationsmanager.inc is included.
- * Color chars vary from game to game. 
+ * 
+ * See TransMgr_PrintText in translationsmanager.inc.
+ * 'translated': The translated text being printed.
+ * 'modulefullname': The module's full name.
+ * 
+ * Color chars vary from game to game.
  */
-#define TM_MSGFORMAT_PLUGIN_COLOR      "\x04[%s] \x01%s"          // 1st %s = Plugin name - 2nd %s = Text
-#define TM_MSGFORMAT_PLUGIN_NOCOLOR    "[%s] %s"                  // 1st %s = Plugin name - 2nd %s = Text
-#define TM_MSGFORMAT_MODULE_COLOR      "\x03[%s] \x01%s"          // 1st %s = Module name - 2nd %s = Text
-#define TM_MSGFORMAT_MODULE_NOCOLOR    "[%s] %s"                  // 1st %s = Module name - 2nd %s = Text
-#define TM_MSGFORMAT_BOTH_COLOR        "\x04[%s::\x03%s] \x01%s"  // 1st %s = Plugin name - 2nd %s = Module name - 3rd %s = Text
-#define TM_MSGFORMAT_BOTH_NOCOLOR      "[%s::%s] %s"              // 1st %s = Plugin name - 2nd %s = Module name - 3rd %s = Text
+#define TM_MSGFORMAT_PLUGIN_COLOR      "\x04[%s] \x01%s", PROJECT_FULLNAME, translated
+#define TM_MSGFORMAT_PLUGIN_NOCOLOR    "[%s] %s", PROJECT_FULLNAME, translated
+#define TM_MSGFORMAT_MODULE_COLOR      "\x03[%s] \x01%s", modulefullname, translated
+#define TM_MSGFORMAT_MODULE_NOCOLOR    "[%s] %s", modulefullname, translated
+#define TM_MSGFORMAT_BOTH_COLOR        "\x04[%s::\x03%s] \x01%s", PROJECT_FULLNAME, modulefullname, translated
+#define TM_MSGFORMAT_BOTH_NOCOLOR      "[%s::%s] %s", PROJECT_FULLNAME, modulefullname, translated
 /**
  * @endsection
  */
-
-/**
- * The formatting string for all logs.
- * Note: This is only used if logmanager.inc is included.
- */
-#define LM_FORMAT "[%s] [%s] %s"    // 1st %s = Module name - 2nd %s = Short description - 3rd = Log text
 
 /**
  * Load any extra translation files here.
@@ -263,3 +266,29 @@ stock TransMgr_LoadExtraTranslations()
     // Standard phrases provided by SM.
     LoadTranslations("common.phrases");
 }
+
+// Log Manager
+
+/**
+ * The formatting string for all logs.
+ * Note: This is only used if logmanager.inc is included.
+ *  
+ * See LogMgr_Print in logmanager.inc.
+ * 'modulefullname': The module's full name.
+ * 'description': The log description.
+ * 'logbuffer': The log text.
+ */
+#define LM_FORMAT "[%s] [%s] %s", modulefullname, description, logbuffer
+
+
+// Access Manager
+
+/**
+ * The formatting string for module access groups/cvars.
+ * Note: This is only used if accessmanager.inc is included.
+ *  
+ * See AccessMgr_ModuleToGroupName and AccessMgr_ModuleToCvarName in accessmanager.inc.
+ * 'moduleshortname':  The short name of the module the group/cvar name is being formatted for.
+ */
+#define AM_FORMAT_GROUP "%s_access_%s", PROJECT_SHORTNAME, moduleshortname
+#define AM_FORMAT_CVAR  "%s_access_%s", PROJECT_SHORTNAME, moduleshortname
