@@ -86,7 +86,7 @@ EventMgr_OnPluginStart()
 }
 
 /**
- * A module was just registered.  This is being called before the module has been loaded.
+ * A module was just registered.  This is being called before the module has been assigned a module identifier.
  * 
  * @param adtModule The adt array of the module being registered.
  */

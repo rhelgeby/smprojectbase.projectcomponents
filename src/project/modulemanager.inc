@@ -159,6 +159,10 @@ stock Module:ModuleMgr_Register(moduledata[ModuleData])
     // Store the handle in the global module list.
     new module = PushArrayCell(g_adtModuleList, adtModule);
     
+    #if defined ACCESS_MANAGER
+        AccessMgr_OnModuleRegistered(Module:module);  // Don't need to store data in the module, just read module data.
+    #endif
+    
     // Return the module identifier.
     return Module:module;
 }
@@ -350,7 +354,7 @@ stock ModuleMgr_ReadString(Module:module, ModuleData:data, String:output[], maxl
  * This is meant for other base project files to use, modules shouldn't need this. 
  * 
  * @param moduledata    Array of module data to validate.
- * @param moduleflags   0 if all values were valid.  Non-zero means there is a list of flags that failed.
+ * @param moduleflags   0 if all values were valid.  Non-zero means there is a bitstring of module data flags that failed.
  * 
  * @return              True if validation was successful, false if there were invalid values.
  */
@@ -697,9 +701,9 @@ stock ModuleMgr_BaseCmdFind(const String:cmd[], level, cmdindex = -1)
 public Action:Command_Base(client, argc)
 {
     if (client > SERVER_INDEX)
-        ModuleMgr_BaseCmdNonAdmin(client);
+        ModuleMgr_BaseCmdClient(client);
     else
-        ModuleMgr_BaseCmdAdmin(client, argc);
+        ModuleMgr_BaseCmdServer(client, argc);
     
     // Say that we handled the command so CS:S doesn't see it and print "Unknown command"
     return Plugin_Handled;
@@ -711,7 +715,7 @@ public Action:Command_Base(client, argc)
  * @param client    The client index.
  * @param argc      The number of arguments that the client sent with the command.
  */
-ModuleMgr_BaseCmdNonAdmin(client)
+ModuleMgr_BaseCmdClient(client)
 {
     decl String:arg[sizeof(g_BaseCmdsLvl1[])];
     GetCmdArg(1, arg, sizeof(arg));
@@ -741,7 +745,7 @@ ModuleMgr_BaseCmdNonAdmin(client)
  * @param client    The client index.
  * @param argc      The number of arguments that the client sent with the command.
  */
-ModuleMgr_BaseCmdAdmin(client, argc)
+ModuleMgr_BaseCmdServer(client, argc)
 {
     // Determine how to print the message to server/client.
     new MsgTypes:msgtype = (client == SERVER_INDEX) ? MsgType_Server : MsgType_Console;

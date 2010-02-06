@@ -104,12 +104,12 @@ LogMgr_OnPluginStart()
     cvarLogPrintPublic =    CreateConVar("project_log_print_public", "0", "Logs will be printed to public chat in addition to log files.");
     
     // Create log commands.
-    RegConsoleCmd("project_log_whitelist_add", Command_LogWhitelistAdd, "Adds one or more modules to the whitelist.  Usage: project_log_whitelist_add <moduleshortname [module2] ...");
-    RegConsoleCmd("project_log_whitelist_remove", Command_LogWhitelistRemove, "Removes one or more modules from the whitelist.  Usage: project_log_whitelist_remove <moduleshortname [module2] ...");
+    RegServerCmd("project_log_whitelist_add", Command_LogWhitelistAdd, "Adds one or more modules to the whitelist.  Usage: project_log_whitelist_add <moduleshortname [module2] ...");
+    RegServerCmd("project_log_whitelist_remove", Command_LogWhitelistRemove, "Removes one or more modules from the whitelist.  Usage: project_log_whitelist_remove <moduleshortname [module2] ...");
 }
 
 /**
- * A module was just registered.  This is being called before the module has been loaded.
+ * A module was just registered.  This is being called before the module has been assigned a module identifier.
  * 
  * @param adtModule The adt array of the module being registered.
  */
@@ -309,7 +309,7 @@ stock bool:LogMgr_WhitelistRemove(Module:module)
  * @param client    The client index.  Or SERVER_INDEX if coming from the server.
  * @param argc      The number of arguments that the client sent with the command.
  */
-public Action:Command_LogWhitelistAdd(client, argc)
+public Action:Command_LogWhitelistAdd(argc)
 {
     /**
      * Check if the client has access
@@ -320,9 +320,9 @@ public Action:Command_LogWhitelistAdd(client, argc)
     {
         #if defined TRANSLATIONS_MANAGER
             // Display usage info.
-            TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "LogMgr cmd whitelistadd usage");
+            TransMgr_PrintText(SERVER_INDEX, MsgFormat_Plugin, MsgType_Server, _, false, "LogMgr cmd whitelistadd usage");
         #else
-            ReplyToCommand(client, "Adds one or more modules to the whitelist.  Usage: project_log_whitelist_add <moduleshortname [module2] ...\nRelated command(s): project_log_whitelist_remove");
+            ReplyToCommand(SERVER_INDEX, "Adds one or more modules to the whitelist.  Usage: project_log_whitelist_add <moduleshortname [module2] ...\nRelated command(s): project_log_whitelist_remove");
         #endif
         
         return Plugin_Handled;
@@ -342,9 +342,9 @@ public Action:Command_LogWhitelistAdd(client, argc)
         {
             #if defined TRANSLATIONS_MANAGER
                 // Reply with an error and skip to next argument.
-                TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "ModuleMgr invalid module", strModuleID);
+                TransMgr_PrintText(SERVER_INDEX, MsgFormat_Plugin, MsgType_Server, _, false, "ModuleMgr invalid module", strModuleID);
             #else
-                ReplyToCommand(client, "Invalid module: \"%s\"", strModuleID);
+                ReplyToCommand(SERVER_INDEX, "Invalid module: \"%s\"", strModuleID);
             #endif
             
             continue;
@@ -353,9 +353,9 @@ public Action:Command_LogWhitelistAdd(client, argc)
         LogMgr_WhitelistAdd(module);
         
         #if defined TRANSLATIONS_MANAGER
-            TransMgr_PrintText(client, MsgFormat_Both, MsgType_Reply, module, false, "LogMgr cmd whitelistadd");
+            TransMgr_PrintText(SERVER_INDEX, MsgFormat_Both, MsgType_Server, module, false, "LogMgr cmd whitelistadd");
         #else
-            ReplyToCommand(client, "Module has been added to the whitelist.");
+            ReplyToCommand(SERVER_INDEX, "Module has been added to the whitelist.");
         #endif
     }
     
@@ -370,7 +370,7 @@ public Action:Command_LogWhitelistAdd(client, argc)
  * @param client    The client index.  Or SERVER_INDEX if coming from the server.
  * @param argc      The number of arguments that the client sent with the command.
  */
-public Action:Command_LogWhitelistRemove(client, argc)
+public Action:Command_LogWhitelistRemove(argc)
 {
     /**
      * Check if the client has access
@@ -381,9 +381,9 @@ public Action:Command_LogWhitelistRemove(client, argc)
     {
         #if defined TRANSLATIONS_MANAGER
             // Display usage info.
-            TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "LogMgr cmd whitelistremove usage");
+            TransMgr_PrintText(SERVER_INDEX, MsgFormat_Plugin, MsgType_Server, _, false, "LogMgr cmd whitelistremove usage");
         #else
-            ReplyToCommand(client, "Removes one or more modules from the whitelist.  Usage: project_log_whitelist_remove <moduleshortname [module2] ...\nRelated command(s): project_log_whitelist_add");
+            ReplyToCommand(SERVER_INDEX, "Removes one or more modules from the whitelist.  Usage: project_log_whitelist_remove <moduleshortname [module2] ...\nRelated command(s): project_log_whitelist_add");
         #endif
         
         return Plugin_Handled;
@@ -403,9 +403,9 @@ public Action:Command_LogWhitelistRemove(client, argc)
         {
             #if defined TRANSLATIONS_MANAGER
                 // Reply with an error and skip to next argument.
-                TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "ModuleMgr invalid module", strModuleID);
+                TransMgr_PrintText(SERVER_INDEX, MsgFormat_Plugin, MsgType_Server, _, false, "ModuleMgr invalid module", strModuleID);
             #else
-                ReplyToCommand(client, "Invalid module: \"%s\"", strModuleID);
+                ReplyToCommand(SERVER_INDEX, "Invalid module: \"%s\"", strModuleID);
             #endif
             
             continue;
@@ -414,9 +414,9 @@ public Action:Command_LogWhitelistRemove(client, argc)
         LogMgr_WhitelistRemove(module);
         
         #if defined TRANSLATIONS_MANAGER
-            TransMgr_PrintText(client, MsgFormat_Both, MsgType_Reply, module, false, "LogMgr cmd whitelistremove");
+            TransMgr_PrintText(SERVER_INDEX, MsgFormat_Both, MsgType_Server, module, false, "LogMgr cmd whitelistremove");
         #else
-            ReplyToCommand(client, "Module has been added to the whitelist.");
+            ReplyToCommand(SERVER_INDEX, "Module has been added to the whitelist.");
         #endif
     }
     

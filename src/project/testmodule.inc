@@ -79,6 +79,8 @@ public TestModule_OnMapStart()
 public TestModule_OnPlayerSpawn(client)
 {
     LogMgr_Print(g_iTestModule, LogType_Normal, "Event_PlayerSpawn", "Client %N spawned.", client);
+    if (AccessMgr_HasAccess(client, g_iTestModule))
+        LogMgr_Print(g_iTestModule, LogType_Normal, "Event_PlayerSpawn", "Client %N has access to testmodule.", client);
 }
 
 public TestModule_OnPlayerHurt(client, attacker, health, armor, const String:weapon[], dmg_health, dmg_armor, hitgroup)

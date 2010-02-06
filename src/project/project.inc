@@ -205,7 +205,7 @@ new const String:g_ProjectEventDisplay[ProjectEvents][] = {
  */
 #define PROJECT_FULLNAME    "Project"   // Used when printing the plugin name anywhere.
 #define PROJECT_SHORTNAME   "project"   // Used for filenames, etc.
-#define PROJECT_AUTHOR      "Greyscale"
+#define PROJECT_AUTHOR      "Jacque Strap"
 #define PROJECT_DESCRIPTION "A base for large plugins to load modules and use its API."
 #define PROJECT_VERSION     "1.0.0"     // http://wiki.eclipse.org/Version_Numbering
 #define PROJECT_URL ""

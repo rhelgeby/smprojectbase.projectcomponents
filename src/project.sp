@@ -34,6 +34,7 @@
 
 #include "project/project"
 #include "project/versioninfo"
+#include "project/accessmanager"
 #include "project/translationsmanager"
 #include "project/logmanager"
 #include "project/eventmanager"
@@ -88,6 +89,10 @@ public OnPluginStart()
     
     #if defined LOG_MANAGER
         LogMgr_OnPluginStart();
+    #endif
+    
+    #if defined ACCESS_MANAGER
+        AccessMgr_OnPluginStart();
     #endif
     
     #if defined VERSION_INFO
