@@ -37,6 +37,7 @@
 #include "project/accessmanager"
 #include "project/translationsmanager"
 #include "project/logmanager"
+#include "project/configmanager"
 #include "project/eventmanager"
 #include "project/modulemanager"
 
@@ -81,6 +82,10 @@ public OnPluginStart()
     
     #if defined EVENT_MANAGER
         EventMgr_OnPluginStart();
+    #endif
+    
+    #if defined CONFIG_MANAGER
+        ConfigMgr_OnPluginStart();
     #endif
     
     #if defined TRANSLATIONS_MANAGER

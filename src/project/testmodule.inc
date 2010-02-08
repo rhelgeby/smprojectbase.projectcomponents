@@ -62,12 +62,23 @@ public TestModule_OnPluginStart()
     
     // Register this module with the translations manager.
     // Make sure testmodule.phrase.txt exists in translations/project/
-    //TransMgr_Register(g_iTestModule);
+    TransMgr_Register(g_iTestModule);
+    
+    ConfigMgr_Register(g_iTestModule, "configs/project/invalid.txt");
+    ConfigMgr_Register(g_iTestModule, "configs/project/testconfig.txt");
+    ConfigMgr_Register(g_iTestModule, "configs/project/testconfig.txt"); // duplicates test
+    
+    ConfigMgr_CacheKv(g_iTestModule, 0, "TestModuleConfigCache");
     
     // ************************
     // Done registering module.
     // ************************
     
+}
+
+public KvCache:TestModuleConfigCache(Handle:kv, sectionindex, const String:sectionname[])
+{
+    PrintToServer("index %d name %s", sectionindex, sectionname);
 }
 
 public TestModule_OnMapStart()

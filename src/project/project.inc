@@ -233,6 +233,13 @@ stock String:g_ProjectEventDisplay[ProjectEvents][] = {
 #define PROJECT_LICENSE "GNU GPL, Version 3"
 
 /**
+ * Credits.
+ * This is the exact string that's printed to the server/client.
+ * Feel free to change it to anything, but the names mentioned here by default, should be credited somewhere.
+ */
+#define PROJECT_CREDITS " Plugin was developed by Greyscale.\n Development would not have been possible without:\n  AlliedModders, LLC.\n  Andrew \"Greyscale\" Borba, plugin base developer\n  Richard \"rhelgeby\" Helgeby, compilation environment designer and advisor\n http://www.sourcemod.net/"
+
+/**
  * Your plugin's base command for module management.
  * This command will be very similar to the "sm" command except geared toward module management instead of plugin management.
  * Also handles printing plugin information like credits and version.
@@ -247,6 +254,17 @@ stock String:g_ProjectEventDisplay[ProjectEvents][] = {
 #define PROJECT_CMD_PREFIX  PROJECT_SHORTNAME
 
 // Translations Manager
+
+/**
+ * @section The formatting rules for the paths to the project translation files.
+ * Note: These are only used if translationsmanager.inc is included.
+ * 
+ * See TransMgr_BuildTranslationPath in translationsmanager.inc.
+ * 'shortname': The module's short name.
+ */
+#define TM_BASE_PATH "%s/projectbase.phrases", PROJECT_SHORTNAME
+#define TM_PROJECT_PATH "%s/%s.phrases", PROJECT_SHORTNAME, PROJECT_SHORTNAME
+#define TM_MODULE_PATH "%s/%s.phrases", PROJECT_SHORTNAME, shortname
 
 /**
  * @section The formatting string for each option in enum MsgFormatting.

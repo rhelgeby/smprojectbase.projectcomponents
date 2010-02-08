@@ -75,6 +75,7 @@ new g_iMMMaxBlockSize;
 //                 Forwards
 // **********************************************
 
+
 /**
  * Plugin has loaded.
  */
@@ -100,6 +101,11 @@ ModuleMgr_OnPluginStart()
             g_iMMMaxBlockSize = EM_DATA_MAX_CELLS;
     #endif
     
+    #if defined CONFIG_MANAGER
+        if (CM_DATA_MAX_CELLS > g_iMMMaxBlockSize)
+            g_iMMMaxBlockSize = CM_DATA_MAX_CELLS;
+    #endif
+    
     #if defined TRANSLATIONS_MANAGER
         if (TM_DATA_MAX_CELLS > g_iMMMaxBlockSize)
             g_iMMMaxBlockSize = TM_DATA_MAX_CELLS;
@@ -109,6 +115,9 @@ ModuleMgr_OnPluginStart()
         if (LM_DATA_MAX_CELLS > g_iMMMaxBlockSize)
             g_iMMMaxBlockSize = LM_DATA_MAX_CELLS;
     #endif
+    
+    // Log the blocksize.
+    LogMessage("[Module Manager] Module data array blocksize: %d", g_iMMMaxBlockSize);
     
     // Create base command.
     #if defined PROJECT_BASE_CMD
@@ -147,6 +156,10 @@ stock Module:ModuleMgr_Register(moduledata[ModuleData])
     
     #if defined EVENT_MANAGER
         EventMgr_OnModuleRegister(adtModule);
+    #endif
+    
+    #if defined CONFIG_MANAGER
+        ConfigMgr_OnModuleRegister(adtModule);
     #endif
     
     #if defined TRANSLATIONS_MANAGER
@@ -725,7 +738,7 @@ ModuleMgr_BaseCmdClient(client)
     if (StrEqual(arg, g_BaseCmdsLvl1[0], false))
     {
         // Print credits.
-        TransMgr_PrintText(client, MsgFormat_None, MsgType_Reply, _, false, "Project credits");
+        ReplyToCommand(client, PROJECT_CREDITS);
     }
     // The "modules" command.
     else if (StrEqual(arg, g_BaseCmdsLvl1[1], false))
@@ -735,7 +748,7 @@ ModuleMgr_BaseCmdClient(client)
     }
     else
     {
-        TransMgr_PrintText(client, MsgFormat_None, MsgType_Reply, _, false, "ModuleMgr cmd base non-admin syntax", PROJECT_FULLNAME, PROJECT_VERSION, PROJECT_AUTHOR, PROJECT_BASE_CMD, PROJECT_BASE_CMD);
+        TransMgr_PrintText(client, MsgFormat_None, MsgType_Reply, _, false, "ModuleMgr cmd base client syntax", PROJECT_FULLNAME, PROJECT_VERSION, PROJECT_AUTHOR, PROJECT_BASE_CMD, PROJECT_BASE_CMD);
         return;
     }
 }
@@ -859,7 +872,7 @@ ModuleMgr_BaseCmdParse(client, const String:strArgs[][])
     if (StrEqual(strArgs[BASECMD_ARG(1)], g_BaseCmdsLvl1[0], false))
     {
         // Print credits.
-        TransMgr_PrintText(client, MsgFormat_None, MsgType_Reply, _, false, "Project credits");
+        ReplyToCommand(client, PROJECT_CREDITS);
     }
     // The "modules" accessor.
     else if (StrEqual(strArgs[BASECMD_ARG(1)], g_BaseCmdsLvl1[1], false))

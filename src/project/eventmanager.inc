@@ -104,10 +104,9 @@ stock EventMgr_OnModuleRegister(Handle:adtModule)
 }
 
 /**
- * Command project_module_info is being called.
+ * Base command is printing a module's info.
  * Print the module data allocated by the event manager.
- * Note: |stock| tag will stop this function from being compiled if the project_module_info command
- * isn't working due to required base components not being included.
+ * Note: |stock| tag will stop this function from being compiled if the base command is disabled.
  * 
  * @param client    The client index the text is being printed to.
  * @param module    The module to print info for.
@@ -349,7 +348,7 @@ stock EventMgr_SyncEnableData(Module:module, bool:enable)
  * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param module    The module whose event enable data to read.
- * @param event     An event from enum ProjectEvents. (top of file)
+ * @param event     An event from enum ProjectEvents.
  * 
  * @return          True if the event is enabled in the module, false if not.
  */
@@ -428,7 +427,7 @@ stock EventMgr_ResetFuncData(Module:module)
  * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param module    The module whose event function data to read.
- * @param event     An event from enum ProjectEvents. (top of file)
+ * @param event     An event from enum ProjectEvents.
  * 
  * @return          The function ID of the event forward in the module.
  */

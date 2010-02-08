@@ -39,7 +39,7 @@
 	// {2}: PROJECT_VERSION
 	// {3}: PROJECT_AUTHOR
 	// {4}: PROJECT_BASE_CMD
-	"ModuleMgr cmd base non-admin syntax"
+	"ModuleMgr cmd base client syntax"
 	{
 		"#format"	"{1:s},{2:s},{3:s},{4:s},{5:s}"
 		"en"		"{1} {2}, by {3}\nTo see registered plugin modules, type \"{4} modules\"\nTo see credits, type \"{5} credits\"\nVisit http://www.sourcemod.net/"
@@ -126,7 +126,7 @@
 
 	"ModuleMgr cmd base lvl2 modules disable_all"
 	{
-		"en"		"All moduled have been disabled."
+		"en"		"All modules have been disabled."
 	}
 
 
@@ -134,7 +134,7 @@
 	//           Event Manager
 	// **********************************
 
-	// Command: project_module_info
+	// Command: PROJECT_BASE_CMD
 
 	// {1}: list of the module's registered events.
 	"EventMgr cmd base lvl2 modules info print"
@@ -148,7 +148,7 @@
 	//       Translations Manager
 	// **********************************
 
-	// Command: project_module_info
+	// Command: PROJECT_BASE_CMD
 
 	// {1}: path to translation file if registered, none if not registered.
 	"TransMgr cmd base lvl2 modules info print"
@@ -169,7 +169,7 @@
 	//            Log Manager
 	// **********************************
 
-	// Command: project_module_info
+	// Command: PROJECT_BASE_CMD
 
 	// {1}: yes if the module is on the whitelist, no if not.
 	"LogMgr cmd base lvl2 modules info print"

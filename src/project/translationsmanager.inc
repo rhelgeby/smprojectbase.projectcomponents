@@ -154,10 +154,9 @@ TransMgr_OnModulesRegistered()
 }
 
 /**
- * Command project_module_info is being called.
+ * Base command is printing a module's info.
  * Print the module data allocated by the translation manager.
- * Note: |stock| tag will stop this function from being compiled if the project_module_info command
- * isn't working due to required base components not being included.
+ * Note: |stock| tag will stop this function from being compiled if the base command is disabled.
  * 
  * @param client    The client index the text is being printed to.
  * @param module    The module to print info for.
@@ -482,14 +481,14 @@ stock TransMgr_BuildTranslationPath(ProjectTransFiles:transfile, Module:module =
     
     switch (transfile)
     {
-        case TransFile_ProjectBase: Format(path, maxlen, "%s/projectbase.phrases", PROJECT_SHORTNAME);
-        case TransFile_Project:     Format(path, maxlen, "%s/%s.phrases", PROJECT_SHORTNAME, PROJECT_SHORTNAME);
+        case TransFile_ProjectBase: Format(path, maxlen, TM_BASE_PATH);
+        case TransFile_Project:     Format(path, maxlen, TM_PROJECT_PATH);
         case TransFile_Module:
         {
             // Get the module's shortname to use as the translations name.
             decl String:shortname[16];
             ModuleMgr_ReadString(module, ModuleData_ShortName, shortname, sizeof(shortname));
-            Format(path, maxlen, "%s/%s.phrases", PROJECT_SHORTNAME, shortname);
+            Format(path, maxlen, TM_MODULE_PATH);
         }
     }
     
