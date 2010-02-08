@@ -107,7 +107,6 @@ stock bool:AccessMgr_HasAccess(client, Module:module = INVALID_MODULE)
 
 /**
  * Check if a client has the root access flag(s) as defined by the project_access_root cvar.
- * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param client    The client index.
  */
@@ -123,7 +122,8 @@ stock bool:AccessMgr_HasRootAccess(client)
         
         // Loop through each char in the string.
         new AdminFlag:flag;
-        for (new cindex = 0; cindex < strlen(strCvarRootFlags); cindex++)
+        new length = strlen(strCvarRootFlags);
+        for (new cindex = 0; cindex < length; cindex++)
         {
             if (!FindFlagByChar(strCvarRootFlags[cindex], flag))
             {
@@ -152,7 +152,6 @@ stock bool:AccessMgr_HasRootAccess(client)
 
 /**
  * Check if a client has access to a module via groups.
- * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param client    The client index.
  * @param module    The module to check if client has access to.
@@ -171,7 +170,6 @@ stock bool:AccessMgr_HasModuleAccessGroup(client, Module:module)
 
 /**
  * Check if a client has access to a module via the project_access_<moduleshortname> cvar.
- * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param client    The client index.
  * @param module    The module to check if client has access to.
@@ -189,7 +187,8 @@ stock bool:AccessMgr_HasModuleAccessCvar(client, Module:module)
     
     // Loop through each char in the string.
     new AdminFlag:flag;
-    for (new cindex = 0; cindex < strlen(strCvarModuleFlags); cindex++)
+    new length = strlen(strCvarModuleFlags);
+    for (new cindex = 0; cindex < length; cindex++)
     {
         if (!FindFlagByChar(strCvarModuleFlags[cindex], flag))
             continue;
@@ -214,7 +213,6 @@ stock bool:AccessMgr_HasModuleAccessCvar(client, Module:module)
 
 /**
  * Wrapper function to check both real and effective access modes.
- * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * See native GetAdminFlag, but both AdmAccessMode options are checked.
  */
@@ -226,7 +224,6 @@ stock bool:AccessMgr_GetAdminFlag(AdminId:adminid, AdminFlag:flag)
 
 /**
  * Checks if a client is in a specified group.
- * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param client    The client index.
  * @param groupid   The group id to check.
@@ -240,7 +237,8 @@ stock bool:AccessMgr_ClientInGroup(client, GroupId:groupid)
     
     decl String:testgroup[16 + 16];     // See 'group'
     new GroupId:testgroupid;
-    for (new gindex; gindex < GetAdminGroupCount(GetUserAdmin(client)); gindex++)
+    new count = GetAdminGroupCount(GetUserAdmin(client));
+    for (new gindex; gindex < count; gindex++)
     {
         testgroupid = GetAdminGroup(GetUserAdmin(client), gindex, testgroup, sizeof(testgroup));
         if (testgroupid == INVALID_GROUP_ID)
@@ -260,7 +258,6 @@ stock bool:AccessMgr_ClientInGroup(client, GroupId:groupid)
 
 /**
  * Take a module identifier and output its group name.
- * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param module    The module identifier to return group name for.
  * @param group     The group name associated with this module.
@@ -268,7 +265,7 @@ stock bool:AccessMgr_ClientInGroup(client, GroupId:groupid)
  */
 stock AccessMgr_ModuleToGroupName(Module:module, String:group[], maxlen)
 {
-    decl String:moduleshortname[16];
+    decl String:moduleshortname[CM_DATA_SHORTNAME];
     ModuleMgr_ReadString(module, ModuleData_ShortName, moduleshortname, sizeof(moduleshortname));
     
     // Format output.
@@ -277,7 +274,6 @@ stock AccessMgr_ModuleToGroupName(Module:module, String:group[], maxlen)
 
 /**
  * Take a module identifier and output its access cvar name.
- * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param module    The module identifier to return group name for.
  * @param cvar      The access cvar name associated with this module.
@@ -285,7 +281,7 @@ stock AccessMgr_ModuleToGroupName(Module:module, String:group[], maxlen)
  */
 stock AccessMgr_ModuleToCvarName(Module:module, String:cvar[], maxlen)
 {
-    decl String:moduleshortname[16];
+    decl String:moduleshortname[CM_DATA_SHORTNAME];
     ModuleMgr_ReadString(module, ModuleData_ShortName, moduleshortname, sizeof(moduleshortname));
     
     Format(cvar, maxlen, AM_FORMAT_CVAR);

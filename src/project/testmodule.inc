@@ -64,16 +64,21 @@ public TestModule_OnPluginStart()
     // Make sure testmodule.phrase.txt exists in translations/project/
     //TransMgr_Register(g_iTestModule);
     
-    ConfigMgr_Register(g_iTestModule, "configs/project/invalid.txt");
-    ConfigMgr_Register(g_iTestModule, "configs/project/testconfig.txt");
-    ConfigMgr_Register(g_iTestModule, "configs/project/testconfig.txt"); // duplicates test
+    ConfigMgr_Register(g_iTestModule, "Invalid", "configs/project/invalid.txt");
+    ConfigMgr_Register(g_iTestModule, "TestConfigReload", "configs/project/testconfig.txt");
+    ConfigMgr_Register(g_iTestModule, "TestConfigReload", "configs/project/testconfig.txt"); // duplicates test
     
-    ConfigMgr_CacheKv(g_iTestModule, 0, "TestModuleConfigCache");
+    
     
     // ************************
     // Done registering module.
     // ************************
     
+}
+
+public TestConfigReload(configindex)
+{
+    PrintToServer("Reloaded configindex %d", configindex);
 }
 
 public KvCache:TestModuleConfigCache(Handle:kv, sectionindex, const String:sectionname[])
@@ -83,6 +88,7 @@ public KvCache:TestModuleConfigCache(Handle:kv, sectionindex, const String:secti
 
 public TestModule_OnMapStart()
 {
+    ConfigMgr_CacheKv(g_iTestModule, 0, "TestModuleConfigCache");
     LogMgr_Print(g_iTestModule, LogType_Normal, "Event_OnMapStart", "OnMapStart");
 }
 

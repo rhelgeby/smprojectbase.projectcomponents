@@ -110,8 +110,8 @@ LogMgr_OnPluginStart()
     #endif
     
     // Create log commands.
-    Project_RegServerCmd("log_whitelist_add", Command_LogWhitelistAdd, "Adds one or more modules to the whitelist.  Usage: project_log_whitelist_add <moduleshortname [module2] ...");
-    Project_RegServerCmd("log_whitelist_remove", Command_LogWhitelistRemove, "Removes one or more modules from the whitelist.  Usage: project_log_whitelist_remove <moduleshortname [module2] ...");
+    Project_RegServerCmd("log_whitelist_add", Command_LogWhitelistAdd, "Adds one or more modules to the whitelist.  Usage: <prefix>_log_whitelist_add <moduleshortname [module2] ...");
+    Project_RegServerCmd("log_whitelist_remove", Command_LogWhitelistRemove, "Removes one or more modules from the whitelist.  Usage: <prefix>_log_whitelist_remove <moduleshortname [module2] ...");
 }
 
 /**
@@ -185,7 +185,7 @@ stock LogMgr_Print(Module:module, LogTypes:logtype, const String:description[], 
     VFormat(logbuffer, sizeof(logbuffer), text, 5);
     
     // Get the module's full name.
-    decl String:modulefullname[32]; // 32 because that's the max length of the module's fullname.
+    decl String:modulefullname[CM_DATA_FULLNAME];
     ModuleMgr_ReadString(module, ModuleData_FullName, modulefullname, sizeof(modulefullname));
     
     // Format the text string.
@@ -239,7 +239,6 @@ stock LogMgr_Print(Module:module, LogTypes:logtype, const String:description[], 
 
 /**
  * Check if the specified module is on the whitelist
- * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param module        The module to check.
  * 
@@ -252,7 +251,6 @@ stock bool:LogMgr_IsModuleOnWhitelist(Module:module)
 
 /**
  * Change if a module is enabled on the whitelist.
- * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param module        The module to change.
  * @param enable        True to add the module to the whitelist, false to remove.
@@ -264,7 +262,6 @@ stock LogMgr_WhitelistSet(Module:module, bool:enable)
 
 /**
  * Adds a module to the whitelist.
- * This is meant for other base project files to use, modules shouldn't need this.
  *
  * @param module    The module being add to whitelist.
  * 
@@ -285,7 +282,6 @@ stock bool:LogMgr_WhitelistAdd(Module:module)
 
 /**
  * Removes a module from the whitelist.
- * This is meant for other base project files to use, modules shouldn't need this.
  *
  * @param module    The module being removed from the whitelist.
  * 
@@ -305,7 +301,7 @@ stock bool:LogMgr_WhitelistRemove(Module:module)
 }
 
 /**
- * Command callback: project_log_whitelist_add
+ * Command callback: <prefix>_log_whitelist_add
  * Add one or modules to the whitelist.
  * 
  * @param argc      The number of arguments that the server sent with the command.
@@ -315,7 +311,7 @@ public Action:Command_LogWhitelistAdd(argc)
     // Check if no arguments.
     if (argc < 1)
     {
-        Project_PrintToServer("%T", "LogMgr cmd whitelistadd usage", LANG_SERVER);
+        Project_PrintToServer("%T", "LogMgr cmd whitelistadd usage", LANG_SERVER, PROJECT_CMD_PREFIX, PROJECT_CMD_PREFIX);
         return Plugin_Handled;
     }
     
@@ -336,7 +332,10 @@ public Action:Command_LogWhitelistAdd(argc)
         }
         
         LogMgr_WhitelistAdd(module);
-        Project_PrintToServer("%T", "LogMgr cmd whitelistadd", LANG_SERVER);
+        
+        decl String:modulefullname[CM_DATA_FULLNAME];
+        ModuleMgr_ReadString(module, ModuleData_FullName, modulefullname, sizeof(modulefullname));
+        Project_PrintToServer("%T", "LogMgr cmd whitelistadd", LANG_SERVER, modulefullname);
     }
     
     // Say that we handled the command so CS:S doesn't see it and print "Unknown command"
@@ -344,21 +343,17 @@ public Action:Command_LogWhitelistAdd(argc)
 }
 
 /**
- * Command callback: project_log_whitelist_remove
- * Remove one or modules from the whitelist
+ * Command callback: <prefix>_log_whitelist_remove
+ * Remove one or modules from the whitelist.
  * 
  * @param argc      The number of arguments that the server sent with the command.
  */
 public Action:Command_LogWhitelistRemove(argc)
 {
-    /**
-     * Check if the client has access
-     */
-    
     // Check if no arguments.
     if (argc < 1)
     {
-        Project_PrintToServer("%T", "LogMgr cmd whitelistremove usage", LANG_SERVER);
+        Project_PrintToServer("%T", "LogMgr cmd whitelistremove usage", LANG_SERVER, PROJECT_CMD_PREFIX, PROJECT_CMD_PREFIX);
         return Plugin_Handled;
     }
     
@@ -379,7 +374,10 @@ public Action:Command_LogWhitelistRemove(argc)
         }
         
         LogMgr_WhitelistRemove(module);
-        Project_PrintToServer("%T", "LogMgr cmd whitelistremove", LANG_SERVER);
+        
+        decl String:modulefullname[CM_DATA_FULLNAME];
+        ModuleMgr_ReadString(module, ModuleData_FullName, modulefullname, sizeof(modulefullname));
+        Project_PrintToServer("%T", "LogMgr cmd whitelistremove", LANG_SERVER, modulefullname);
     }
     
     // Say that we handled the command so CS:S doesn't see it and print "Unknown command"

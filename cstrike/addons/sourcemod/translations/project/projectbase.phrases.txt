@@ -154,6 +154,27 @@
 		"en"		"  Currently Registered Events: {1}"
 	}
 
+	// **********************************
+	//           Config Manager
+	// **********************************
+
+	// Command: PROJECT_BASE_CMD
+
+	// {1}: list of the module's registered config files.
+	"ConfigMgr cmd base lvl2 modules info print"
+	{
+		"#format"	"{1:s}"
+		"en"		"  Currently Registered Config Files: {1}"
+	}
+
+	// Command: <PROJECT_CMD_PREFIX>_reload_config
+
+	// {1-2}: PROJECT_CMD_PREFIX
+	"ConfigMgr cmd reloadconfig usage"
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"Reloads a module's config files.  Usage: {1}_reload_config <moduleshortname> [module2] ...\nRelated command(s): {2}_reload_config_all"
+	}
 
 	// **********************************
 	//       Translations Manager
@@ -168,7 +189,7 @@
 		"en"		"  Registered translation file: {1}"
 	}
 
-	// Command: project_reload_translations
+	// Command: <PROJECT_CMD_PREFIX>_reload_translations
 
 	"TransMgr cmd reloadtranslations"
 	{
@@ -183,34 +204,41 @@
 	// Command: PROJECT_BASE_CMD
 
 	// {1}: yes if the module is on the whitelist, no if not.
+	// {2}: PROJECT_CVAR_PREFIX
 	"LogMgr cmd base lvl2 modules info print"
 	{
-		"#format"	"{1:s}"
-		"en"		"  On Log Whitelist: {1} (see cvar project_log_whitelist)"
+		"#format"	"{1:s},{2:s}"
+		"en"		"  On Log Whitelist: {1} (see cvar {2}_log_whitelist)"
 	}
 
-	// Command: project_log_whitelist_add
+	// Command: <PROJECT_CMD_PREFIX>_log_whitelist_add
 
+	// {1-2}: PROJECT_CMD_PREFIX
 	"LogMgr cmd whitelistadd usage"
 	{
-		"en"		"Adds one or more modules to the whitelist.  Usage: project_log_whitelist_add <moduleshortname [module2] ...\nRelated command(s): project_log_whitelist_remove"
+		"#format"	"{1:s},{2:s}"
+		"en"		"Adds one or more modules to the whitelist.  Usage: {1}_log_whitelist_add <moduleshortname> [module2] ...\nRelated command(s): {2}_log_whitelist_remove"
 	}
 
 	"LogMgr cmd whitelistadd"
 	{
-		"en"		"Module has been added to the whitelist."
+		"#format"	"{1:s}"
+		"en"		"Module \"{1}\" has been added to the whitelist."
 	}
 
-	// Command: project_log_whitelist_remove
+	// Command: <PROJECT_CMD_PREFIX>_log_whitelist_remove
 
+	// {1-2}: PROJECT_CMD_PREFIX
 	"LogMgr cmd whitelistremove usage"
 	{
-		"en"		"Removes one or more modules from the whitelist.  Usage: project_log_whitelist_remove <moduleshortname [module2] ...\nRelated command(s): project_log_whitelist_add"
+		"#format"	"{1:s},{2:s}"
+		"en"		"Removes one or more modules from the whitelist.  Usage: {1}_log_whitelist_remove <moduleshortname> [module2] ...\nRelated command(s): {2}_log_whitelist_add"
 	}
 
 	"LogMgr cmd whitelistremove"
 	{
-		"en"		"Module has been removed from the whitelist."
+		"#format"	"{1:s}"
+		"en"		"Module \"{1}\" has been removed from the whitelist."
 	}
 
 }

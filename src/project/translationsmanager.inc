@@ -218,7 +218,7 @@ stock TransMgr_PrintText(client, MsgFormatting:msgformat, MsgTypes:msgtype, Modu
     g_bMsgTypeColor[MsgType_Reply] = bool:(GetCmdReplySource() == SM_REPLY_TO_CHAT);
     
     // Get the name of the module if a module identifier was given.
-    new String:modulefullname[32] = "Invalid Module";
+    new String:modulefullname[CM_DATA_FULLNAME] = "Invalid Module";
     if (ModuleMgr_IsModuleValid(module))
     {
         ModuleMgr_ReadString(module, ModuleData_FullName, modulefullname, sizeof(modulefullname));
@@ -354,7 +354,8 @@ stock TransMgr_TranslateBoolToPhrase(target, bool:boolean, BoolPhrases:boolphras
     // Force all chars to lowercase.
     if (lowercase)
     {
-        for (new x = 0; x < strlen(phrase); x++)
+        new length = strlen(phrase);
+        for (new x = 0; x < length; x++)
         {
             phrase[x] = CharToLower(phrase[x]);
         }
@@ -408,7 +409,6 @@ stock PhraseToBool:TransMgr_TranslatePhraseToBool(target, BoolPhrases:boolphrase
 
 /**
  * Check if the specified module has translations enabled.
- * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param module        The module to check.
  * 
@@ -421,14 +421,13 @@ stock bool:TransMgr_IsEnabled(Module:module)
 
 /**
  * Change if translations is enabled for a module.
- * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param module        The module to change.
  * @param enable        True to enable translations in this module, false to disable.
  */
 stock TransMgr_SetEnabled(Module:module, bool:enable)
 {
-    SetArrayCell(ModuleMgr_GetModuleArray(module), TRANSLATIONS_DATA_ENABLED, _:enable);
+    SetArrayCell(MM_HANDLE_FROM_ID(module), TRANSLATIONS_DATA_ENABLED, _:enable);
 }
 
 /**
@@ -452,7 +451,8 @@ stock TransMgr_LoadTranslations()
     new Module:module;
     
     // Loop through all the modules.
-    for (new moduleindex = 0; moduleindex < MODULE_COUNT; moduleindex++)
+    new count = MODULE_COUNT;
+    for (new moduleindex = 0; moduleindex < count; moduleindex++)
     {
         // Read moduleindex as a Module type.
         module = Module:moduleindex;
@@ -485,8 +485,8 @@ stock TransMgr_BuildTranslationPath(ProjectTransFiles:transfile, Module:module =
         case TransFile_Module:
         {
             // Get the module's shortname to use as the translations name.
-            decl String:shortname[16];
-            ModuleMgr_ReadString(module, ModuleData_ShortName, shortname, sizeof(shortname));
+            decl String:moduleshortname[CM_DATA_SHORTNAME];
+            ModuleMgr_ReadString(module, ModuleData_ShortName, moduleshortname, sizeof(moduleshortname));
             Format(path, maxlen, TM_MODULE_PATH);
         }
     }

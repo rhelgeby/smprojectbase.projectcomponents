@@ -246,7 +246,8 @@ stock Module:ModuleMgr_Find(ModuleData:data, any:value, Module:modules[] = {INVA
     new Module:module;
     
     // Loop through all the modules.
-    for (new moduleindex = 0; moduleindex < MODULE_COUNT; moduleindex++)
+    new count = MODULE_COUNT;
+    for (new moduleindex = 0; moduleindex < count; moduleindex++)
     {
         // Read moduleindex as a Module type.
         module = Module:moduleindex;
@@ -287,7 +288,8 @@ stock Module:ModuleMgr_FindByString(ModuleData:data, const String:value[], bool:
     new Module:module;
     
     // Loop through all the modules.
-    for (new moduleindex = 0; moduleindex < MODULE_COUNT; moduleindex++)
+    new count = MODULE_COUNT;
+    for (new moduleindex = 0; moduleindex < count; moduleindex++)
     {
         // Read moduleindex as a Module type.
         module = Module:moduleindex;
@@ -330,12 +332,12 @@ stock ModuleMgr_ReadAll(Module:module, moduledata[ModuleData])
  * @param module    The module whose cell data to read.
  * @param data      The data to get the value of.  See enum ModuleData.
  * 
- * @return          The integer value of the desired module data.
+ * @return          The value of the desired module data.
  */
 stock ModuleMgr_ReadCell(Module:module, ModuleData:data)
 {
     new moduledata[ModuleData];
-    GetArrayArray(MM_HANDLE_FROM_ID(module), MODULE_DATA, moduledata[0], sizeof(moduledata));
+    ModuleMgr_ReadAll(module, moduledata);
     
     // Return the value.
     return _:moduledata[data];
@@ -353,7 +355,7 @@ stock ModuleMgr_ReadCell(Module:module, ModuleData:data)
 stock ModuleMgr_ReadString(Module:module, ModuleData:data, String:output[], maxlen)
 {
     new moduledata[ModuleData];
-    GetArrayArray(MM_HANDLE_FROM_ID(module), MODULE_DATA, moduledata[0], sizeof(moduledata));
+    ModuleMgr_ReadAll(module, moduledata);
     
     // Copy full name to output
     strcopy(output, maxlen, String:moduledata[data]);
@@ -365,7 +367,6 @@ stock ModuleMgr_ReadString(Module:module, ModuleData:data, String:output[], maxl
 
 /**
  * Validates all values in a ModuleData array, and prints errors for each invalid value.
- * This is meant for other base project files to use, modules shouldn't need this. 
  * 
  * @param moduledata    Array of module data to validate.
  * @param moduleflags   0 if all values were valid.  Non-zero means there is a bitstring of module data flags that failed.
@@ -398,7 +399,7 @@ stock bool:ModuleMgr_Validate(moduledata[ModuleData], &moduleflags = 0)
         new Module:clashmodule = ModuleMgr_FindByString(ModuleData_ShortName, moduledata[ModuleData_ShortName]);
         if (clashmodule != INVALID_MODULE)
         {
-            decl String:clashmodulefullname[32];
+            decl String:clashmodulefullname[CM_DATA_FULLNAME];
             ModuleMgr_ReadString(clashmodule, ModuleData_FullName, clashmodulefullname, sizeof(clashmodulefullname));
             
             moduleflags |= MODULE_DATA_SHORTNAME;
@@ -415,7 +416,6 @@ stock bool:ModuleMgr_Validate(moduledata[ModuleData], &moduleflags = 0)
 /**
  * Finds any modules matching the given module ID or shortname.
  * This should only be used if input it coming from a client.  Otherwise use ModuleMgr_FindByString.
- * This is meant for other base project files to use, modules shouldn't need this. 
  * 
  * @param value         The module ID to match to a module. (This will be matched first if both are inputed)
  * @param shortname     The short name to match to a module.
@@ -424,11 +424,12 @@ stock bool:ModuleMgr_Validate(moduledata[ModuleData], &moduleflags = 0)
  */
 stock Module:ModuleMgr_FindByID(moduleID = 0, const String:moduleshortname[] = "")
 {
-    decl String:matchshortname[16];
+    decl String:matchshortname[CM_DATA_SHORTNAME];
     new Module:module;
     
     // Loop through all the modules.
-    for (new moduleindex = 0; moduleindex < MODULE_COUNT; moduleindex++)
+    new count = MODULE_COUNT;
+    for (new moduleindex = 0; moduleindex < count; moduleindex++)
     {
         // Read moduleindex as a Module type.
         module = Module:moduleindex;
@@ -453,7 +454,6 @@ stock Module:ModuleMgr_FindByID(moduleID = 0, const String:moduleshortname[] = "
 
 /**
  * Reserve space in the module data array.
- * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param count     The number of indexes per module that's needed.
  * @param indexes   The indexes within the array that have been allocated to you.  (number of elements = param count)
@@ -473,7 +473,6 @@ stock ModuleMgr_Allocate(count, indexes[])
 
 /**
  * Module data writer that overwrites all data for a module with the given data.
- * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param module        The module whose data to write.
  * @param moduledata    New data to replace the old data.  See enum ModuleData.
@@ -485,7 +484,6 @@ stock ModuleMgr_WriteAll(Module:module, moduledata[ModuleData])
 
 /**
  * Module data writer that writes a specified non-string data value.
- * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param module    The module whose cell data to write.
  * @param data      Data to write new value to.  See enum ModuleData.
@@ -501,12 +499,11 @@ stock ModuleMgr_WriteCell(Module:module, ModuleData:data, any:value)
     moduledata[data] = value;
     
     // Overwrite the old array with the modified one.
-    SetArrayArray(MM_HANDLE_FROM_ID(module), MODULE_DATA, moduledata[0], sizeof(moduledata));
+    ModuleMgr_WriteAll(module, moduledata);
 }
 
 /**
  * Module data writer that writes a specified string data value.
- * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param module    The module whose string data to write.
  * @param data      Data to write new string to.  See enum ModuleData.
@@ -523,26 +520,21 @@ stock ModuleMgr_WriteString(Module:module, ModuleData:data, maxlen, const String
     strcopy(String:moduledata[data], maxlen, value);
     
     // Overwrite the old array with the modified one.
-    SetArrayArray(MM_HANDLE_FROM_ID(module), MODULE_DATA, moduledata[0], sizeof(moduledata));
+    ModuleMgr_WriteAll(module, moduledata);
 }
 
 /**
- * Returns a module's handle given it's module identifier.
- * This is meant for other base project files to use, modules shouldn't need this.
+ * Wrapper for macro MM_HANDLE_FROM_ID so other base components can use it.
  * 
- * @param module    The module to get the handle for.
- * 
- * @return          The array handle to the module.
- */ 
+ * @param module    The module identifier.
+ */
 stock Handle:ModuleMgr_GetModuleArray(Module:module)
 {
-    // Return the module's array handle.
     return MM_HANDLE_FROM_ID(module);
 }
 
 /**
  * Returns a module's ID given it's array handle.
- * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param adtModule The module's array handle to get the module identifier for.
  * 
@@ -553,7 +545,8 @@ stock Module:ModuleMgr_GetModule(Handle:adtModule)
     new Module:module;
     
     // Loop through all the modules.
-    for (new moduleindex = 0; moduleindex < MODULE_COUNT; moduleindex++)
+    new count = MODULE_COUNT;
+    for (new moduleindex = 0; moduleindex < count; moduleindex++)
     {
         // Read moduleindex as a Module type.
         module = Module:moduleindex;
@@ -568,7 +561,6 @@ stock Module:ModuleMgr_GetModule(Handle:adtModule)
 
 /**
  * Allows other modules to get the handle of the main array to manipulate data.
- * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @return  The handle to the array with all module data handles.
  */
@@ -672,7 +664,6 @@ new const BaseSubCmdType:g_BaseSubCmdType[][] = {
 
 /**
  * Finds the index the command is located at in the arrays above.
- * This is meant for other base project files to use, modules shouldn't need this. 
  * 
  * @param cmd       The command to search for.
  * @param level     The level the command is in.
@@ -752,7 +743,7 @@ ModuleMgr_BaseCmdClient(client)
 }
 
 /**
- * Handle PROJECT_BASE_CMD command when an admin or server uses it.
+ * Handle PROJECT_BASE_CMD command when the server uses it.
  * 
  * @param client    The client index.
  * @param argc      The number of arguments that the client sent with the command.
@@ -761,7 +752,7 @@ ModuleMgr_BaseCmdServer(client, argc)
 {
     // Get all arguments.
     if (argc == 0) argc++;
-    new String:strArgs[argc][16];
+    new String:strArgs[argc][32];
     for (new arg = 1; arg <= argc; arg++)
         GetCmdArg(arg, strArgs[BASECMD_ARG(arg)], 16);
                                                    // ^^^ SHOULD BE sizeof(strArgs[].  But compiler bug.
@@ -856,7 +847,6 @@ ModuleMgr_BaseCmdServer(client, argc)
 
 /**
  * The "control center" that redirects all commands to their respective functions.
- * This is meant for other base project files to use, modules shouldn't need this. 
  * 
  * @param client    The client calling the command.
  * @param strArgs   The list of arguments that were validated by the base command callback.
@@ -900,7 +890,7 @@ ModuleMgr_BaseCmdParse(client, const String:strArgs[][])
             
             ModuleMgr_Enable(module);
             
-            decl String:modulefullname[32];
+            decl String:modulefullname[CM_DATA_FULLNAME];
             ModuleMgr_ReadString(module, ModuleData_FullName, modulefullname, sizeof(modulefullname));
             
             Format(phraseformat, sizeof(phraseformat), "ModuleMgr cmd base lvl2 modules %s", g_BaseCmdsLvl2[cmdindex][2]);
@@ -911,7 +901,8 @@ ModuleMgr_BaseCmdParse(client, const String:strArgs[][])
         {
             // Loop through all the modules.
             new Module:module;
-            for (new moduleindex = 0; moduleindex < MODULE_COUNT; moduleindex++)
+            new count = MODULE_COUNT;
+            for (new moduleindex = 0; moduleindex < count; moduleindex++)
             {
                 // Read moduleindex as a Module type.
                 module = Module:moduleindex;
@@ -937,7 +928,7 @@ ModuleMgr_BaseCmdParse(client, const String:strArgs[][])
             ModuleMgr_Disable(module);
             ModuleMgr_Enable(module);
             
-            decl String:modulefullname[32];
+            decl String:modulefullname[CM_DATA_FULLNAME];
             ModuleMgr_ReadString(module, ModuleData_FullName, modulefullname, sizeof(modulefullname));
             
             Format(phraseformat, sizeof(phraseformat), "ModuleMgr cmd base lvl2 modules %s", g_BaseCmdsLvl2[cmdindex][4]);
@@ -956,7 +947,7 @@ ModuleMgr_BaseCmdParse(client, const String:strArgs[][])
             
             ModuleMgr_Disable(module);
             
-            decl String:modulefullname[32];
+            decl String:modulefullname[CM_DATA_FULLNAME];
             ModuleMgr_ReadString(module, ModuleData_FullName, modulefullname, sizeof(modulefullname));
             
             Format(phraseformat, sizeof(phraseformat), "ModuleMgr cmd base lvl2 modules %s", g_BaseCmdsLvl2[cmdindex][5]);
@@ -967,7 +958,8 @@ ModuleMgr_BaseCmdParse(client, const String:strArgs[][])
         {
             // Loop through all the modules.
             new Module:module;
-            for (new moduleindex = 0; moduleindex < MODULE_COUNT; moduleindex++)
+            new count = MODULE_COUNT;
+            for (new moduleindex = 0; moduleindex < count; moduleindex++)
             {
                 // Read moduleindex as a Module type.
                 module = Module:moduleindex;
@@ -992,7 +984,6 @@ ModuleMgr_BaseCmdParse(client, const String:strArgs[][])
 
 /**
  * Prints the information stored about a module.
- * This is meant for other base project files to use, modules shouldn't need this. 
  * 
  * @param client        Client to print information to.
  * @param strModuleID   Either the module's shortname or it's module ID.
@@ -1007,9 +998,9 @@ stock ModuleMgr_PrintModuleInfo(client, const String:strModuleID[])
         return;
     }
     
-    decl String:modulefullname[32];
-    decl String:moduleshortname[16];
-    decl String:moduledesc[256];
+    decl String:modulefullname[CM_DATA_FULLNAME];
+    decl String:moduleshortname[CM_DATA_SHORTNAME];
+    decl String:moduledesc[CM_DATA_DESCRIPTION];
     new bool:bModuleDisabled;
     decl String:strModuleEnabled[16];
     
@@ -1048,14 +1039,13 @@ stock ModuleMgr_PrintModuleInfo(client, const String:strModuleID[])
 
 /**
  * Prints all registered modules.
- * This is meant for other base project files to use, modules shouldn't need this. 
  * 
  * @param client        Client to print information to.
  */
 stock ModuleMgr_PrintModules(client)
 {
-    decl String:modulefullname[32];
-    decl String:moduleshortname[16];
+    decl String:modulefullname[CM_DATA_FULLNAME];
+    decl String:moduleshortname[CM_DATA_SHORTNAME];
     new bool:bModuleDisabled;
     decl String:strModuleEnabled[16];
     decl String:line[256];
@@ -1064,7 +1054,8 @@ stock ModuleMgr_PrintModules(client)
     new moduleID;
     
     // Loop through all the modules.
-    for (new moduleindex = 0; moduleindex < MODULE_COUNT; moduleindex++)
+    new count = MODULE_COUNT;
+    for (new moduleindex = 0; moduleindex < count; moduleindex++)
     {
         // Read moduleindex as a Module type.
         module = Module:moduleindex;

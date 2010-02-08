@@ -242,7 +242,8 @@ stock EventMgr_Forward(ProjectEvents:event, any:eventdata[][], numValues, size, 
     new Module:module;
     
     // Loop through all the modules.
-    for (new moduleindex = 0; moduleindex < MODULE_COUNT; moduleindex++)
+    new count = MODULE_COUNT;
+    for (new moduleindex = 0; moduleindex < count; moduleindex++)
     {
         // Read moduleindex as a Module type.
         module = Module:moduleindex;
@@ -272,7 +273,7 @@ stock EventMgr_Forward(ProjectEvents:event, any:eventdata[][], numValues, size, 
         // If the function ID is invalid, then stop this iteration.
         if (func == INVALID_FUNCTION)
         {
-            decl String:modulefullname[32];
+            decl String:modulefullname[CM_DATA_FULLNAME];
             ModuleMgr_ReadString(module, ModuleData_FullName, modulefullname, sizeof(modulefullname));
             
             LogError("[Event Manager] Module \"%s\" has an invalid event forward function stored for event \"%s\"", modulefullname, g_ProjectEventDisplay[event]);
@@ -306,7 +307,6 @@ stock EventMgr_Forward(ProjectEvents:event, any:eventdata[][], numValues, size, 
 
 /**
  * Event data reader that returns all event enable data.
- * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param module    The module whose event enable data to read.
  */
@@ -317,7 +317,6 @@ stock EventMgr_ReadAllEnableData(Module:module, bool:eventenabledata[ProjectEven
 
 /**
  * Sync all event enable data for all events with the given value.
- * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param module    The module whose event enable data to sync.
  * @param enable    True to enable all events, false to disable all.
@@ -342,12 +341,11 @@ stock EventMgr_SyncEnableData(Module:module, bool:enable)
     }
     
     // Overwrite the old array with the modified one.
-    SetArrayArray(MM_HANDLE_FROM_ID(module), EVENT_DATA_ENABLE, eventenabledata[0], sizeof(eventenabledata));
+    SetArrayArray(ModuleMgr_GetModuleArray(module), EVENT_DATA_ENABLE, eventenabledata[0], sizeof(eventenabledata));
 }
 
 /**
  * Event data reader that returns a single event enable value.
- * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param module    The module whose event enable data to read.
  * @param event     An event from enum ProjectEvents.
@@ -365,7 +363,6 @@ stock bool:EventMgr_ReadEnableValue(Module:module, ProjectEvents:event)
 
 /**
  * Module data writer that writes a new enable value for an event.
- * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param module    The module whose event enable data to write.
  * @param event     The event to write new function ID to.
@@ -386,7 +383,6 @@ stock EventMgr_WriteEnableValue(Module:module, ProjectEvents:event, bool:enable)
 
 /**
  * Event data reader that returns all event function data.
- * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param module    The module whose event function data to read.
  */
@@ -397,7 +393,6 @@ stock EventMgr_ReadAllFuncData(Module:module, Function:eventfuncdata[ProjectEven
 
 /**
  * Reset's all event function data for all events.
- * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param module    The module whose event function data to reset.
  */
@@ -421,12 +416,11 @@ stock EventMgr_ResetFuncData(Module:module)
     }
     
     // Overwrite the old array with the modified one.
-    SetArrayArray(MM_HANDLE_FROM_ID(module), EVENT_DATA_FUNCTION, eventfuncdata[0], sizeof(eventfuncdata));
+    SetArrayArray(ModuleMgr_GetModuleArray(module), EVENT_DATA_FUNCTION, eventfuncdata[0], sizeof(eventfuncdata));
 }
 
 /**
  * Event data reader that returns a single event function value.
- * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param module    The module whose event function data to read.
  * @param event     An event from enum ProjectEvents.
@@ -444,7 +438,6 @@ stock Function:EventMgr_ReadFuncValue(Module:module, ProjectEvents:event)
 
 /**
  * Module data writer that writes a new function ID for an event.
- * This is meant for other base project files to use, modules shouldn't need this.
  * 
  * @param module    The module whose event function data to write.
  * @param event     The event to write new function ID to.
@@ -520,7 +513,7 @@ public GameEvent_RoundEnd(Handle:event, const String:name[], bool:dontBroadcast)
 public GameEvent_PlayerTeam(Handle:event, const String:name[], bool:dontBroadcast)
 {
     // Forward event to all modules.
-    new EventDataTypes:eventdatatypes[] = {DataType_Cell, DataType_Cell, DataType_Cell, DataType_Cell};
+    static EventDataTypes:eventdatatypes[] = {DataType_Cell, DataType_Cell, DataType_Cell, DataType_Cell};
     new any:eventdata[sizeof(eventdatatypes)][1];
     
     eventdata[0][0] = GetClientOfUserId(GetEventInt(event, "userid"));
@@ -558,7 +551,7 @@ public GameEvent_PlayerSpawn(Handle:event, const String:name[], bool:dontBroadca
 public GameEvent_PlayerHurt(Handle:event, const String:name[], bool:dontBroadcast)
 {
     // Forward event to all modules.
-    new EventDataTypes:eventdatatypes[] = {DataType_Cell, DataType_Cell, DataType_Cell, DataType_Cell, DataType_String, DataType_Cell, DataType_Cell, DataType_Cell};
+    static EventDataTypes:eventdatatypes[] = {DataType_Cell, DataType_Cell, DataType_Cell, DataType_Cell, DataType_String, DataType_Cell, DataType_Cell, DataType_Cell};
     new any:eventdata[sizeof(eventdatatypes)][32];
     
     eventdata[0][0] = GetClientOfUserId(GetEventInt(event, "userid"));
@@ -584,7 +577,7 @@ public GameEvent_PlayerHurt(Handle:event, const String:name[], bool:dontBroadcas
 public GameEvent_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
 {
     // Forward event to all modules.
-    new EventDataTypes:eventdatatypes[] = {DataType_Cell, DataType_Cell, DataType_String, DataType_Cell};
+    static EventDataTypes:eventdatatypes[] = {DataType_Cell, DataType_Cell, DataType_String, DataType_Cell};
     new any:eventdata[sizeof(eventdatatypes)][32];
     
     eventdata[0][0] = GetClientOfUserId(GetEventInt(event, "userid"));
@@ -624,7 +617,7 @@ public GameEvent_PlayerJump(Handle:event, const String:name[], bool:dontBroadcas
 public GameEvent_WeaponFire(Handle:event, const String:name[], bool:dontBroadcast)
 {
     // Forward event to all modules. (WeaponFire)
-    new EventDataTypes:eventdatatypes[] = {DataType_Cell, DataType_String};
+    static EventDataTypes:eventdatatypes[] = {DataType_Cell, DataType_String};
     new any:eventdata[sizeof(eventdatatypes)][32];
     
     eventdata[0][0] = GetClientOfUserId(GetEventInt(event, "userid"));
@@ -635,13 +628,14 @@ public GameEvent_WeaponFire(Handle:event, const String:name[], bool:dontBroadcas
     /*
     // Forward event to all modules. (WeaponEntityFire)
     new eventdata2[sizeof(eventdatatypes)][1];
-    eventdatatypes[1] = DataType_Cell;
+    static EventDataTypes:eventdatatypes2[] = {DataType_Cell, DataType_Cell};
     
     decl String:classname[32];
     new weaponentity;
     
     // Loop through all entities.
-    for (new entity = MaxClients; entity < GetMaxEntities(); entity++)
+    new maxentities = GetMaxEntities();
+    for (new entity = MaxClients; entity < maxentities; entity++)
     {
         if (!IsValidEntity(entity))
             continue;
@@ -660,6 +654,6 @@ public GameEvent_WeaponFire(Handle:event, const String:name[], bool:dontBroadcas
     eventdata2[0][0] = eventdata[0][0];
     eventdata2[1][0] = weaponentity;
     
-    EventMgr_Forward(Event_WeaponEntityFire, eventdata2, sizeof(eventdata2), sizeof(eventdata2[]), eventdatatypes);
+    EventMgr_Forward(Event_WeaponEntityFire, eventdata2, sizeof(eventdata2), sizeof(eventdata2[]), eventdatatypes2);
     */
 }

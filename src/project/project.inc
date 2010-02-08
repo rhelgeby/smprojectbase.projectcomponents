@@ -86,22 +86,28 @@ enum Module
  */
 
 /**
+ * @section The max string lengths of module data variables.
+ */
+#define CM_DATA_FULLNAME    32
+#define CM_DATA_SHORTNAME   16
+#define CM_DATA_DESCRIPTION 256
+
+/**
  * All the data modules need to register.
  */
 enum ModuleData
 {
-    bool:ModuleData_Disabled = 0,       /** True if the module is disabled. */
-    bool:ModuleData_Hidden,             /** True to hide the module from console. (base cmd can't touch it) */
-    String:ModuleData_FullName[32],     /** Used for displaying modules. */
-    String:ModuleData_ShortName[16],    /** Used for client interaction with modules. */
-    String:ModuleData_Description[256], /** A description of the module */
-    // gunna need more than this..
+    bool:ModuleData_Disabled = 0,                       /** True if the module is disabled. */
+    bool:ModuleData_Hidden,                             /** True to hide the module from console. (base cmd can't touch it) */
+    String:ModuleData_FullName[CM_DATA_FULLNAME],       /** Used for displaying modules. */
+    String:ModuleData_ShortName[CM_DATA_SHORTNAME],     /** Used for client interaction with modules. */
+    String:ModuleData_Description[CM_DATA_DESCRIPTION], /** A description of the module */
 }
 
 /**
  * The number of cells used to store all the data in enum ModuleData.
  */
-#define MODULE_DATA_CELL_COUNT 1 + 1 + 32 + 16 + 256
+#define MODULE_DATA_CELL_COUNT 1 + 1 + CM_DATA_FULLNAME + CM_DATA_SHORTNAME + CM_DATA_DESCRIPTION
 
 /**
  * The longest string that can be stored in the module's data. (Size of ModuleData_FullName)
@@ -113,6 +119,7 @@ enum ModuleData
 // --------------------------------
 // Note: Since event HOOKING is done here, you can touch this one ;) (you can change/add/remove stuff here)
 // Note: Ignore this section if eventmanager.inc won't be compiled into the plugin.
+
 /**
  * This is a collection of ALL game and custom events.
  * Add any custom events here to the bottom of the list, and update define EVENT_DATA_CELL_COUNT. (below)
@@ -140,6 +147,32 @@ enum ProjectEvents
     Event_WeaponFire
     //Event_WeaponEntityFire
 }
+
+/**
+ * String array of display names for project events. (above)
+ * Keep this updated as ProjectEvents is modified.
+ */
+stock String:g_ProjectEventDisplay[ProjectEvents][] = {
+    "OnPluginStart",
+    "OnAllPluginsLoaded",
+    "OnPluginEnd",
+    "OnMapStart",
+    "OnMapEnd",
+    "OnAutoConfigsBuffered",
+    "OnConfigsExecuted",
+    "OnClientPutInServer",
+    "OnClientDisconnect",
+    "RoundStart",
+    "RoundFreezeEnd",
+    "RoundEnd",
+    "PlayerTeam",
+    "PlayerSpawn",
+    "PlayerHurt",
+    "PlayerDeath",
+    "PlayerJump",
+    "WeaponFire"
+    //"WeaponEntityFire"
+};
 
 /**
  * The number of cells used to store all the event enable data in enum ProjectEvents. (above)
@@ -173,32 +206,6 @@ stock EventDataTypes:g_CommonDataType2[] = {DataType_Cell};
 /**
  * @endsection
  */
-
-/**
- * String array of display names for project events. (above)
- * Keep this updated as ProjectEvents is modified.
- */
-stock String:g_ProjectEventDisplay[ProjectEvents][] = {
-    "OnPluginStart",
-    "OnAllPluginsLoaded",
-    "OnPluginEnd",
-    "OnMapStart",
-    "OnMapEnd",
-    "OnAutoConfigsBuffered",
-    "OnConfigsExecuted",
-    "OnClientPutInServer",
-    "OnClientDisconnect",
-    "RoundStart",
-    "RoundFreezeEnd",
-    "RoundEnd",
-    "PlayerTeam",
-    "PlayerSpawn",
-    "PlayerHurt",
-    "PlayerDeath",
-    "PlayerJump",
-    "WeaponFire"
-    //"WeaponEntityFire"
-};
 
 // ---------------
 //    Editable
@@ -272,11 +279,11 @@ stock String:g_ProjectEventDisplay[ProjectEvents][] = {
  * @section The formatting rules for the paths to the project translation files.
  * 
  * See TransMgr_BuildTranslationPath in translationsmanager.inc.
- * 'shortname': The module's short name.
+ * 'moduleshortname': The module's short name.
  */
 #define TM_BASE_PATH "%s/projectbase.phrases", PROJECT_SHORTNAME
 #define TM_PROJECT_PATH "%s/%s.phrases", PROJECT_SHORTNAME, PROJECT_SHORTNAME
-#define TM_MODULE_PATH "%s/%s.phrases", PROJECT_SHORTNAME, shortname
+#define TM_MODULE_PATH "%s/%s.phrases", PROJECT_SHORTNAME, moduleshortname
 
 /**
  * @section The formatting string for each option in enum MsgFormatting.

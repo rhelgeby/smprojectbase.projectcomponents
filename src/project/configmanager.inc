@@ -35,14 +35,29 @@
 // ---------------
 
 /**
+ * The max string lengths of config data variables.
+ */
+#define CM_DATA_PATH 128
+
+/**
+ * All data stored for each config file.
+ */
+enum ConfigData
+{
+    Function:ConfigData_ReloadFunc,           /** This function is called when the config should be reloaded. */
+    String:ConfigData_Path[CM_DATA_PATH]    /** The path relative to the sourcemod/ folder to the config file. */
+}
+
+/**
+ * The max number of cells needed for each of the config manager's allocated indexes.
+ */
+#define CM_DATA_MAX_CELLS 1 + CM_DATA_PATH
+// Config manager needs the max number of configs multiplied by the max length of each path.
+
+/**
  * The max number of config files a single module can maintain.
  */
 #define CM_MODULE_MAX_CONFIGS 3
-
-/**
- * The max size of each of a module's config paths.
- */
-#define CM_MODULE_CONFIG_PATH_MAX 128
 
 /**
  * @section Default defines for each config file index.
@@ -80,15 +95,9 @@ enum KvCache
 // ---------------
 
 /**
- * The max number of cells needed for each of the config manager's allocated indexes.
- */
-#define CM_DATA_MAX_CELLS CM_MODULE_CONFIG_PATH_MAX
-// Config manager needs the max number of configs multiplied by the max length of each path.
-
-/**
  * Defines the block of data in the module data arrays that contains config path data.
  */
-#define CONFIG_DATA_PATH(%1) g_iCMAllocatedIndexes[%1]
+#define CONFIG_DATA(%1) g_iCMAllocatedIndexes[%1]
 
 /**
  * Array to store the indexes of the allocated space in the module data arrays for the config manager.
@@ -106,7 +115,46 @@ ConfigMgr_OnPluginStart()
 {
     // Allocate 1 index for the data we want to store for each module.
     ModuleMgr_Allocate(CM_MODULE_MAX_CONFIGS, g_iCMAllocatedIndexes);
+    
+    // Create config commands.
+    Project_RegServerCmd("reload_config", Command_ReloadConfig, "Reloads a module's config files.  Usage: <prefix>_reload_config <moduleshortname> [module2] ...\nRelated command(s): <prefix>_reload_config_all");
+    Project_RegServerCmd("reload_config_all", Command_ReloadConfigAll, "Reloads all modules' config files.\nRelated command(s): <prefix>_reload_config");
 }
+
+/**
+ * Map has loaded.
+ */
+/*ConfigMgr_OnMapStart()
+{
+    new Module:module;
+    new Function:reloadfuncs[CM_MODULE_MAX_CONFIGS];
+    
+    // Loop through all the modules.
+    new count = MODULE_COUNT;
+    for (new moduleindex = 0; moduleindex < count; moduleindex++)
+    {
+        // Read moduleindex as a Module type.
+        module = Module:moduleindex;
+        
+        // If the module is disabled, then stop this iteration.
+        if (ModuleMgr_IsDisabled(module))
+            continue;
+        
+        // Get each load function ID into an array.
+        ConfigMgr_ReadCells(module, ConfigData_ReloadFunc, reloadfuncs);
+        
+        // Loop through each config index and forward the function if it's valid.
+        new nextindex = ConfigMgr_FindNextIndex(module);
+        new configcount = (nextindex > -1) ? nextindex : CM_MODULE_MAX_CONFIGS;
+        for (new configindex = 0; configindex < configcount; configindex++)
+        {
+            Call_StartFunction(GetMyHandle(), reloadfuncs[configindex]);
+            Call_PushCell(configindex);
+            Call_PushCell(false);
+            Call_Finish();
+        }
+    }
+}*/
 
 /**
  * A module was just registered.  This is being called before the module has been assigned a module identifier.
@@ -131,6 +179,20 @@ stock ConfigMgr_OnModuleRegister(Handle:adtModule)
  */
 stock ConfigMgr_OnPrintModuleInfo(client, Module:module)
 {
+    decl String:configpaths[CM_MODULE_MAX_CONFIGS][CM_DATA_PATH];
+    ConfigMgr_ReadStrings(module, ConfigData_Path, configpaths, sizeof(configpaths[]));
+    
+    new String:configpathlist[CM_MODULE_MAX_CONFIGS * CM_DATA_PATH];
+    for (new configindex = 0; configindex < CM_MODULE_MAX_CONFIGS; configindex++)
+    {
+        if (configpaths[configindex][0] == 0)
+            continue;
+        
+        Format(configpathlist, sizeof(configpathlist), "%s\n    %s", configpathlist, configpaths[configindex]);
+    }
+    
+    // Print all the data stored in the module manager itself.
+    PrintToServer("%T", "ConfigMgr cmd base lvl2 modules info print", LANG_SERVER, configpathlist);
 }
 
 // **********************************************
@@ -138,17 +200,28 @@ stock ConfigMgr_OnPrintModuleInfo(client, Module:module)
 // **********************************************
 
 /**
+ * Config reload function prototype:
+ * 
+ * @param configindex   The module's config index that's being reloaded.
+ * 
+ * public:ReloadFunc(configindex)
+ */
+
+/**
  * Register a config file.
  * 
- * @param module        The module identifier
- * @param configpath    The path to the config file relative to sourcemod/.
- * @param configindex   The index (starting from 0) of this module's config file.
+ * @param module            The module identifier.
+ * @param configreloadfunc  This name of the function that will be called when the config file is being reloaded.
+ *                          Set this as a null string to disable the reload function.
+ *                          Prototype is right above this comment block.
+ * @param configpath        The path to the config file relative to sourcemod/.
+ * @param configindex       Index of the module's config file. See CM_CONFIGINDEX_* defines.
  * 
- * @return              RegResult_Success on success.  See enum ConfigRegistrationResults for other results.
+ * @return                  RegResult_Success on success.  See enum ConfigRegistrationResults for other results.
  */
-stock ConfigRegistrationResults:ConfigMgr_Register(Module:module, const String:configpath[], &configindex = -1)
+stock ConfigRegistrationResults:ConfigMgr_Register(Module:module, const String:configreloadfunc[], const String:configpath[], &configindex = -1)
 {
-    decl String:modulefullname[32];
+    decl String:modulefullname[CM_DATA_FULLNAME];
     ModuleMgr_ReadString(module, ModuleData_FullName, modulefullname, sizeof(modulefullname));
     
     // Check if the module has registered the max number of config files.
@@ -175,8 +248,9 @@ stock ConfigRegistrationResults:ConfigMgr_Register(Module:module, const String:c
         return RegResult_Duplicate;
     }
     
-    // Write the config path in the module's config path data.
-    ConfigMgr_WriteConfigPath(module, configindex, configpath);
+    // Write the config data to the module data arrays.
+    ConfigMgr_WriteCell(module, configindex, ConfigData_ReloadFunc, GetFunctionByName(GetMyHandle(), configreloadfunc));
+    ConfigMgr_WriteString(module, configindex, ConfigData_Path, CM_DATA_PATH, configpath);
     
     return RegResult_Success;
 }
@@ -214,15 +288,15 @@ stock ConfigRegistrationResults:ConfigMgr_Register(Module:module, const String:c
  * Note: SM has plans to remove the need for 'public' on this private function.
  * 
  * @param module        The module identifier to get the config info from.
- * @param configindex   The index, starting from 0, of the config file path.
+ * @param configindex   Index of the module's config file. See CM_CONFIGINDEX_* defines.
  * @param funcCache     The name of the function that will be doing the caching. (see prototype above)
  * 
  * @return              The number of sections in the keyvalue file.  
  */
 stock ConfigMgr_CacheKv(Module:module, configindex, const String:funcCache[])
 {
-    decl String:configpath[CM_MODULE_CONFIG_PATH_MAX];
-    ConfigMgr_ReadConfigPath(module, configindex, configpath, sizeof(configpath));
+    decl String:configpath[CM_DATA_PATH];
+    ConfigMgr_ReadString(module, configindex, ConfigData_Path, configpath, sizeof(configpath));
     
     decl String:fullconfigpath[PLATFORM_MAX_PATH];
     BuildPath(Path_SM, fullconfigpath, sizeof(fullconfigpath), configpath);
@@ -275,7 +349,7 @@ stock ConfigMgr_CacheKv(Module:module, configindex, const String:funcCache[])
  * Caches each line of a text file into an adt array.
  * 
  * @param module        The module identifier.
- * @param configindex   The index, starting from 0, of the config file path.
+ * @param configindex   Index of the module's config file. See CM_CONFIGINDEX_* defines.
  * @param maxlen        The max length of each string.
  * @param count         This will be set to the number of lines cached.
  * 
@@ -284,7 +358,7 @@ stock ConfigMgr_CacheKv(Module:module, configindex, const String:funcCache[])
  */
 stock Handle:ConfigMgr_CacheFile(Module:module, configindex, maxlen, &count = 0)
 {
-    decl String:configpath[CM_MODULE_CONFIG_PATH_MAX];
+    decl String:configpath[CM_DATA_PATH];
     ConfigMgr_ReadConfigPath(module, configindex, configpath, sizeof(configpath));
     
     decl String:fullconfigpath[PLATFORM_MAX_PATH];
@@ -331,6 +405,32 @@ stock Handle:ConfigMgr_CacheFile(Module:module, configindex, maxlen, &count = 0)
 // **********************************************
 
 /**
+ * Reloads all of a module's config files.
+ * 
+ * @param module    The module identifier of the module whose configs to reload.
+ */
+stock ConfigMgr_ReloadConfigs(Module:module)
+{
+    new Function:reloadfuncs[CM_MODULE_MAX_CONFIGS];
+    new String:configpaths[CM_MODULE_MAX_CONFIGS][CM_DATA_PATH];
+    
+    // Get the config data for this module into arrays.
+    ConfigMgr_ReadCells(module, ConfigData_ReloadFunc, reloadfuncs);
+    ConfigMgr_ReadStrings(module, ConfigData_Path, configpaths, CM_DATA_PATH);
+    
+    // Call the reload func stored in the module's config data for each of its config files.
+    for (new configindex = 0; configindex < CM_MODULE_MAX_CONFIGS; configindex++)
+    {
+        if (configpaths[configindex][0] == 0)
+            continue;
+        
+        Call_StartFunction(GetMyHandle(), reloadfuncs[configindex]);
+        Call_PushCell(configindex);
+        Call_Finish();
+    }
+}
+
+/**
  * Finds the next available index to store a config path.
  * 
  * @param module    The module identifier.
@@ -339,8 +439,8 @@ stock Handle:ConfigMgr_CacheFile(Module:module, configindex, maxlen, &count = 0)
  */
 stock ConfigMgr_FindNextIndex(Module:module)
 {
-    new String:configpaths[CM_MODULE_MAX_CONFIGS][CM_MODULE_CONFIG_PATH_MAX];
-    ConfigMgr_ReadConfigPaths(module, configpaths);
+    new String:configpaths[CM_MODULE_MAX_CONFIGS][CM_DATA_PATH];
+    ConfigMgr_ReadStrings(module, ConfigData_Path, configpaths, CM_DATA_PATH);
     
     // Loop through each config path index.
     for (new cpindex = 0; cpindex < sizeof(configpaths); cpindex++)
@@ -362,8 +462,8 @@ stock ConfigMgr_FindNextIndex(Module:module)
  */
 stock ConfigMgr_PathToIndex(Module:module, const String:configpath[])
 {
-    new String:configpaths[CM_MODULE_MAX_CONFIGS][CM_MODULE_CONFIG_PATH_MAX];
-    ConfigMgr_ReadConfigPaths(module, configpaths);
+    new String:configpaths[CM_MODULE_MAX_CONFIGS][CM_DATA_PATH];
+    ConfigMgr_ReadStrings(module, ConfigData_Path, configpaths, CM_DATA_PATH);
     
     // Loop through each config path index.
     for (new cpindex = 0; cpindex < sizeof(configpaths); cpindex++)
@@ -376,54 +476,201 @@ stock ConfigMgr_PathToIndex(Module:module, const String:configpath[])
 }
 
 /**
- * Reads a config path registered by a module.
+ * Config data reader that returns all available config data.
  * 
- * @param module        The module to check.
- * @param configindex   The index of the config path starting from 0 and ending at CM_MODULE_MAX_CONFIGS - 1. 
- * @param configpath    The path to the config file.
+ * @param module        The module whose config data to read.
+ * @param configindex   Index of the module's config file. See CM_CONFIGINDEX_* defines.
+ * @param configdata    Output array for all config data.  See enum ConfigData.
+ */
+stock ConfigMgr_ReadAll(Module:module, configindex, configdata[ConfigData])
+{
+    GetArrayArray(ModuleMgr_GetModuleArray(module), CONFIG_DATA(configindex), configdata[0], sizeof(configdata));
+}
+
+/**
+ * Module config data reader for any data type except strings.
+ * 
+ * @param module        The module whose config cell data to read.
+ * @param configindex   Index of the module's config file. See CM_CONFIGINDEX_* defines.
+ * @param data          The data to get the value of.  See enum ConfigData.
+ * 
+ * @return          The value of the desired module config data.
+ */
+stock ConfigMgr_ReadCell(Module:module, configindex, ConfigData:data)
+{
+    new configdata[ConfigData];
+    ConfigMgr_ReadAll(module, configindex, configdata);
+    
+    // Return the value.
+    return _:configdata[data];
+}
+
+/**
+ * Module config data reader for reading all non-string-typed values for every config index.
+ * The size of the array is equal to CM_MODULE_MAX_CONFIGS.
+ * 
+ * @param module    The module whose config string data to read.
+ * @param data      The data to get the values of.  See enum ConfigData.
+ * @param output    Output array for the data read.
+ */
+//stock ConfigMgr_ReadCells(Module:module, ConfigData:data, any:output[CM_MODULE_MAX_CONFIGS])
+stock ConfigMgr_ReadCells(Module:module, ConfigData:data, any:output[])  // ^^ Should be this, but compiler bug/limitation.
+{
+    // Loop through each config index.
+    for (new configindex = 0; configindex < CM_MODULE_MAX_CONFIGS; configindex++)
+        output[configindex] = ConfigMgr_ReadCell(module, configindex, data);
+}
+
+/**
+ * Module config data reader for any string typed values.
+ * 
+ * @param module        The module whose config string data to read.
+ * @param data          The data to get the value of.  See enum ConfigData.
+ * @param configindex   Index of the module's config file. See CM_CONFIGINDEX_* defines.
+ * @param output        Output variable for the data read.
  * @param maxlen        The max length of the output string.
  */
-stock ConfigMgr_ReadConfigPath(Module:module, configindex, String:configpath[], maxlen)
+stock ConfigMgr_ReadString(Module:module, configindex, ConfigData:data, String:output[], maxlen)
 {
-    // Get the config path.
-    GetArrayString(ModuleMgr_GetModuleArray(module), CONFIG_DATA_PATH(configindex), configpath, maxlen);
+    new configdata[ConfigData];
+    ConfigMgr_ReadAll(module, configindex, configdata);
+    
+    // Copy full name to output
+    strcopy(output, maxlen, String:configdata[data]);
 }
 
 /**
- * Reads the config paths registered by a module.
+ * Module config data reader for reading all string-typed values for every config index.
+ * The size of the array is equal to CM_MODULE_MAX_CONFIGS.
  * 
- * @param module        The module to check.
- * @param configpaths   The paths to all the module's registered configs.
+ * @param module    The module whose config string data to read.
+ * @param data      The data to get the values of.  See enum ConfigData.
+ * @param output    Output string array for the data read.
+ * @param maxlen    The max length of the output array strings.
  */
-stock ConfigMgr_ReadConfigPaths(Module:module, String:configpaths[][])
+stock ConfigMgr_ReadStrings(Module:module, ConfigData:data, String:output[CM_MODULE_MAX_CONFIGS][], maxlen)
 {
-    // Get all of the config paths.
-    for (new pindex = 0; pindex < CM_MODULE_MAX_CONFIGS; pindex++)
-        GetArrayString(ModuleMgr_GetModuleArray(module), CONFIG_DATA_PATH(pindex), configpaths[pindex], CM_MODULE_CONFIG_PATH_MAX);
+    // Loop through each config index.
+    for (new configindex = 0; configindex < sizeof(output); configindex++)
+        ConfigMgr_ReadString(module, configindex, data, output[configindex], maxlen);
 }
 
 /**
- * Sets a config path for module.
+ * Module config data writer that overwrites all config data for a module with the given data.
  * 
- * @param module        The module whose config path to set.
- * @param configindex   The index of the config path starting from 0 and ending at CM_MODULE_MAX_CONFIGS - 1. 
- * @param configpath    The path to the config file.
+ * @param module        The module whose config data to write.
+ * @param configindex   Index of the module's config file. See CM_CONFIGINDEX_* defines.
+ * @param configdata    New config data to replace the old config data.  See enum ConfigData.
  */
-stock ConfigMgr_WriteConfigPath(Module:module, configindex, const String:configpath[])
+stock ConfigMgr_WriteAll(Module:module, configindex, configdata[ConfigData])
 {
-    // Get the config path.
-    SetArrayString(ModuleMgr_GetModuleArray(module), CONFIG_DATA_PATH(configindex), configpath);
+    SetArrayArray(ModuleMgr_GetModuleArray(module), CONFIG_DATA(configindex), configdata[0], sizeof(configdata));
 }
 
 /**
- * Reads the config paths registered by a module.
+ * Module config data writer that writes a specified non-string data value.
  * 
- * @param module        The module to check.
- * @param configpaths   The paths to all the module's registered configs.
+ * @param module        The module whose config cell data to write.
+ * @param configindex   Index of the module's config file. See CM_CONFIGINDEX_* defines.
+ * @param data          Data to write new value to.  See enum ConfigData.
+ * @param value         Any cell value to write as the new data.
  */
-stock ConfigMgr_WriteConfigPaths(Module:module, String:configpaths[][])
+stock ConfigMgr_WriteCell(Module:module, configindex, ConfigData:data, any:value)
 {
-    // Set all of the config paths.
-    for (new pindex = 0; pindex < CM_MODULE_MAX_CONFIGS; pindex++)
-        SetArrayString(ModuleMgr_GetModuleArray(module), CONFIG_DATA_PATH(pindex), configpaths[pindex]);
+    // Read all the module's config data.
+    new configdata[ConfigData];
+    ConfigMgr_ReadAll(module, configindex, configdata);
+    
+    // Change the value of the specified module config data.
+    configdata[data] = value;
+    
+    // Overwrite the old array with the modified one.
+    ConfigMgr_WriteAll(module, configindex, configdata);
+}
+
+/**
+ * Module config data writer that writes a specified string data value.
+ * 
+ * @param module        The module whose config string data to write.
+ * @param configindex   Index of the module's config file. See CM_CONFIGINDEX_* defines.
+ * @param data          Data to write new string to.  See enum ConfigData.
+ * @param maxlen        The max length of the data value.  See enum ConfigData.
+ * @param value         A string to write as the new data value.
+ */
+stock ConfigMgr_WriteString(Module:module, configindex, ConfigData:data, maxlen, const String:value[])
+{
+    // Read all the module's config data.
+    new configdata[ConfigData];
+    ConfigMgr_ReadAll(module, configindex, configdata);
+    
+    // Change the value of the specified module config data.
+    strcopy(String:configdata[data], maxlen, value);
+    
+    // Overwrite the old array with the modified one.
+    ConfigMgr_WriteAll(module, configindex, configdata);
+}
+
+/**
+ * Command callback: <prefix>_config_reload
+ * Reloads a module's config files.
+ * 
+ * @param argc      The number of arguments that the server sent with the command.
+ */
+public Action:Command_ReloadConfig(argc)
+{
+    // Check if no arguments.
+    if (argc < 1)
+    {
+        Project_PrintToServer("%T", "ConfigMgr cmd reloadconfig usage", LANG_SERVER, PROJECT_CMD_PREFIX, PROJECT_CMD_PREFIX);
+        return Plugin_Handled;
+    }
+    
+    decl String:strModuleID[16];
+    new Module:module;
+    
+    // Loop through each argument.
+    for (new arg = 1; arg <= argc; arg++)
+    {
+        // Get argument string.
+        GetCmdArg(arg, strModuleID, sizeof(strModuleID));
+        module = ModuleMgr_FindByID(StringToInt(strModuleID), strModuleID);
+        
+        if (module == INVALID_MODULE)
+        {
+            Project_PrintToServer("%T", "ModuleMgr invalid module", LANG_SERVER, strModuleID);
+            continue;
+        }
+        
+        // Reload the module's configs.
+        ConfigMgr_ReloadConfigs(module);
+    }
+    
+    // Say that we handled the command so CS:S doesn't see it and print "Unknown command"
+    return Plugin_Handled;
+}
+
+/**
+ * Command callback: <prefix>_config_reload_all
+ * Reload all modules' config files.
+ * 
+ * @param argc      The number of arguments that the server sent with the command.
+ */
+public Action:Command_ReloadConfigAll(argc)
+{
+    new Module:module;
+    
+    // Loop through all the modules.
+    new count = MODULE_COUNT;
+    for (new moduleindex = 0; moduleindex < count; moduleindex++)
+    {
+        // Read moduleindex as a Module type.
+        module = Module:moduleindex;
+        
+        // If the module is disabled, then stop this iteration.
+        if (ModuleMgr_IsDisabled(module))
+            continue;
+        
+        // Reload the module's configs.
+        ConfigMgr_ReloadConfigs(module);
+    }
 }

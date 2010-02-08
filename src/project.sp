@@ -73,7 +73,7 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 }
 
 /**
- * Plugin is loading.
+ * Plugin has loaded.
  */
 public OnPluginStart()
 {
@@ -118,7 +118,7 @@ public OnPluginStart()
 }
 
 /**
- * All plugins have finished loading.
+ * All plugins have loaded.
  */
 public OnAllPluginsLoaded()
 {
@@ -129,7 +129,7 @@ public OnAllPluginsLoaded()
 }
 
 /**
- * The map is starting.
+ * The map has started.
  */
 public OnMapStart()
 {
@@ -140,7 +140,7 @@ public OnMapStart()
 }
 
 /**
- * The map is ending.
+ * The map has ended.
  */
 public OnMapEnd()
 {
@@ -151,7 +151,8 @@ public OnMapEnd()
 }
 
 /**
- * Main configs were just executed.
+ * This is called before OnConfigsExecuted but any time after OnMapStart.
+ * Per-map settings should be set here. 
  */
 public OnAutoConfigsBuffered()
 {
@@ -162,7 +163,7 @@ public OnAutoConfigsBuffered()
 }
 
 /**
- * Configs just finished getting executed.
+ * All convars are set, cvar-dependent code should use this.
  */
 public OnConfigsExecuted()
 {
@@ -173,7 +174,7 @@ public OnConfigsExecuted()
 }
 
 /**
- * Client is joining the server.
+ * Client has joined the server.
  * 
  * @param client    The client index.
  */
@@ -190,7 +191,7 @@ public OnClientPutInServer(client)
 }
 
 /**
- * Client is leaving the server.
+ * Client is disconnecting from the server.
  * 
  * @param client    The client index.
  */
@@ -225,6 +226,7 @@ stock Project_PrintToServer(const String:text[], any:...)
 
 /**
  * Wrapper of CreateConVar to prefix the cvars with the project's shortname.
+ * Use <prefix> in the description to print the value of PROJECT_CVAR_PREFIX.
  * 
  * See native CreateConVar.
  */
@@ -233,11 +235,16 @@ stock Handle:Project_CreateConVar(const String:name[], const String:defaultValue
     decl String:project_cvarname[64];
     Format(project_cvarname, sizeof(project_cvarname), "%s_%s", PROJECT_CVAR_PREFIX, name);
     
-    return CreateConVar(project_cvarname, defaultValue, description, flags, hasMin, min, hasMax, max);
+    // Replace the define name with the actual cvar prefix.
+    decl String:fmtdescription[1024];
+    ReplaceString(fmtdescription, sizeof(fmtdescription), "<prefix>", PROJECT_CVAR_PREFIX, false);
+    
+    return CreateConVar(project_cvarname, defaultValue, fmtdescription, flags, hasMin, min, hasMax, max);
 }
 
 /**
  * Wrapper of RegServerCmd to prefix the commands with the project's shortname.
+ * Use <prefix> in the description to print the value of PROJECT_CMD_PREFIX.
  * 
  * See native RegServerCmd.
  */
@@ -246,7 +253,11 @@ stock Project_RegServerCmd(const String:cmd[], SrvCmd:callback, const String:des
     decl String:project_cmdname[64];
     Format(project_cmdname, sizeof(project_cmdname), "%s_%s", PROJECT_CMD_PREFIX, cmd);
     
-    RegServerCmd(project_cmdname, callback, description, flags);
+    // Replace the define name with the actual server cmd prefix.
+    decl String:fmtdescription[1024];
+    ReplaceString(fmtdescription, sizeof(fmtdescription), "<prefix>", PROJECT_CMD_PREFIX, false);
+    
+    RegServerCmd(project_cmdname, callback, fmtdescription, flags);
 }
 
 /**
