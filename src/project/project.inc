@@ -240,6 +240,19 @@ stock String:g_ProjectEventDisplay[ProjectEvents][] = {
 #define PROJECT_CREDITS " Plugin was developed by Greyscale.\n Development would not have been possible without:\n  AlliedModders, LLC.\n  Andrew \"Greyscale\" Borba, plugin base developer\n  Richard \"rhelgeby\" Helgeby, compilation environment designer and advisor\n http://www.sourcemod.net/"
 
 /**
+ * @section Base file message prefixes.
+ * 
+ * See Project_PrintToServer in <projectname>.sp.
+ * 'formatted': The text being printed.
+ */
+#define PROJECT_SERVER_PREFIX "[%s] %s", PROJECT_FULLNAME, formatted
+#define PROJECT_LOG_PREFIX "[%s] %s", PROJECT_FULLNAME, formatted
+#define PROJECT_ERROR_PREFIX "[%s] %s", PROJECT_FULLNAME, formatted
+/**
+ * @endsection
+ */
+
+/**
  * Your plugin's base command for module management.
  * This command will be very similar to the "sm" command except geared toward module management instead of plugin management.
  * Also handles printing plugin information like credits and version.
@@ -257,7 +270,6 @@ stock String:g_ProjectEventDisplay[ProjectEvents][] = {
 
 /**
  * @section The formatting rules for the paths to the project translation files.
- * Note: These are only used if translationsmanager.inc is included.
  * 
  * See TransMgr_BuildTranslationPath in translationsmanager.inc.
  * 'shortname': The module's short name.
@@ -294,10 +306,24 @@ stock String:g_ProjectEventDisplay[ProjectEvents][] = {
  * translations/<projectshortname>/projectbase.phrases.txt
  *  
  * Translation files for modules should be loaded via TransMgr_Register.
- * Note: This is only used if translationsmanager.inc is included.
+ *  
+ * Note: None of the above applies if the translations manager isn't included.
+ * You must load all translations here, if that's the case.
  */
-stock TransMgr_LoadExtraTranslations()
+stock Project_LoadExtraTranslations()
 {
+    // Load base and project translations if translations manager isn't included.
+    #if !defined TRANSLATIONS_MANAGER
+        decl String:basetranslations[PLATFORM_MAX_PATH];
+        decl String:projecttranslations[PLATFORM_MAX_PATH];
+        
+        Format(basetranslations, sizeof(basetranslations), TM_BASE_PATH);
+        Format(projecttranslations, sizeof(projecttranslations), TM_PROJECT_PATH);
+        
+        LoadTranslations(basetranslations);
+        LoadTranslations(projecttranslations);
+    #endif
+    
     // Standard phrases provided by SM.
     LoadTranslations("common.phrases");
 }

@@ -600,7 +600,6 @@ stock bool:ModuleMgr_CreateBackupCmd()
 }
 
 #if defined PROJECT_BASE_CMD
-    #if defined TRANSLATIONS_MANAGER
 
 /**
  * Base command sub command types.
@@ -724,10 +723,9 @@ public Action:Command_Base(client, argc)
 }
 
 /**
- * Handle PROJECT_BASE_CMD command when a non-admin uses it.
+ * Handle PROJECT_BASE_CMD command when a client uses it.
  * 
  * @param client    The client index.
- * @param argc      The number of arguments that the client sent with the command.
  */
 ModuleMgr_BaseCmdClient(client)
 {
@@ -748,7 +746,7 @@ ModuleMgr_BaseCmdClient(client)
     }
     else
     {
-        TransMgr_PrintText(client, MsgFormat_None, MsgType_Reply, _, false, "ModuleMgr cmd base client syntax", PROJECT_FULLNAME, PROJECT_VERSION, PROJECT_AUTHOR, PROJECT_BASE_CMD, PROJECT_BASE_CMD);
+        ReplyToCommand(client, "%t", "ModuleMgr cmd base client syntax", PROJECT_FULLNAME, PROJECT_VERSION, PROJECT_AUTHOR, PROJECT_BASE_CMD, PROJECT_BASE_CMD);
         return;
     }
 }
@@ -761,9 +759,6 @@ ModuleMgr_BaseCmdClient(client)
  */
 ModuleMgr_BaseCmdServer(client, argc)
 {
-    // Determine how to print the message to server/client.
-    new MsgTypes:msgtype = (client == SERVER_INDEX) ? MsgType_Server : MsgType_Console;
-    
     // Get all arguments.
     if (argc == 0) argc++;
     new String:strArgs[argc][16];
@@ -798,7 +793,7 @@ ModuleMgr_BaseCmdServer(client, argc)
     // Print level 1 syntax.
     if (!valid_exists)
     {
-        TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "ModuleMgr cmd base lvl1 syntax", PROJECT_FULLNAME, PROJECT_BASE_CMD, g_BaseCmdsLvl1[0], g_BaseCmdsLvl1[1], g_BaseCmdsLvl1[2]);
+        PrintToServer("%T", "ModuleMgr cmd base lvl1 syntax", LANG_SERVER, PROJECT_FULLNAME, PROJECT_BASE_CMD, g_BaseCmdsLvl1[0], g_BaseCmdsLvl1[1], g_BaseCmdsLvl1[2]);
         return;
     }
     
@@ -807,7 +802,7 @@ ModuleMgr_BaseCmdServer(client, argc)
     {
         // Format the phrase name, because it depends on which command is being entered.
         Format(phraseformat, sizeof(phraseformat), "ModuleMgr cmd base lvl1 %s syntax", strArgs[BASECMD_ARG(1)]);
-        TransMgr_PrintText(client, MsgFormat_Plugin, msgtype, _, false, phraseformat);
+        Project_PrintToServer("%T", phraseformat, LANG_SERVER);
         return;
     }
     
@@ -840,8 +835,8 @@ ModuleMgr_BaseCmdServer(client, argc)
         if (!valid_exists)
         {
             // Format the phrase name, because it depends on which sub-command accessor is being used.
-            Format(phraseformat, sizeof(phraseformat), "ModuleMgr cmd base lvl2 accessor %s syntax", strArgs[BASECMD_ARG(1)]);
-            TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, phraseformat, PROJECT_FULLNAME, g_BaseCmdsLvl2[iLvl1Cmd][0], g_BaseCmdsLvl2[iLvl1Cmd][1], g_BaseCmdsLvl2[iLvl1Cmd][2], g_BaseCmdsLvl2[iLvl1Cmd][3], g_BaseCmdsLvl2[iLvl1Cmd][4], g_BaseCmdsLvl2[iLvl1Cmd][5], g_BaseCmdsLvl2[iLvl1Cmd][6]);
+            Format(phraseformat, sizeof(phraseformat), "ModuleMgr cmd base lvl2 %s syntax", strArgs[BASECMD_ARG(1)]);
+            PrintToServer("%T", phraseformat, LANG_SERVER, PROJECT_FULLNAME, g_BaseCmdsLvl2[iLvl1Cmd][0], g_BaseCmdsLvl2[iLvl1Cmd][1], g_BaseCmdsLvl2[iLvl1Cmd][2], g_BaseCmdsLvl2[iLvl1Cmd][3], g_BaseCmdsLvl2[iLvl1Cmd][4], g_BaseCmdsLvl2[iLvl1Cmd][5], g_BaseCmdsLvl2[iLvl1Cmd][6]);
             return;
         }
         
@@ -850,7 +845,7 @@ ModuleMgr_BaseCmdServer(client, argc)
         {
             // Format the phrase name, because it depends on which command is being entered.
             Format(phraseformat, sizeof(phraseformat), "ModuleMgr cmd base lvl2 %s %s syntax", strArgs[BASECMD_ARG(1)], strArgs[BASECMD_ARG(2)]);
-            TransMgr_PrintText(client, MsgFormat_Plugin, msgtype, _, false, phraseformat, PROJECT_BASE_CMD, strArgs[BASECMD_ARG(1)], strArgs[BASECMD_ARG(2)]);
+            Project_PrintToServer("%T", phraseformat, LANG_SERVER, PROJECT_BASE_CMD, strArgs[BASECMD_ARG(1)], strArgs[BASECMD_ARG(2)]);
             return;
         }
     }
@@ -868,6 +863,8 @@ ModuleMgr_BaseCmdServer(client, argc)
  */
 ModuleMgr_BaseCmdParse(client, const String:strArgs[][])
 {
+    decl String:phraseformat[64];
+    
     // The "credits" sub-command.
     if (StrEqual(strArgs[BASECMD_ARG(1)], g_BaseCmdsLvl1[0], false))
     {
@@ -897,12 +894,17 @@ ModuleMgr_BaseCmdParse(client, const String:strArgs[][])
             new Module:module = ModuleMgr_FindByID(StringToInt(strArgs[BASECMD_ARG(3)]), strArgs[BASECMD_ARG(3)]);
             if (module == INVALID_MODULE)
             {
-                TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "ModuleMgr invalid module", strArgs[BASECMD_ARG(3)]);
+                Project_PrintToServer("%T", "ModuleMgr invalid module", LANG_SERVER, strArgs[BASECMD_ARG(3)]);
                 return;
             }
             
             ModuleMgr_Enable(module);
-            TransMgr_PrintText(client, MsgFormat_Both, MsgType_Reply, module, false, "ModuleMgr cmd base lvl2 modules enable");
+            
+            decl String:modulefullname[32];
+            ModuleMgr_ReadString(module, ModuleData_FullName, modulefullname, sizeof(modulefullname));
+            
+            Format(phraseformat, sizeof(phraseformat), "ModuleMgr cmd base lvl2 modules %s", g_BaseCmdsLvl2[cmdindex][2]);
+            Project_PrintToServer("%T", phraseformat, LANG_SERVER, modulefullname);
         }
         // The "refresh" sub-command.
         else if (StrEqual(strArgs[BASECMD_ARG(2)], g_BaseCmdsLvl2[cmdindex][3], false))
@@ -918,7 +920,8 @@ ModuleMgr_BaseCmdParse(client, const String:strArgs[][])
                 ModuleMgr_Enable(module);
             }
             
-            TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "ModuleMgr cmd base lvl2 modules refresh");
+            Format(phraseformat, sizeof(phraseformat), "ModuleMgr cmd base lvl2 modules %s", g_BaseCmdsLvl2[cmdindex][3]);
+            Project_PrintToServer("%T", phraseformat, LANG_SERVER);
         }
         // The "reload" sub-command.
         else if (StrEqual(strArgs[BASECMD_ARG(2)], g_BaseCmdsLvl2[cmdindex][4], false))
@@ -927,13 +930,18 @@ ModuleMgr_BaseCmdParse(client, const String:strArgs[][])
             new Module:module = ModuleMgr_FindByID(StringToInt(strArgs[BASECMD_ARG(3)]), strArgs[BASECMD_ARG(3)]);
             if (module == INVALID_MODULE)
             {
-                TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "ModuleMgr invalid module", strArgs[BASECMD_ARG(3)]);
+                Project_PrintToServer("%T", "ModuleMgr invalid module", LANG_SERVER, strArgs[BASECMD_ARG(3)]);
                 return;
             }
             
             ModuleMgr_Disable(module);
             ModuleMgr_Enable(module);
-            TransMgr_PrintText(client, MsgFormat_Both, MsgType_Reply, module, false, "ModuleMgr cmd base lvl2 modules reload");
+            
+            decl String:modulefullname[32];
+            ModuleMgr_ReadString(module, ModuleData_FullName, modulefullname, sizeof(modulefullname));
+            
+            Format(phraseformat, sizeof(phraseformat), "ModuleMgr cmd base lvl2 modules %s", g_BaseCmdsLvl2[cmdindex][4]);
+            Project_PrintToServer("%T", phraseformat, LANG_SERVER, modulefullname);
         }
         // The "disable" sub-command.
         else if (StrEqual(strArgs[BASECMD_ARG(2)], g_BaseCmdsLvl2[cmdindex][5], false))
@@ -942,12 +950,17 @@ ModuleMgr_BaseCmdParse(client, const String:strArgs[][])
             new Module:module = ModuleMgr_FindByID(StringToInt(strArgs[BASECMD_ARG(3)]), strArgs[BASECMD_ARG(3)]);
             if (module == INVALID_MODULE)
             {
-                TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "ModuleMgr invalid module", strArgs[BASECMD_ARG(3)]);
+                Project_PrintToServer("%T", "ModuleMgr invalid module", LANG_SERVER, strArgs[BASECMD_ARG(3)]);
                 return;
             }
             
             ModuleMgr_Disable(module);
-            TransMgr_PrintText(client, MsgFormat_Both, MsgType_Reply, module, false, "ModuleMgr cmd base lvl2 modules disable");
+            
+            decl String:modulefullname[32];
+            ModuleMgr_ReadString(module, ModuleData_FullName, modulefullname, sizeof(modulefullname));
+            
+            Format(phraseformat, sizeof(phraseformat), "ModuleMgr cmd base lvl2 modules %s", g_BaseCmdsLvl2[cmdindex][5]);
+            Project_PrintToServer("%T", phraseformat, LANG_SERVER, modulefullname);
         }
         // The "disable_all" sub-command.
         else if (StrEqual(strArgs[BASECMD_ARG(2)], g_BaseCmdsLvl2[cmdindex][6], false))
@@ -962,7 +975,8 @@ ModuleMgr_BaseCmdParse(client, const String:strArgs[][])
                 ModuleMgr_Disable(module);
             }
             
-            TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "ModuleMgr cmd base lvl2 modules disable_all");
+            Format(phraseformat, sizeof(phraseformat), "ModuleMgr cmd base lvl2 modules %s", g_BaseCmdsLvl2[cmdindex][6]);
+            Project_PrintToServer("%T", phraseformat, LANG_SERVER);
         }
     }
     // The "version" sub-command.
@@ -971,7 +985,7 @@ ModuleMgr_BaseCmdParse(client, const String:strArgs[][])
         #if defined VERSION_INFO
             VersionPrint(client);
         #else
-            TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "Missing component", "versioninfo.inc");
+            Project_PrintToServer("%T", "Missing base component", LANG_SERVER, "versioninfo.inc");
         #endif
     }
 }
@@ -989,12 +1003,9 @@ stock ModuleMgr_PrintModuleInfo(client, const String:strModuleID[])
     new Module:module = ModuleMgr_FindByID(StringToInt(strModuleID), strModuleID);
     if (module == INVALID_MODULE)
     {
-        TransMgr_PrintText(client, MsgFormat_Plugin, MsgType_Reply, _, false, "ModuleMgr invalid module", strModuleID);
+        Project_PrintToServer("%T", "ModuleMgr invalid module", LANG_SERVER, strModuleID);
         return;
     }
-    
-    // Determine how to print the message to server/client.
-    new MsgTypes:msgtype = (client == SERVER_INDEX) ? MsgType_Server : MsgType_Console;
     
     decl String:modulefullname[32];
     decl String:moduleshortname[16];
@@ -1007,22 +1018,31 @@ stock ModuleMgr_PrintModuleInfo(client, const String:strModuleID[])
     ModuleMgr_ReadString(module, ModuleData_ShortName, moduleshortname, sizeof(moduleshortname));
     ModuleMgr_ReadString(module, ModuleData_Description, moduledesc, sizeof(moduledesc));
     bModuleDisabled = bool:ModuleMgr_ReadCell(module, ModuleData_Disabled);
-    TransMgr_TranslateBoolToPhrase(client, !bModuleDisabled, BoolPhrase_YesNo, strModuleEnabled, sizeof(strModuleEnabled));
+    
+    #if defined TRANSLATIONS_MANAGER
+        TransMgr_TranslateBoolToPhrase(client, !bModuleDisabled, BoolPhrase_YesNo, strModuleEnabled, sizeof(strModuleEnabled));
+    #else
+        IntToString(_:!bModuleDisabled, strModuleEnabled, sizeof(strModuleEnabled));
+    #endif
     
     // Print all the data stored in the module manager itself.
-    TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "ModuleMgr cmd base lvl2 modules info print", modulefullname, moduleshortname, moduledesc, strModuleEnabled);
+    PrintToServer("%T", "ModuleMgr cmd base lvl2 modules info print", LANG_SERVER, modulefullname, moduleshortname, moduledesc, strModuleEnabled);
     
     // Forward event to other project base components.
     #if defined EVENT_MANAGER
-        EventMgr_OnPrintModuleInfo(client, module, msgtype);
+        EventMgr_OnPrintModuleInfo(client, module);
+    #endif
+    
+    #if defined CONFIG_MANAGER
+        ConfigMgr_OnPrintModuleInfo(client, module);
     #endif
     
     #if defined TRANSLATIONS_MANAGER
-        TransMgr_OnPrintModuleInfo(client, module, msgtype);
+        TransMgr_OnPrintModuleInfo(client, module);
     #endif
     
     #if defined LOG_MANAGER
-        LogMgr_OnPrintModuleInfo(client, module, msgtype);
+        LogMgr_OnPrintModuleInfo(client, module);
     #endif
 }
 
@@ -1034,9 +1054,6 @@ stock ModuleMgr_PrintModuleInfo(client, const String:strModuleID[])
  */
 stock ModuleMgr_PrintModules(client)
 {
-    // Determine how to print the message to server/client.
-    new MsgTypes:msgtype = (client == SERVER_INDEX) ? MsgType_Server : MsgType_Console;
-    
     decl String:modulefullname[32];
     decl String:moduleshortname[16];
     new bool:bModuleDisabled;
@@ -1061,24 +1078,20 @@ stock ModuleMgr_PrintModules(client)
         ModuleMgr_ReadString(module, ModuleData_FullName, modulefullname, sizeof(modulefullname));
         ModuleMgr_ReadString(module, ModuleData_ShortName, moduleshortname, sizeof(moduleshortname));
         bModuleDisabled = bool:ModuleMgr_ReadCell(module, ModuleData_Disabled);
-        TransMgr_TranslateBoolToPhrase(client, !bModuleDisabled, BoolPhrase_EnabledDisabled, strModuleEnabled, sizeof(strModuleEnabled), true);
         
-        SetGlobalTransTarget(client);
-        Format(line, sizeof(line), "%t", "ModuleMgr cmd base lvl2 modules list print", modulefullname, strModuleEnabled, moduleshortname);
+        #if defined TRANSLATIONS_MANAGER
+            TransMgr_TranslateBoolToPhrase(client, !bModuleDisabled, BoolPhrase_EnabledDisabled, strModuleEnabled, sizeof(strModuleEnabled), true);
+        #else
+            IntToString(_:!bModuleDisabled, strModuleEnabled, sizeof(strModuleEnabled));
+        #endif
+        
+        Format(line, sizeof(line), "%T", "ModuleMgr cmd base lvl2 modules list print", client, modulefullname, strModuleEnabled, moduleshortname);
         
         // Format on the moduleID?
         (client == SERVER_INDEX) ?  Format(line, sizeof(line), "  %02d %s", moduleID, line) :
                                     Format(line, sizeof(line), "  %s", line);
         
-        TransMgr_PrintText(client, MsgFormat_None, msgtype, _, true, line);
+        ReplyToCommand(client, line);
     }
 }
-#else   // If TRANSLATIONS_MANAGER isn't defined.
-// How can we print the module information without translations to read from?
-public Action:Command_Base(client, argc)
-{
-    ReplyToCommand(client, "The base command requires that the translations manager be compiled into the plugin.");
-}
-#endif
-
 #endif

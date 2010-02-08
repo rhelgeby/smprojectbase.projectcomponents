@@ -123,14 +123,13 @@ stock ConfigMgr_OnModuleRegister(Handle:adtModule)
 
 /**
  * Base command is printing a module's info.
- * Print the module data allocated by the event manager.
+ * Print the module data allocated by the config manager.
  * Note: |stock| tag will stop this function from being compiled if the base command is disabled.
  * 
  * @param client    The client index the text is being printed to.
  * @param module    The module to print info for.
- * @param msgtype   The type of message to tell Translations Manager to print.
  */
-stock ConfigMgr_OnPrintModuleInfo(client, Module:module, MsgTypes:msgtype)
+stock ConfigMgr_OnPrintModuleInfo(client, Module:module)
 {
 }
 
@@ -231,7 +230,7 @@ stock ConfigMgr_CacheKv(Module:module, configindex, const String:funcCache[])
     new Handle:kv = CreateKeyValues("");
     if (!FileToKeyValues(kv, fullconfigpath))
     {
-        LogError("Keyvalue config file \"%s\" couldn't be loaded.", fullconfigpath);
+        LogError("[Config Manager] Keyvalue config file \"%s\" couldn't be loaded.", fullconfigpath);
         return 0;
     }
     
@@ -294,7 +293,7 @@ stock Handle:ConfigMgr_CacheFile(Module:module, configindex, maxlen, &count = 0)
     new Handle:hConfig = OpenFile(configpath, "r");
     if (hConfig == INVALID_HANDLE)
     {
-        LogError("Config file \"%s\" couldn't be loaded.", fullconfigpath);
+        LogError("[Config Manager] Config file \"%s\" couldn't be loaded.", fullconfigpath);
         return INVALID_HANDLE;
     }
     

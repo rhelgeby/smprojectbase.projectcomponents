@@ -100,8 +100,14 @@ LogMgr_OnPluginStart()
     // Create log cvars.
     cvarLog =               Project_CreateConVar("log", "1", "Enable logging in the plugin.  Error messages will always be logged.");
     cvarLogWhitelist =      Project_CreateConVar("log_whitelist", "0", "Only modules added to the whitelist (project_log_whitelist_add) will be logged.");
-    cvarLogPrintAdmins =    Project_CreateConVar("log_print_admins", "0", "Logs will be printed to admin chat in addition to log files.");
     cvarLogPrintPublic =    Project_CreateConVar("log_print_public", "0", "Logs will be printed to public chat in addition to log files.");
+    
+    // This cvar needs the translations manager to filter out the non-admins and the access manager to determine what "admin" is.
+    #if defined TRANSLATIONS_MANAGER
+    #if defined ACCESS_MANAGER
+        cvarLogPrintAdmins = Project_CreateConVar("log_print_admins", "0", "Logs will be printed to admin chat in addition to log files.");
+    #endif
+    #endif
     
     // Create log commands.
     Project_RegServerCmd("log_whitelist_add", Command_LogWhitelistAdd, "Adds one or more modules to the whitelist.  Usage: project_log_whitelist_add <moduleshortname [module2] ...");
@@ -126,17 +132,21 @@ stock LogMgr_OnModuleRegister(Handle:adtModule)
  * 
  * @param client    The client index the text is being printed to.
  * @param module    The module to print info for.
- * @param msgtype   The type of message to tell Translations Manager to print.
  */
-stock LogMgr_OnPrintModuleInfo(client, Module:module, MsgTypes:msgtype)
+stock LogMgr_OnPrintModuleInfo(client, Module:module)
 {
     // Translate a bool into a text phrase.
     decl String:strWhiteList[8];
     new bool:bWhiteList = LogMgr_IsModuleOnWhitelist(module);
-    TransMgr_TranslateBoolToPhrase(client, bWhiteList, BoolPhrase_YesNo, strWhiteList, sizeof(strWhiteList));
+    
+    #if defined TRANSLATIONS_MANAGER
+        TransMgr_TranslateBoolToPhrase(client, bWhiteList, BoolPhrase_YesNo, strWhiteList, sizeof(strWhiteList));
+    #else
+        IntToString(_:bWhiteList, strWhiteList, sizeof(strWhiteList));
+    #endif
     
     // Print the module event info.
-    TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "LogMgr cmd base lvl2 modules info print", strWhiteList);
+    PrintToServer("%T", "LogMgr cmd base lvl2 modules info print", LANG_SERVER, strWhiteList);
 }
 
 // **********************************************
@@ -207,26 +217,19 @@ stock LogMgr_Print(Module:module, LogTypes:logtype, const String:description[], 
         }
     }
     
-    // Print log to all in-game admins if the cvar is enabled.
-    if (LogMgr_CvarPrintAdmins())
-    {
-        #if defined TRANSLATIONS_MANAGER
+    #if defined TRANSLATIONS_MANAGER
+        // Print log to all in-game admins if the cvar is enabled.
+        if (LogMgr_CvarPrintAdmins())
+        {
             // Print text to admins.
             TransMgr_PrintTextAll(false, true, MsgFormat_None, MsgType_Chat, _, true, logbuffer);
-        #else
-            PrintToChatAll("Cvar project_log_print_admins requires the translations manager.");
-        #endif
-    }
+        }
+    #endif
     
     // Print log to all in-game clients if the cvar is enabled.
     if (LogMgr_CvarPrintPublic())
     {
-        #if defined TRANSLATIONS_MANAGER
-            // Print text to public chat.
-            TransMgr_PrintTextAll(false, false, MsgFormat_None, MsgType_Chat, _, true, logbuffer);
-        #else
-            PrintToChatAll("Cvar project_log_print_public requires the translations manager.");
-        #endif
+        PrintToChatAll(logbuffer);
     }
 }
 
@@ -309,20 +312,10 @@ stock bool:LogMgr_WhitelistRemove(Module:module)
  */
 public Action:Command_LogWhitelistAdd(argc)
 {
-    /**
-     * Check if the client has access
-     */
-    
     // Check if no arguments.
     if (argc < 1)
     {
-        #if defined TRANSLATIONS_MANAGER
-            // Display usage info.
-            TransMgr_PrintText(SERVER_INDEX, MsgFormat_Plugin, MsgType_Server, _, false, "LogMgr cmd whitelistadd usage");
-        #else
-            ReplyToCommand(SERVER_INDEX, "Adds one or more modules to the whitelist.  Usage: project_log_whitelist_add <moduleshortname [module2] ...\nRelated command(s): project_log_whitelist_remove");
-        #endif
-        
+        Project_PrintToServer("%T", "LogMgr cmd whitelistadd usage", LANG_SERVER);
         return Plugin_Handled;
     }
     
@@ -338,23 +331,12 @@ public Action:Command_LogWhitelistAdd(argc)
         
         if (module == INVALID_MODULE)
         {
-            #if defined TRANSLATIONS_MANAGER
-                // Reply with an error and skip to next argument.
-                TransMgr_PrintText(SERVER_INDEX, MsgFormat_Plugin, MsgType_Server, _, false, "ModuleMgr invalid module", strModuleID);
-            #else
-                ReplyToCommand(SERVER_INDEX, "Invalid module: \"%s\"", strModuleID);
-            #endif
-            
+            Project_PrintToServer("%T", "ModuleMgr invalid module", LANG_SERVER, strModuleID);
             continue;
         }
         
         LogMgr_WhitelistAdd(module);
-        
-        #if defined TRANSLATIONS_MANAGER
-            TransMgr_PrintText(SERVER_INDEX, MsgFormat_Both, MsgType_Server, module, false, "LogMgr cmd whitelistadd");
-        #else
-            ReplyToCommand(SERVER_INDEX, "Module has been added to the whitelist.");
-        #endif
+        Project_PrintToServer("%T", "LogMgr cmd whitelistadd", LANG_SERVER);
     }
     
     // Say that we handled the command so CS:S doesn't see it and print "Unknown command"
@@ -376,13 +358,7 @@ public Action:Command_LogWhitelistRemove(argc)
     // Check if no arguments.
     if (argc < 1)
     {
-        #if defined TRANSLATIONS_MANAGER
-            // Display usage info.
-            TransMgr_PrintText(SERVER_INDEX, MsgFormat_Plugin, MsgType_Server, _, false, "LogMgr cmd whitelistremove usage");
-        #else
-            ReplyToCommand(SERVER_INDEX, "Removes one or more modules from the whitelist.  Usage: project_log_whitelist_remove <moduleshortname [module2] ...\nRelated command(s): project_log_whitelist_add");
-        #endif
-        
+        Project_PrintToServer("%T", "LogMgr cmd whitelistremove usage", LANG_SERVER);
         return Plugin_Handled;
     }
     
@@ -398,23 +374,12 @@ public Action:Command_LogWhitelistRemove(argc)
         
         if (module == INVALID_MODULE)
         {
-            #if defined TRANSLATIONS_MANAGER
-                // Reply with an error and skip to next argument.
-                TransMgr_PrintText(SERVER_INDEX, MsgFormat_Plugin, MsgType_Server, _, false, "ModuleMgr invalid module", strModuleID);
-            #else
-                ReplyToCommand(SERVER_INDEX, "Invalid module: \"%s\"", strModuleID);
-            #endif
-            
+            Project_PrintToServer("%T", "ModuleMgr invalid module", LANG_SERVER, strModuleID);
             continue;
         }
         
         LogMgr_WhitelistRemove(module);
-        
-        #if defined TRANSLATIONS_MANAGER
-            TransMgr_PrintText(SERVER_INDEX, MsgFormat_Both, MsgType_Server, module, false, "LogMgr cmd whitelistremove");
-        #else
-            ReplyToCommand(SERVER_INDEX, "Module has been added to the whitelist.");
-        #endif
+        Project_PrintToServer("%T", "LogMgr cmd whitelistremove", LANG_SERVER);
     }
     
     // Say that we handled the command so CS:S doesn't see it and print "Unknown command"

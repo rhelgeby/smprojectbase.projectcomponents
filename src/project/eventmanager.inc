@@ -110,9 +110,8 @@ stock EventMgr_OnModuleRegister(Handle:adtModule)
  * 
  * @param client    The client index the text is being printed to.
  * @param module    The module to print info for.
- * @param msgtype   The type of message to tell Translations Manager to print.
  */
-stock EventMgr_OnPrintModuleInfo(client, Module:module, MsgTypes:msgtype)
+stock EventMgr_OnPrintModuleInfo(client, Module:module)
 {
     decl String:registeredevents[512];
     registeredevents[0] = 0;
@@ -143,7 +142,7 @@ stock EventMgr_OnPrintModuleInfo(client, Module:module, MsgTypes:msgtype)
         Format(registeredevents, sizeof(registeredevents), "%t", "_None");
     
     // Print the module event info.
-    TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "EventMgr cmd base lvl2 modules info print", registeredevents);
+    PrintToServer("%T", "EventMgr cmd base lvl2 modules info print", LANG_SERVER, registeredevents);
 }
 
 // **********************************************
@@ -273,7 +272,10 @@ stock EventMgr_Forward(ProjectEvents:event, any:eventdata[][], numValues, size, 
         // If the function ID is invalid, then stop this iteration.
         if (func == INVALID_FUNCTION)
         {
-            LogError("INVALID FORWARD");
+            decl String:modulefullname[32];
+            ModuleMgr_ReadString(module, ModuleData_FullName, modulefullname, sizeof(modulefullname));
+            
+            LogError("[Event Manager] Module \"%s\" has an invalid event forward function stored for event \"%s\"", modulefullname, g_ProjectEventDisplay[event]);
             continue;
         }
         

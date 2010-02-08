@@ -160,9 +160,8 @@ TransMgr_OnModulesRegistered()
  * 
  * @param client    The client index the text is being printed to.
  * @param module    The module to print info for.
- * @param msgtype   The type of message to tell Translations Manager to print.
  */
-stock TransMgr_OnPrintModuleInfo(client, Module:module, MsgTypes:msgtype)
+stock TransMgr_OnPrintModuleInfo(client, Module:module)
 {
     decl String:translationfile[PLATFORM_MAX_PATH];
     
@@ -172,7 +171,7 @@ stock TransMgr_OnPrintModuleInfo(client, Module:module, MsgTypes:msgtype)
         Format(translationfile, sizeof(translationfile), "%t", "_None");
     
     // Print the module event info.
-    TransMgr_PrintText(client, MsgFormat_None, msgtype, _, false, "TransMgr cmd base lvl2 modules info print", translationfile);
+    PrintToServer("%T", "TransMgr cmd base lvl2 modules info print", LANG_SERVER, translationfile);
 }
 
 // **********************************************
@@ -438,7 +437,7 @@ stock TransMgr_SetEnabled(Module:module, bool:enable)
 stock TransMgr_LoadTranslations()
 {
     // Loads extra translations from the main project.inc file.
-    TransMgr_LoadExtraTranslations();
+    Project_LoadExtraTranslations();
     
     decl String:translationfile[PLATFORM_MAX_PATH];
     

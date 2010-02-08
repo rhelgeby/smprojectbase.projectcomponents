@@ -62,7 +62,7 @@ public TestModule_OnPluginStart()
     
     // Register this module with the translations manager.
     // Make sure testmodule.phrase.txt exists in translations/project/
-    TransMgr_Register(g_iTestModule);
+    //TransMgr_Register(g_iTestModule);
     
     ConfigMgr_Register(g_iTestModule, "configs/project/invalid.txt");
     ConfigMgr_Register(g_iTestModule, "configs/project/testconfig.txt");
@@ -121,10 +121,10 @@ public TestModule_OnRoundStart(dcell, Float:dfloat, any:darray[], String:dstring
  */
 public TestModule_OnRoundStart2(dcell, Float:dfloat, any:darray[], String:dstring[])
 {
-    TransMgr_PrintText(SERVER_INDEX, MsgFormat_Plugin, MsgType_Server, _, true, "Event round_start alternate");
-    TransMgr_PrintTextAll(true, false, MsgFormat_Both, MsgType_Chat, g_iTestModule, true, "Event round_start alternate");
-    TransMgr_PrintTextAll(false, false, MsgFormat_None, MsgType_Center, _, true, "Event round_start alternate");
-    TransMgr_PrintTextAll(false, false, MsgFormat_Plugin, MsgType_Hint, _, true, "Event round_start alternate");
+    //TransMgr_PrintText(SERVER_INDEX, MsgFormat_Plugin, MsgType_Server, _, true, "Event round_start alternate");
+    //TransMgr_PrintTextAll(true, false, MsgFormat_Both, MsgType_Chat, g_iTestModule, true, "Event round_start alternate");
+    //TransMgr_PrintTextAll(false, false, MsgFormat_None, MsgType_Center, _, true, "Event round_start alternate");
+    //TransMgr_PrintTextAll(false, false, MsgFormat_Plugin, MsgType_Hint, _, true, "Event round_start alternate");
     
     LogMgr_Print(g_iTestModule, LogType_Normal, "Round_Start", "Alternate round_start event.");
     //LogMgr_Print(g_iTestModule, LogType_Fatal_Module, "Round_Start", "Fatal error!  Disabling module.");
@@ -138,5 +138,5 @@ public TestModule_OnRoundStart2(dcell, Float:dfloat, any:darray[], String:dstrin
  */
 public TestModule_OnRoundStartHidden()
 {
-    TransMgr_PrintTextAll(true, false, MsgFormat_Both, MsgType_Chat, g_iTestModule2, true, "(Hidden) Round started!");
+    //TransMgr_PrintTextAll(true, false, MsgFormat_Both, MsgType_Chat, g_iTestModule2, true, "(Hidden) Round started!");
 }

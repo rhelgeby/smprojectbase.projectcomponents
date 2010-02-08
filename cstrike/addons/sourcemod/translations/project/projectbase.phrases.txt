@@ -21,6 +21,14 @@
 		"en"		"Disabled"
 	}
 
+	// Generic
+
+	// {1}: The missing base component file.
+	"Missing base component"
+	{
+		"#format"	"{1:s}"
+		"en"		"Base component file missing: \"{1}\""
+	}
 
 	// **********************************
 	//          Module Manager
@@ -51,7 +59,7 @@
 		"en"		"{1} Menu:\nUsage: {2} <command> [arguments]\n    {3}- Display credits listing\n    {4}- Manage modules\n    {5}- Display version information"
 	}
 
-	"ModuleMgr cmd base lvl2 accessor modules syntax"
+	"ModuleMgr cmd base lvl2 modules syntax"
 	{
 		"#format"	"{1:s},{2:17s},{3:17s},{4:17s},{5:17s},{6:17s},{7:17s},{8:17s}"
 		"en"		"{1} Modules Menu:\n    {2}- Information about a module\n    {3}- Show registered modules\n    {4}- Enable a module\n    {5}- Reloads/refreshes all registered modules in the plugin\n    {6}- Reload a module\n    {7}- Disable a module\n    {8}- Disable all enabled modules"
@@ -106,7 +114,8 @@
 
 	"ModuleMgr cmd base lvl2 modules enable"
 	{
-		"en"		"Module has been enabled."
+		"#format"	"{1:s}"
+		"en"		"Module \"{1}\" has been enabled."
 	}
 
 	"ModuleMgr cmd base lvl2 modules refresh"
@@ -116,12 +125,14 @@
 
 	"ModuleMgr cmd base lvl2 modules reload"
 	{
-		"en"		"Module has been reloaded."
+		"#format"	"{1:s}"
+		"en"		"Module \"{1}\" has been reloaded."
 	}
 
 	"ModuleMgr cmd base lvl2 modules disable"
 	{
-		"en"		"Module has been disabled."
+		"#format"	"{1:s}"
+		"en"		"Module \"{1}\" has been disabled."
 	}
 
 	"ModuleMgr cmd base lvl2 modules disable_all"

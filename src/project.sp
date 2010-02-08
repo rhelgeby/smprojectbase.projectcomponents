@@ -3,7 +3,7 @@
  *
  *  Project
  *
- *  File:          project.sp
+ *  File:          <projectname>.sp
  *  Type:          Base
  *  Description:   Base file.
  *
@@ -90,6 +90,8 @@ public OnPluginStart()
     
     #if defined TRANSLATIONS_MANAGER
         TransMgr_OnPluginStart();
+    #else
+        Project_LoadExtraTranslations(); // Call this to load translations if the translations manager isn't included.
     #endif
     
     #if defined LOG_MANAGER
@@ -207,6 +209,19 @@ public OnClientDisconnect(client)
 // **********************************************
 //           Project Base Utilities
 // **********************************************
+
+/**
+ * Wrappers for some non-client specific print natives that will prefix project-specific text on each message.
+ * These should only be used if the plugin name needs to be prefixed onto the message. 
+ */
+
+stock Project_PrintToServer(const String:text[], any:...)
+{
+    decl String:formatted[512];
+    VFormat(formatted, sizeof(formatted), text, 2);
+    Format(formatted, sizeof(formatted), PROJECT_SERVER_PREFIX);
+    PrintToServer(formatted);
+}
 
 /**
  * Wrapper of CreateConVar to prefix the cvars with the project's shortname.

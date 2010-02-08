@@ -127,7 +127,7 @@ stock bool:AccessMgr_HasRootAccess(client)
         {
             if (!FindFlagByChar(strCvarRootFlags[cindex], flag))
             {
-                LogMessage("[Access Manager] Invalid char (%c) in cvar project_access_root.", strCvarRootFlags[cindex]);
+                LogError("[Access Manager] Invalid char (%c) in cvar project_access_root.", strCvarRootFlags[cindex]);
                 continue;
             }
             
