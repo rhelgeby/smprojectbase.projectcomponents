@@ -3,7 +3,7 @@
  *
  *  Project
  *
- *  File:          eventmanager.inc
+ *  File:          eventmanager.inc (Optional)
  *  Type:          Base
  *  Description:   Manages project events.
  *

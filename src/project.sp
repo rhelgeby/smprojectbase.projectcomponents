@@ -30,19 +30,19 @@
 
 #include <sourcemod>
 
-// Base project includes.
-
 #include "project/project"
-#include "project/versioninfo"
-#include "project/accessmanager"
-#include "project/translationsmanager"
-#include "project/logmanager"
-#include "project/configmanager"
-#include "project/eventmanager"
-#include "project/modulemanager"
+#include "project/base/wrappers"
 
-// Module includes
+// Base project includes.
+#include "project/base/versioninfo"
+#include "project/base/accessmanager"
+#include "project/base/translationsmanager"
+#include "project/base/logmanager"
+#include "project/base/configmanager"
+#include "project/base/eventmanager"
+#include "project/base/modulemanager"
 
+// Module includes.
 #include "project/testmodule"
 
 /**
@@ -244,77 +244,4 @@ public OnClientDisconnect(client)
         
         EventMgr_Forward(Event_OnClientDisconnect, eventdata, sizeof(eventdata), sizeof(eventdata[]), g_CommonDataType2);
     #endif
-}
-
-// **********************************************
-//           Project Base Utilities
-// **********************************************
-
-/**
- * Wrappers for some non-client specific print natives that will prefix project-specific text on each message.
- * These should only be used if the plugin name needs to be prefixed onto the message. 
- */
-
-stock Project_PrintToServer(const String:text[], any:...)
-{
-    decl String:formatted[512];
-    VFormat(formatted, sizeof(formatted), text, 2);
-    Format(formatted, sizeof(formatted), PROJECT_SERVER_PREFIX);
-    PrintToServer(formatted);
-}
-
-/**
- * Wrapper of CreateConVar to prefix the cvars with the project's shortname.
- * Use <prefix> in the description to print the value of PROJECT_CVAR_PREFIX.
- * 
- * See native CreateConVar.
- */
-stock Handle:Project_CreateConVar(const String:name[], const String:defaultValue[], const String:description[]="", flags=0, bool:hasMin=false, Float:min=0.0, bool:hasMax=false, Float:max=0.0)
-{
-    decl String:project_cvarname[64];
-    Format(project_cvarname, sizeof(project_cvarname), "%s_%s", PROJECT_CVAR_PREFIX, name);
-    
-    // Replace the define name with the actual cvar prefix.
-    decl String:fmtdescription[1024];
-    strcopy(fmtdescription, sizeof(fmtdescription), description);
-    ReplaceString(fmtdescription, sizeof(fmtdescription), "<prefix>", PROJECT_CVAR_PREFIX, false);
-    
-    return CreateConVar(project_cvarname, defaultValue, fmtdescription, flags, hasMin, min, hasMax, max);
-}
-
-/**
- * Wrapper of RegServerCmd to prefix the commands with the project's shortname.
- * Use <prefix> in the description to print the value of PROJECT_CMD_PREFIX.
- * 
- * See native RegServerCmd.
- */
-stock Project_RegServerCmd(const String:cmd[], SrvCmd:callback, const String:description[]="", flags=0)
-{
-    decl String:project_cmdname[64];
-    Format(project_cmdname, sizeof(project_cmdname), "%s_%s", PROJECT_CMD_PREFIX, cmd);
-    
-    // Replace the define name with the actual server cmd prefix.
-    decl String:fmtdescription[1024];
-    strcopy(fmtdescription, sizeof(fmtdescription), description);
-    ReplaceString(fmtdescription, sizeof(fmtdescription), "<prefix>", PROJECT_CMD_PREFIX, false);
-    
-    RegServerCmd(project_cmdname, callback, fmtdescription, flags);
-}
-
-/**
- * Wrapper of RegConsoleCmd to prefix the commands with the project's shortname.
- * 
- * See native RegConsoleCmd.
- */
-stock Project_RegConsoleCmd(const String:cmd[], ConCmd:callback, const String:description[]="", flags=0)
-{
-    decl String:project_cmdname[64];
-    Format(project_cmdname, sizeof(project_cmdname), "%s_%s", PROJECT_CMD_PREFIX, cmd);
-    
-    // Replace the define name with the actual server cmd prefix.
-    decl String:fmtdescription[1024];
-    strcopy(fmtdescription, sizeof(fmtdescription), description);
-    ReplaceString(fmtdescription, sizeof(fmtdescription), "<prefix>", PROJECT_CMD_PREFIX, false);
-    
-    RegConsoleCmd(project_cmdname, callback, fmtdescription, flags);
 }

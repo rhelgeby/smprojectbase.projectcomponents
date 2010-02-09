@@ -3,7 +3,7 @@
  *
  *  Project
  *
- *  File:          logmanager.inc
+ *  File:          logmanager.inc (Optional)
  *  Type:          Base
  *  Description:   Manages project logging.
  *

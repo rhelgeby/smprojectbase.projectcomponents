@@ -13,14 +13,21 @@ ProjectFilesOnly=0
 Project
 	+Plugin
 		-Base Includes
-			..\src\project\eventmanager.inc
-			..\src\project\hgversion.inc
-			..\src\project\modulemanager.inc
-			..\src\project\project.inc
+			..\src\project\base\accessmanager.inc
+			..\src\project\base\configmanager.inc
+			..\src\project\base\eventmanager.inc
+			..\src\project\base\logmanager.inc
+			..\src\project\base\modulemanager.inc
+			..\src\project\base\project.inc
+			..\src\project\base\translationsmanager.inc
+			..\src\project\base\versioninfo.inc
+			..\src\project\base\wrappers.inc
 		-Module Includes
 			..\src\project\testmodule.inc
-			..\src\project\versioninfo.inc
 		..\src\project.sp
+	-Translations
+		..\cstrike\addons\sourcemod\translations\project\project.phrases.txt
+		..\cstrike\addons\sourcemod\translations\project\projectbase.phrases.txt
 	-SM Includes
 		..\env\include\admin.inc
 		..\env\include\adminmenu.inc
@@ -86,5 +93,5 @@ Project
 Main=
 Selected=..\src\project.sp
 [..\src\project.sp]
-TopLine=22
-Caret=19,51
+TopLine=9
+Caret=1,27

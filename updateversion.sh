@@ -18,7 +18,7 @@ then
     fi
 fi
 
-PROJECT_VERSION_FILE="src/project/hgversion.inc"
+PROJECT_VERSION_FILE="src/project/base/hgversion.inc"
 
 PROJECT_REVISION=$(hg id -n):$(hg id -i)
 

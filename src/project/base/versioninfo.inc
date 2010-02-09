@@ -3,7 +3,7 @@
  *
  *  Project
  *
- *  File:          versioninfo.inc
+ *  File:          versioninfo.inc (Optional)
  *  Type:          Base
  *  Description:   Command to display Mercurial version information in-game.
  *
@@ -31,7 +31,7 @@
 #define VERSION_INFO
 
 #if defined PROJECT_MERCURIAL
-    #include "project/hgversion"
+    #include "project/base/hgversion"
 #endif
 
 /**

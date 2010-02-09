@@ -3,7 +3,7 @@
  *
  *  Project
  *
- *  File:          translationsmanager.inc
+ *  File:          translationsmanager.inc (Optional)
  *  Type:          Base
  *  Description:   Manages translations throughout the project.
  *

@@ -3,7 +3,7 @@
  *
  *  Project
  *
- *  File:          accessmanager.inc
+ *  File:          accessmanager.inc (Optional)
  *  Type:          Base
  *  Description:   Manages client access to project modules.
  *
