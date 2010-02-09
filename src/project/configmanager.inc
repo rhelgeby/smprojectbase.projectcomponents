@@ -122,6 +122,13 @@ ConfigMgr_OnPluginStart()
 }
 
 /**
+ * Plugin has ended.
+ */
+ConfigMgr_OnPluginEnd()
+{
+}
+
+/**
  * Map has loaded.
  */
 /*ConfigMgr_OnMapStart()

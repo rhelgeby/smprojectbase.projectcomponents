@@ -37,13 +37,20 @@
 /**
  * Plugin has loaded.
  */
-public VersionInfo_OnPluginStart()
+VersionInfo_OnPluginStart()
 {
     if (ModuleMgr_CreateBackupCmd())
     {
         // Create a version information print command.
         Project_RegConsoleCmd("version", Command_Version, "Prints version info about this project.");
     }
+}
+
+/**
+ * Plugin has ended.
+ */
+VersionInfo_OnPluginEnd()
+{
 }
 
 /**

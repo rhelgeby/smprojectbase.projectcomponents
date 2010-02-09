@@ -52,6 +52,13 @@ AccessMgr_OnPluginStart()
 }
 
 /**
+ * Plugin has ended.
+ */
+AccessMgr_OnPluginEnd()
+{
+}
+
+/**
  * A module was just registered.  This is being called after a module identifier has been assigned.
  * 
  * @param module        The module identifer of the registered module.

@@ -78,6 +78,7 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 public OnPluginStart()
 {
     // Forward event to other project base components.
+    
     ModuleMgr_OnPluginStart();
     
     #if defined EVENT_MANAGER
@@ -126,6 +127,44 @@ public OnAllPluginsLoaded()
         // Forward event to all modules.
         EventMgr_Forward(Event_OnAllPluginsLoaded, g_CommonEventData1, 0, 0, g_CommonDataType1);
     #endif
+}
+
+public OnPluginEnd()
+{
+    // Unload in reverse order of loading.
+    
+    #if defined EVENT_MANAGER
+        // Forward event to all modules.
+        EventMgr_Forward(Event_OnPluginEnd, g_CommonEventData1, 0, 0, g_CommonDataType1);
+    #endif
+    
+    // Forward event to other project base components.
+    
+    #if defined VERSION_INFO
+        VersionInfo_OnPluginEnd();
+    #endif
+    
+    #if defined ACCESS_MANAGER
+        AccessMgr_OnPluginEnd();
+    #endif
+    
+    #if defined LOG_MANAGER
+        LogMgr_OnPluginEnd();
+    #endif
+    
+    #if defined TRANSLATIONS_MANAGER
+        TransMgr_OnPluginEnd();
+    #endif
+    
+    #if defined CONFIG_MANAGER
+        ConfigMgr_OnPluginEnd();
+    #endif
+    
+    #if defined EVENT_MANAGER
+        EventMgr_OnPluginEnd();
+    #endif
+    
+    ModuleMgr_OnPluginEnd();
 }
 
 /**

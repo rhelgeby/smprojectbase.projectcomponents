@@ -126,6 +126,24 @@ ModuleMgr_OnPluginStart()
     #endif
 }
 
+/**
+ * Plugin has ended.
+ */
+ModuleMgr_OnPluginEnd()
+{
+    new Module:module;
+    
+    // Loop through all the modules, and kill them.
+    new count = MODULE_COUNT;
+    for (new moduleindex = 0; moduleindex < count; moduleindex++)
+    {
+        // Read moduleindex as a Module type.
+        module = Module:moduleindex;
+        
+        ModuleMgr_Unregister(module);
+    }
+}
+
 // **********************************************
 //                Public API
 // **********************************************
@@ -366,6 +384,30 @@ stock ModuleMgr_ReadString(Module:module, ModuleData:data, String:output[], maxl
 // **********************************************
 
 /**
+ * Unregistered a registered module.  Call this only when the plugin is ending.
+ * 
+ * @param module        The module identifer of the module to unregister.
+ * 
+ * @return              True if unregistered successfully, false if module doesn't exist.
+ */
+stock bool:ModuleMgr_Unregister(Module:module)
+{
+    if (!ModuleMgr_IsModuleValid(module))
+        return false;
+    
+    // Get the module's array handle.
+    new Handle:adtModule = MM_HANDLE_FROM_ID(module);
+    if (adtModule == INVALID_HANDLE)
+        return false;
+    
+    // Destroy all the data stored by every component, and then set the space in the global array to INVALID_HANDLE.
+    CloseHandle(adtModule);
+    SetArrayCell(g_adtModuleList, _:module, INVALID_HANDLE);
+    
+    return true;
+}
+
+/**
  * Validates all values in a ModuleData array, and prints errors for each invalid value.
  * 
  * @param moduledata    Array of module data to validate.
@@ -456,7 +498,7 @@ stock Module:ModuleMgr_FindByID(moduleID = 0, const String:moduleshortname[] = "
  * Reserve space in the module data array.
  * 
  * @param count     The number of indexes per module that's needed.
- * @param indexes   The indexes within the array that have been allocated to you.  (number of elements = param count)
+ * @param indexes   The indexes within the array that have been allocated to you.  (number of elements = param 'count')
  */
 stock ModuleMgr_Allocate(count, indexes[])
 {
