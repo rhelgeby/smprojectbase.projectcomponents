@@ -237,6 +237,7 @@ stock Handle:Project_CreateConVar(const String:name[], const String:defaultValue
     
     // Replace the define name with the actual cvar prefix.
     decl String:fmtdescription[1024];
+    strcopy(fmtdescription, sizeof(fmtdescription), description);
     ReplaceString(fmtdescription, sizeof(fmtdescription), "<prefix>", PROJECT_CVAR_PREFIX, false);
     
     return CreateConVar(project_cvarname, defaultValue, fmtdescription, flags, hasMin, min, hasMax, max);
@@ -255,6 +256,7 @@ stock Project_RegServerCmd(const String:cmd[], SrvCmd:callback, const String:des
     
     // Replace the define name with the actual server cmd prefix.
     decl String:fmtdescription[1024];
+    strcopy(fmtdescription, sizeof(fmtdescription), description);
     ReplaceString(fmtdescription, sizeof(fmtdescription), "<prefix>", PROJECT_CMD_PREFIX, false);
     
     RegServerCmd(project_cmdname, callback, fmtdescription, flags);
@@ -270,5 +272,10 @@ stock Project_RegConsoleCmd(const String:cmd[], ConCmd:callback, const String:de
     decl String:project_cmdname[64];
     Format(project_cmdname, sizeof(project_cmdname), "%s_%s", PROJECT_CMD_PREFIX, cmd);
     
-    RegConsoleCmd(project_cmdname, callback, description, flags);
+    // Replace the define name with the actual server cmd prefix.
+    decl String:fmtdescription[1024];
+    strcopy(fmtdescription, sizeof(fmtdescription), description);
+    ReplaceString(fmtdescription, sizeof(fmtdescription), "<prefix>", PROJECT_CMD_PREFIX, false);
+    
+    RegConsoleCmd(project_cmdname, callback, fmtdescription, flags);
 }

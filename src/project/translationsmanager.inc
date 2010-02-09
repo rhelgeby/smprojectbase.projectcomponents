@@ -261,16 +261,20 @@ stock TransMgr_PrintText(client, MsgFormatting:msgformat, MsgTypes:msgtype, Modu
  * Print text to all clients with special formatting and translated text.
  * 
  * @param server    True to print this phrase to server, along with all clients in the game.
- * @param admin     True to only print to 
+ * @param admin     True to only print to clients with access defined by accessmanager.inc.
+ *                  This is forced to false if the access manager isn't compiled into the plugin.
  * @param msgformat How to format the text before sending.  See enum MsgFormatting.
  * @param msgtype   The type of message to print to the clients.  See enum MsgTypes.
  * @param literal   True to print the last variable as a string, instead of translating it.
  * @param any       The translations phrase follow by formatting parameters.
  * 
- * TODO: CLIENT ACCESS
  */
 stock TransMgr_PrintTextAll(bool:server, bool:admin, MsgFormatting:msgformat, MsgTypes:msgtype, Module:module = INVALID_MODULE, bool:literal = false, any:...)
 {
+    #if !defined ACCESS_MANAGER
+        admin = false;
+    #endif
+    
     // There's only 1 server.
     if (msgtype == MsgType_Server)
     {
@@ -304,13 +308,9 @@ stock TransMgr_PrintTextAll(bool:server, bool:admin, MsgFormatting:msgformat, Ms
         if (!IsClientInGame(client))
             continue;
         
-        /**
-         * TODO: Check if client has permissions
-         */
-        
-        if (admin)
-        {
-        }
+        // If the client must be an admin, and the access manager says they aren't, then skip the client.
+        if (admin && !AccessMgr_HasAccess(client, module))
+            continue;
         
         // Print the phrase in the client's language.
         SetGlobalTransTarget(client);
@@ -427,7 +427,7 @@ stock bool:TransMgr_IsEnabled(Module:module)
  */
 stock TransMgr_SetEnabled(Module:module, bool:enable)
 {
-    SetArrayCell(MM_HANDLE_FROM_ID(module), TRANSLATIONS_DATA_ENABLED, _:enable);
+    SetArrayCell(ModuleMgr_GetModuleArray(module), TRANSLATIONS_DATA_ENABLED, _:enable);
 }
 
 /**

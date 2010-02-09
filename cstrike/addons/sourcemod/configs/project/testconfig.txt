@@ -1,0 +1,18 @@
+"testconfig"
+{
+	"Key1"
+	{
+		"int"		"1"
+		"float"		"1.0"
+		"string"	"hello world"
+	}
+
+	
+	"Key2"
+	{
+		"int"		"2"
+		"float"		"2.0"
+		"string"	"hello world 2"
+	}
+
+}

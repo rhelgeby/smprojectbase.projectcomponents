@@ -28,8 +28,8 @@
 /**
  * A global variable to store this module's ID in.
  */
-new Module:g_iTestModule;
-new Module:g_iTestModule2;
+stock Module:g_iTestModule;
+stock Module:g_iTestModuleHidden;
 
 /**
  * Plugin is loading.
@@ -50,63 +50,100 @@ public TestModule_OnPluginStart()
     ModuleMgr_Register(moduledata3);
     
     new moduledata4[ModuleData] = {false, true, "Hidden Module", "hiddenmodule", "Hidden module."};
-    g_iTestModule2 = ModuleMgr_Register(moduledata4);
+    g_iTestModuleHidden = ModuleMgr_Register(moduledata4);
     
     // Now register the events we're going to use.
-    EventMgr_RegisterEvent(g_iTestModule, Event_RoundStart, "TestModule_OnRoundStart");
-    EventMgr_RegisterEvent(g_iTestModule, Event_OnMapStart, "TestModule_OnMapStart");
-    EventMgr_RegisterEvent(g_iTestModule, Event_PlayerSpawn, "TestModule_OnPlayerSpawn");
-    EventMgr_RegisterEvent(g_iTestModule, Event_PlayerHurt, "TestModule_OnPlayerHurt");
-    EventMgr_RegisterEvent(g_iTestModule, Event_WeaponFire, "TestModule_OnWeaponFire");
-    EventMgr_RegisterEvent(g_iTestModule2, Event_RoundStart, "TestModule_OnRoundStartHidden");
+    #if defined EVENT_MANAGER
+        EventMgr_RegisterEvent(g_iTestModule, Event_RoundStart, "TestModule_OnRoundStart");
+        EventMgr_RegisterEvent(g_iTestModule, Event_OnMapStart, "TestModule_OnMapStart");
+        EventMgr_RegisterEvent(g_iTestModule, Event_PlayerSpawn, "TestModule_OnPlayerSpawn");
+        EventMgr_RegisterEvent(g_iTestModule, Event_PlayerHurt, "TestModule_OnPlayerHurt");
+        EventMgr_RegisterEvent(g_iTestModuleHidden, Event_RoundStart, "TestModule_OnRoundStartHidden");
+    #endif
     
-    // Register this module with the translations manager.
-    // Make sure testmodule.phrase.txt exists in translations/project/
-    //TransMgr_Register(g_iTestModule);
+    #if defined TRANSLATIONS_MANAGER
+        // Register this module with the translations manager.
+        // Make sure testmodule.phrase.txt exists in translations/project/
+        TransMgr_Register(g_iTestModule);
+    #endif
     
-    ConfigMgr_Register(g_iTestModule, "Invalid", "configs/project/invalid.txt");
-    ConfigMgr_Register(g_iTestModule, "TestConfigReload", "configs/project/testconfig.txt");
-    ConfigMgr_Register(g_iTestModule, "TestConfigReload", "configs/project/testconfig.txt"); // duplicates test
-    
+    #if defined CONFIG_MANAGER
+        ConfigMgr_Register(g_iTestModule, "Invalid", "configs/project/invalid.txt");
+        ConfigMgr_Register(g_iTestModule, "TestModule_ReloadConfig", "configs/project/testconfig.txt");
+        ConfigMgr_Register(g_iTestModule, "TestModule_ReloadConfig", "configs/project/testconfig.txt"); // duplicates test
+    #endif
     
     
     // ************************
     // Done registering module.
     // ************************
-    
 }
 
-public TestConfigReload(configindex)
+enum TestModuleConfigs
 {
-    PrintToServer("Reloaded configindex %d", configindex);
+    String:TMConfig_SectionName[32] = 0,
+    TMConfig_Int,
+    Float:TMConfig_Float,
+    String:TMConfig_String[32]
 }
 
-public KvCache:TestModuleConfigCache(Handle:kv, sectionindex, const String:sectionname[])
-{
-    PrintToServer("index %d name %s", sectionindex, sectionname);
-}
+#if defined CONFIG_MANAGER
+#define TM_MAX_KEYS 64
+new g_TMConfigCache[TM_MAX_KEYS][TestModuleConfigs];
+#endif
 
 public TestModule_OnMapStart()
 {
-    ConfigMgr_CacheKv(g_iTestModule, 0, "TestModuleConfigCache");
-    LogMgr_Print(g_iTestModule, LogType_Normal, "Event_OnMapStart", "OnMapStart");
+    #if defined CONFIG_MANAGER
+        // Cache our configs.
+        new count = ConfigMgr_CacheKv(g_iTestModule, CM_CONFIGINDEX_FIRST, "TestModule_ConfigCache");
+        for (new x = 0; x < count; x++)
+            PrintToServer("CACHED: INDEX: %d SECTION: %s INT %d FLOAT %f STRING %s", x, g_TMConfigCache[x][TMConfig_SectionName], g_TMConfigCache[x][TMConfig_Int], g_TMConfigCache[x][TMConfig_Float], g_TMConfigCache[x][TMConfig_String]);
+    #endif
 }
+
+#if defined CONFIG_MANAGER
+public TestModule_ReloadConfig(configindex)
+{
+    #if defined LOG_MANAGER
+        LogMgr_Print(g_iTestModule, LogType_Normal, "TestConfigReload", "Reloaded test module's config (index %d)", configindex);
+    #endif
+    
+    new count = ConfigMgr_CacheKv(g_iTestModule, CM_CONFIGINDEX_FIRST, "TestModule_ConfigCache");
+    for (new x = 0; x < count; x++)
+        PrintToServer("CACHED: INDEX: %d SECTION: %s INT %d FLOAT %f STRING %s", x, g_TMConfigCache[x][TMConfig_SectionName], g_TMConfigCache[x][TMConfig_Int], g_TMConfigCache[x][TMConfig_Float], g_TMConfigCache[x][TMConfig_String]);
+}
+
+public KvCache:TestModule_ConfigCache(Handle:kv, sectionindex, const String:sectionname[])
+{
+    strcopy(g_TMConfigCache[sectionindex][TMConfig_SectionName], 32, sectionname);
+    
+    g_TMConfigCache[sectionindex][TMConfig_Int] =      KvGetNum(kv,    "int");
+    g_TMConfigCache[sectionindex][TMConfig_Float] =    KvGetFloat(kv,  "float");
+    
+    KvGetString(kv, "string", g_TMConfigCache[sectionindex][TMConfig_String], 32);
+}
+#endif
 
 public TestModule_OnPlayerSpawn(client)
 {
-    LogMgr_Print(g_iTestModule, LogType_Normal, "Event_PlayerSpawn", "Client %N spawned.", client);
+    #if defined LOG_MANAGER
+        LogMgr_Print(g_iTestModule, LogType_Normal, "Event_PlayerSpawn", "Client %N spawned.", client);
+    #endif
+    
+    #if defined ACCESS_MANAGER
+    #if defined LOG_MANAGER
     if (AccessMgr_HasAccess(client, g_iTestModule))
         LogMgr_Print(g_iTestModule, LogType_Normal, "Event_PlayerSpawn", "Client %N has access to testmodule.", client);
+    #endif
+    #endif
 }
 
 public TestModule_OnPlayerHurt(client, attacker, health, armor, const String:weapon[], dmg_health, dmg_armor, hitgroup)
 {
-    LogMgr_Print(g_iTestModule, LogType_Normal, "Event_PlayerHurt", "Client %N was hurt by %N health %d armor %d weapon %s dmg_health %d hitgroup %d", client, attacker, health, armor, weapon, dmg_health, hitgroup);
-}
-
-public TestModule_OnWeaponFire(client, const String:weapon[])
-{
-    LogMgr_Print(g_iTestModule, LogType_Normal, "Event_OnWeaponFire", "Client %N fired weapon %s", client, weapon);
+    #if defined LOG_MANAGER
+        LogMgr_Print(g_iTestModule, LogType_Normal, "Event_PlayerHurt", "Client %N was hurt by %N health %d armor %d weapon %s dmg_health %d hitgroup %d", client, attacker, health, armor, weapon, dmg_health, hitgroup);
+    #endif
 }
 
 /**
@@ -114,12 +151,15 @@ public TestModule_OnWeaponFire(client, const String:weapon[])
  */
 public TestModule_OnRoundStart(dcell, Float:dfloat, any:darray[], String:dstring[])
 {
-    //TransMgr_PrintText(SERVER_INDEX, MsgFormat_Both, MsgType_Server, g_iTestModule, false, "Event round_start");
-    //TransMgr_PrintTextAll(true, false, MsgFormat_Both, MsgType_Chat, g_iTestModule, false, "Event round_start");
-    LogMgr_Print(g_iTestModule, LogType_Normal, "Round_Start", "The round has started.");
+    #if defined TRANSLATIONS_MANAGER
+        TransMgr_PrintText(SERVER_INDEX, MsgFormat_Both, MsgType_Server, g_iTestModule, false, "Event round_start");
+        TransMgr_PrintTextAll(false, false, MsgFormat_Both, MsgType_Chat, g_iTestModule, false, "Event round_start");
+    #endif
     
-    // Switching event forward.
-    EventMgr_SetEventForward(g_iTestModule, Event_RoundStart, "TestModule_OnRoundStart2");
+    #if defined EVENT_MANAGER
+        // Switching event forward.
+        EventMgr_SetEventForward(g_iTestModule, Event_RoundStart, "TestModule_OnRoundStart2");
+    #endif
 }
 
 /**
@@ -127,16 +167,9 @@ public TestModule_OnRoundStart(dcell, Float:dfloat, any:darray[], String:dstring
  */
 public TestModule_OnRoundStart2(dcell, Float:dfloat, any:darray[], String:dstring[])
 {
-    //TransMgr_PrintText(SERVER_INDEX, MsgFormat_Plugin, MsgType_Server, _, true, "Event round_start alternate");
-    //TransMgr_PrintTextAll(true, false, MsgFormat_Both, MsgType_Chat, g_iTestModule, true, "Event round_start alternate");
-    //TransMgr_PrintTextAll(false, false, MsgFormat_None, MsgType_Center, _, true, "Event round_start alternate");
-    //TransMgr_PrintTextAll(false, false, MsgFormat_Plugin, MsgType_Hint, _, true, "Event round_start alternate");
-    
-    LogMgr_Print(g_iTestModule, LogType_Normal, "Round_Start", "Alternate round_start event.");
-    //LogMgr_Print(g_iTestModule, LogType_Fatal_Module, "Round_Start", "Fatal error!  Disabling module.");
-    
-    // Disable event.
-    //EventMgr_Disable(g_iTestModule, Event_RoundStart);
+    #if defined LOG_MANAGER
+        LogMgr_Print(g_iTestModule, LogType_Normal, "Round_Start", "Round start!");
+    #endif
 }
 
 /**
@@ -144,5 +177,7 @@ public TestModule_OnRoundStart2(dcell, Float:dfloat, any:darray[], String:dstrin
  */
 public TestModule_OnRoundStartHidden()
 {
-    //TransMgr_PrintTextAll(true, false, MsgFormat_Both, MsgType_Chat, g_iTestModule2, true, "(Hidden) Round started!");
+    #if defined TRANSLATIONS_MANAGER
+        TransMgr_PrintTextAll(true, false, MsgFormat_Both, MsgType_Chat, g_iTestModuleHidden, true, "(Hidden) Round started!");
+    #endif
 }

@@ -218,12 +218,14 @@ stock LogMgr_Print(Module:module, LogTypes:logtype, const String:description[], 
     }
     
     #if defined TRANSLATIONS_MANAGER
+    #if defined ACCESS_MANAGER
         // Print log to all in-game admins if the cvar is enabled.
         if (LogMgr_CvarPrintAdmins())
         {
             // Print text to admins.
             TransMgr_PrintTextAll(false, true, MsgFormat_None, MsgType_Chat, _, true, logbuffer);
         }
+    #endif
     #endif
     
     // Print log to all in-game clients if the cvar is enabled.
