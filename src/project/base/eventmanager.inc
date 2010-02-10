@@ -36,9 +36,20 @@
 
 // See project.inc
 
+/**
+ * Uncomment this to profile every event in your project and log the times to file. (sourcemod/logs/)
+ * The profiler is used in EventMgr_Forward.
+ * WINDOWS ONLY! 
+ */
+//#define PROFILE_EVENTS
+
 // ---------------
 //     Private
 // ---------------
+
+#if defined PROFILE_EVENTS
+    #include <profiler>
+#endif
 
 /**
  * The max number of cells needed for each of the event manager's allocated index.
@@ -180,6 +191,19 @@ stock Function:EventMgr_RegisterEvent(Module:module, ProjectEvents:event, const 
 }
 
 /**
+ * Checks if an event is active for a module.
+ * 
+ * @param module    The module identifier.
+ * @param event     The event to check.
+ * 
+ * @return          True if it's currently active, false if not.
+ */
+stock bool:EventMgr_IsEventActive(Module:module, ProjectEvents:event)
+{
+    return bool:(EventMgr_GetModuleCacheIndex(module, event) > -1);
+}
+
+/**
  * Disables an event in a module.
  * If the event is already disabled, nothing will change.
  * 
@@ -248,8 +272,14 @@ stock Function:EventMgr_SetEventForward(Module:module, ProjectEvents:event, cons
  * @param eventdatatypes    An array of datatypes for each event value.  See enum EventDataTypes.  This should line up with eventdata.
  * @param modules           An extra filter to narrow down which modules will see the event.  This MUST end with INVALID_MODULE.
  */
+new Module:g_ForwardToModule;  // The global variable to store the next module to receive the event being forwarded.
 stock EventMgr_Forward(ProjectEvents:event, any:eventdata[][], numValues, size, EventDataTypes:eventdatatypes[], Module:modules[] = {INVALID_MODULE})
 {
+    #if defined PROFILE_EVENTS
+        new Handle:profiler = CreateProfiler();
+        StartProfiling(profiler);
+    #endif
+    
     new Function:func;
     new Module:module;
     
@@ -278,6 +308,9 @@ stock EventMgr_Forward(ProjectEvents:event, any:eventdata[][], numValues, size, 
         // Read the function ID.
         func = EventMgr_ReadFuncValue(module, event);
         
+        // Set the global variable to the next module who will be receiving this event.
+        g_ForwardToModule = module;
+        
         // Call the event forward.
         Call_StartFunction(GetMyHandle(), func);
         
@@ -297,6 +330,24 @@ stock EventMgr_Forward(ProjectEvents:event, any:eventdata[][], numValues, size, 
         // Call the function.
         Call_Finish();
     }
+    
+    #if defined PROFILE_EVENTS
+        StopProfiling(profiler);
+        Project_LogMessage("PROFILER: Event %s: Forwarded to %d modules, taking %f seconds to do.", g_ProjectEventDisplay[event], count, GetProfilerTime(profiler));
+        CloseHandle(profiler);
+    #endif
+}
+
+/**
+ * This function is only valid if being called within a forwarded event in a module!
+ * This is needed when more than one module is using the same event. 
+ * Returns the module the the current event is being forwarded to.
+ * 
+ * @return  The module identifier.  
+ */
+stock Module:EventMgr_GetEventOwner()
+{
+    return g_ForwardToModule;
 }
 
 // **********************************************

@@ -129,41 +129,6 @@ ConfigMgr_OnPluginEnd()
 }
 
 /**
- * Map has loaded.
- */
-/*ConfigMgr_OnMapStart()
-{
-    new Module:module;
-    new Function:reloadfuncs[CM_MODULE_MAX_CONFIGS];
-    
-    // Loop through all the modules.
-    new count = MODULE_COUNT;
-    for (new moduleindex = 0; moduleindex < count; moduleindex++)
-    {
-        // Read moduleindex as a Module type.
-        module = Module:moduleindex;
-        
-        // If the module is disabled, then stop this iteration.
-        if (ModuleMgr_IsDisabled(module))
-            continue;
-        
-        // Get each load function ID into an array.
-        ConfigMgr_ReadCells(module, ConfigData_ReloadFunc, reloadfuncs);
-        
-        // Loop through each config index and forward the function if it's valid.
-        new nextindex = ConfigMgr_FindNextIndex(module);
-        new configcount = (nextindex > -1) ? nextindex : CM_MODULE_MAX_CONFIGS;
-        for (new configindex = 0; configindex < configcount; configindex++)
-        {
-            Call_StartFunction(GetMyHandle(), reloadfuncs[configindex]);
-            Call_PushCell(configindex);
-            Call_PushCell(false);
-            Call_Finish();
-        }
-    }
-}*/
-
-/**
  * A module was just registered.  This is being called before the module has been assigned a module identifier.
  * 
  * @param adtModule The adt array of the module being registered.

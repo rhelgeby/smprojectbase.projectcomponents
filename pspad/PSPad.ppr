@@ -18,13 +18,13 @@ Project
 			..\src\project\base\eventmanager.inc
 			..\src\project\base\logmanager.inc
 			..\src\project\base\modulemanager.inc
-			..\src\project\base\project.inc
 			..\src\project\base\translationsmanager.inc
 			..\src\project\base\versioninfo.inc
 			..\src\project\base\wrappers.inc
 		-Module Includes
 			..\src\project\testmodule.inc
 		..\src\project.sp
+		..\src\project\project.inc
 	-Translations
 		..\cstrike\addons\sourcemod\translations\project\project.phrases.txt
 		..\cstrike\addons\sourcemod\translations\project\projectbase.phrases.txt
