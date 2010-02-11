@@ -4,7 +4,7 @@
  *  Project
  *
  *  File:          testmodule.inc
- *  Type:          Base
+ *  Type:          Module
  *  Description:   Test module designed with no other purpose other than testing project base components.
  *
  *  Copyright (C) 2009-2010  Greyscale

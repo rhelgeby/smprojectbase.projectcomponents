@@ -35,7 +35,7 @@
 #endif
 
 /**
- * Plugin has loaded.
+ * Plugin is loading.
  */
 VersionInfo_OnPluginStart()
 {
@@ -47,7 +47,7 @@ VersionInfo_OnPluginStart()
 }
 
 /**
- * Plugin has ended.
+ * Plugin is ending.
  */
 VersionInfo_OnPluginEnd()
 {

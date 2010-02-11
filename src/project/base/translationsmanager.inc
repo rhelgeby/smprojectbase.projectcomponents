@@ -122,7 +122,7 @@ enum ProjectTransFiles
 // **********************************************
 
 /**
- * Plugin has loaded.
+ * Plugin is loading.
  */
 TransMgr_OnPluginStart()
 {
@@ -134,7 +134,7 @@ TransMgr_OnPluginStart()
 }
 
 /**
- * Plugin has ended.
+ * Plugin is ending.
  */
 TransMgr_OnPluginEnd()
 {

@@ -77,7 +77,7 @@ new g_iMMMaxBlockSize;
 
 
 /**
- * Plugin has loaded.
+ * Plugin is loading.
  */
 ModuleMgr_OnPluginStart()
 {
@@ -127,7 +127,7 @@ ModuleMgr_OnPluginStart()
 }
 
 /**
- * Plugin has ended.
+ * Plugin is ending.
  */
 ModuleMgr_OnPluginEnd()
 {

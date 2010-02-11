@@ -109,7 +109,7 @@ new g_iCMAllocatedIndexes[CM_MODULE_MAX_CONFIGS];
 // **********************************************
 
 /**
- * Plugin has loaded.
+ * Plugin is loading.
  */
 ConfigMgr_OnPluginStart()
 {
@@ -122,7 +122,7 @@ ConfigMgr_OnPluginStart()
 }
 
 /**
- * Plugin has ended.
+ * Plugin is ending.
  */
 ConfigMgr_OnPluginEnd()
 {

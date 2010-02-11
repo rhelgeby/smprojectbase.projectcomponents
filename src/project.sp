@@ -73,7 +73,7 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 }
 
 /**
- * Plugin has loaded.
+ * Plugin is loading.
  */
 public OnPluginStart()
 {
@@ -129,6 +129,9 @@ public OnAllPluginsLoaded()
     #endif
 }
 
+/**
+ * Plugin is ending.
+ */
 public OnPluginEnd()
 {
     // Unload in reverse order of loading.

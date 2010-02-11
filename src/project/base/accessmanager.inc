@@ -43,7 +43,7 @@ new Handle:g_hCvarRoot;
 // **********************************************
 
 /**
- * Plugin has loaded.
+ * Plugin is loading.
  */
 AccessMgr_OnPluginStart()
 {
@@ -52,7 +52,7 @@ AccessMgr_OnPluginStart()
 }
 
 /**
- * Plugin has ended.
+ * Plugin is ending.
  */
 AccessMgr_OnPluginEnd()
 {

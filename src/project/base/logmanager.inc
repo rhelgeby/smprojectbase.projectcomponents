@@ -90,7 +90,7 @@ new Handle:cvarLogPrintPublic;
 // **********************************************
 
 /**
- * Plugin has loaded.
+ * Plugin is loading.
  */
 LogMgr_OnPluginStart()
 {
@@ -115,7 +115,7 @@ LogMgr_OnPluginStart()
 }
 
 /**
- * Plugin has ended.
+ * Plugin is ending.
  */
 LogMgr_OnPluginEnd()
 {

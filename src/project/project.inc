@@ -333,7 +333,6 @@ stock Project_LoadExtraTranslations()
     
     // Standard phrases provided by SM.
     LoadTranslations("common.phrases");
-    LoadTranslations("project/testmodule.phrases");
 }
 
 
