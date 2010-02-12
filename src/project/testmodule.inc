@@ -72,12 +72,6 @@ public TestModule_OnPluginStart()
             EventMgr_RegisterEvent(g_iTestModules[x], Event_PlayerHurt, "TestModule_OnPlayerHurt");    
         #endif
         
-        #if defined TRANSLATIONS_MANAGER
-            // Register this module with the translations manager.
-            // Make sure testmodule.phrase.txt exists in translations/project/
-            //TransMgr_Register(g_iTestModules[x]);
-        #endif
-        
         #if defined CONFIG_MANAGER
             //ConfigMgr_Register(g_iTestModules[x], "TestModule_ReloadConfig", "configs/project/testconfig.txt");
         #endif

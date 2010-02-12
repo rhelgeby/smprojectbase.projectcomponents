@@ -22,12 +22,15 @@ Project
 			..\src\project\base\versioninfo.inc
 			..\src\project\base\wrappers.inc
 		-Module Includes
+			..\src\project\moduletemplate.inc
 			..\src\project\testmodule.inc
 		..\src\project.sp
 		..\src\project\project.inc
 	-Translations
-		..\cstrike\addons\sourcemod\translations\project\project.phrases.txt
 		..\cstrike\addons\sourcemod\translations\project\projectbase.phrases.txt
+		..\cstrike\addons\sourcemod\translations\project\basecmd.phrases.txt
+		..\cstrike\addons\sourcemod\translations\project\translationsmanager.phrases.txt
+		..\cstrike\addons\sourcemod\translations\project\logmanager.phrases.txt
 	-SM Includes
 		..\env\include\admin.inc
 		..\env\include\adminmenu.inc

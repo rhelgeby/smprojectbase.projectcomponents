@@ -112,10 +112,8 @@ public OnPluginStart()
     
     // All modules should be registered by this point!
     
-    // Forward event to other project base components.
-    #if defined TRANSLATIONS_MANAGER
-        TransMgr_OnModulesRegistered();
-    #endif
+    // Forward the OnAllModulesLoaded to all modules.
+    EventMgr_Forward(Event_OnAllModulesLoaded, g_CommonEventData1, 0, 0, g_CommonDataType1);
 }
 
 /**
@@ -225,7 +223,6 @@ public OnClientPutInServer(client)
     #if defined EVENT_MANAGER
         // Forward event to all modules.
         new any:eventdata[1][1];
-        
         eventdata[0][0] = client;
         
         EventMgr_Forward(Event_OnClientPutInServer, eventdata, sizeof(eventdata), sizeof(eventdata[]), g_CommonDataType2);
@@ -242,7 +239,6 @@ public OnClientDisconnect(client)
     #if defined EVENT_MANAGER
         // Forward event to all modules.
         new any:eventdata[1][1];
-        
         eventdata[0][0] = client;
         
         EventMgr_Forward(Event_OnClientDisconnect, eventdata, sizeof(eventdata), sizeof(eventdata[]), g_CommonDataType2);

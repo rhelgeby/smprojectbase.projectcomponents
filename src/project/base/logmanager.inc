@@ -61,13 +61,10 @@ enum LogTypes
 #define LOG_DATA_WHITELIST g_iLMAllocatedIndexes[0]
 
 /**
- * @section Log message max lengths.
+ * Log message max lengths.
  */
 #define LOG_MAX_LENGTH_FILE 2048
 #define LOG_MAX_LENGTH_CHAT 192
-/**
- * @endsection
- */
 
 /**
  * Array to store the index of the allocated space in the module data arrays for the log manager.
@@ -75,15 +72,12 @@ enum LogTypes
 new g_iLMAllocatedIndexes[1];
 
 /**
- * @section Log cvars.
+ * Log cvars.
  */
 new Handle:cvarLog;
 new Handle:cvarLogWhitelist;
 new Handle:cvarLogPrintAdmins;
 new Handle:cvarLogPrintPublic;
-/**
- * @endsection
- */
 
 // **********************************************
 //                 Forwards

@@ -31,12 +31,9 @@
 #define ACCESS_MANAGER
 
 /**
- * @section Access cvars.
+ * Access cvars.
  */
 new Handle:g_hCvarRoot;
-/**
- * @endsection
- */
 
 // **********************************************
 //                 Forwards
@@ -74,7 +71,7 @@ stock AccessMgr_OnModuleRegistered(Module:module)
     AccessMgr_CvarRoot(strCvarRootFlags, sizeof(strCvarRootFlags));
     
     // Create a module-specific cvar with cvar project_access_root as the default value.
-    CreateConVar(cvarname, strCvarRootFlags, "access_<modulename>: Admin flag(s) required to access this module.");
+    CreateConVar(cvarname, strCvarRootFlags, "Admin flag(s) required to access this module.");
 }
 
 // **********************************************

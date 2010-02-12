@@ -1,0 +1,33 @@
+"Phrases"
+{
+	// Command: <PROJECT_CMD_PREFIX>_log_whitelist_add
+
+	// {1-2}: PROJECT_CMD_PREFIX
+	"LogMgr cmd whitelistadd usage"
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"Adds one or more modules to the whitelist.  Usage: {1}_log_whitelist_add <moduleshortname> [module2] ...\nRelated command(s): {2}_log_whitelist_remove"
+	}
+
+	"LogMgr cmd whitelistadd"
+	{
+		"#format"	"{1:s}"
+		"en"		"Module \"{1}\" has been added to the whitelist."
+	}
+
+	// Command: <PROJECT_CMD_PREFIX>_log_whitelist_remove
+
+	// {1-2}: PROJECT_CMD_PREFIX
+	"LogMgr cmd whitelistremove usage"
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"Removes one or more modules from the whitelist.  Usage: {1}_log_whitelist_remove <moduleshortname> [module2] ...\nRelated command(s): {2}_log_whitelist_add"
+	}
+
+	"LogMgr cmd whitelistremove"
+	{
+		"#format"	"{1:s}"
+		"en"		"Module \"{1}\" has been removed from the whitelist."
+	}
+
+}

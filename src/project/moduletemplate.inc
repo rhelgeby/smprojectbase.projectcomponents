@@ -4,7 +4,7 @@
  *  <Project Name>
  *
  *  File:          .inc
- *  Type:          
+ *  Type:          Module
  *  Description:   
  *
  *  Copyright (C) 2009-2010  <Author>
@@ -26,19 +26,34 @@
  */
 
 /**
+ * Template instructions:
+ * 
+ * All module-specific text has been replaced with text enclosed in <>
+ * This is to make preparing this file to become the module you need easier.
+ * Simply search-and-replace (usually CTRL+H) each of the tags below and replace it with the module specifics.
+ * 
+ * Tags:
+ * <Project Name>       The name of the project.  (PROJECT_FULLNAME)
+ * <Author>             The author(s) of the project.  (PROJECT_AUTHOR)
+ * <FuncPrefix>         The prefix of your module's functions.  Usually the module's full name with no whitespaces.
+ * <ModuleVarName>      Usually the same as <FuncPrefix>.  Names the global variable that stores this module's identifier.
+ * 
+ * Remove these instructions after all text replacement operations are completed.
+ */
+
+/**
  * This module's identifier.
  */
-new Module:g_moduleModule;
+new Module:g_module<ModuleVarName>;
 
 /**
  * Register this module.
  */
-_Register()
+<FuncPrefix>_Register()
 {
     // Define all the module's data as layed out by enum ModuleData in project.inc.
     new moduledata[ModuleData];
     
-    moduledata[ModuleData_Disabled] = ;
     moduledata[ModuleData_Disabled] = ;
     moduledata[ModuleData_Hidden] = ;
     strcopy(moduledata[ModuleData_FullName], CM_DATA_FULLNAME, "");
@@ -46,69 +61,105 @@ _Register()
     strcopy(moduledata[ModuleData_Description], CM_DATA_DESCRIPTION, "");
     
     // Send this array of data to the module manager.
-    g_moduleModule = ModuleMgr_Register(moduledata);
+    g_module<ModuleVarName> = ModuleMgr_Register(moduledata);
     
     // Register all the events needed for this module.
-    //EventMgr_RegisterEvent(g_moduleModule, Event_OnAllPluginsLoaded,      "_OnAllPluginsLoaded");
-    //EventMgr_RegisterEvent(g_moduleModule, Event_OnPluginEnd,             "_OnPluginEnd");
-    //EventMgr_RegisterEvent(g_moduleModule, Event_OnMapStart,              "_OnMapStart");
-    //EventMgr_RegisterEvent(g_moduleModule, Event_OnMapEnd,                "_OnMapEnd");
-    //EventMgr_RegisterEvent(g_moduleModule, Event_OnAutoConfigsBuffered,   "_OnAutoConfigsBuffered");
-    //EventMgr_RegisterEvent(g_moduleModule, Event_OnConfigsExecuted,       "_OnConfigsExecuted");
-    //EventMgr_RegisterEvent(g_moduleModule, Event_OnClientPutInServer,     "_OnClientPutInServer");
-    //EventMgr_RegisterEvent(g_moduleModule, Event_OnClientDisconnect,      "_OnClientDisconnect");
-    //EventMgr_RegisterEvent(g_moduleModule, Event_RoundStart,              "_RoundStart");
-    //EventMgr_RegisterEvent(g_moduleModule, Event_RoundFreezeEnd,          "_RoundFreezeEnd");
-    //EventMgr_RegisterEvent(g_moduleModule, Event_RoundEnd,                "_RoundEnd");
-    //EventMgr_RegisterEvent(g_moduleModule, Event_PlayerTeam,              "_PlayerTeam");
-    //EventMgr_RegisterEvent(g_moduleModule, Event_PlayerSpawn,             "_PlayerSpawn");
-    //EventMgr_RegisterEvent(g_moduleModule, Event_PlayerHurt,              "_PlayerHurt");
-    //EventMgr_RegisterEvent(g_moduleModule, Event_PlayerDeath,             "_PlayerDeath");
-    //EventMgr_RegisterEvent(g_moduleModule, Event_PlayerJump,              "_PlayerJump");
-    //EventMgr_RegisterEvent(g_moduleModule, Event_WeaponFire,              "_WeaponFire");
-    
-    // Register a translations file for this module.
-    // Make sure <moduleshortname>.phrases.txt exists in translations/<projectshortname>/
-    // TransMgr_Register(g_moduleModule);
+    //EventMgr_RegisterEvent(g_module<ModuleVarName>, Event_OnAllPluginsLoaded,      "<FuncPrefix>_OnAllPluginsLoaded");
+    //EventMgr_RegisterEvent(g_module<ModuleVarName>, Event_OnPluginEnd,             "<FuncPrefix>_OnPluginEnd");
+    //EventMgr_RegisterEvent(g_module<ModuleVarName>, Event_OnAllModulesLoaded,      "<FuncPrefix>_OnAllModulesLoaded");
+    //EventMgr_RegisterEvent(g_module<ModuleVarName>, Event_OnModuleEnable,          "<FuncPrefix>_OnModuleEnable");
+    //EventMgr_RegisterEvent(g_module<ModuleVarName>, Event_OnMyModuleEnable,        "<FuncPrefix>_OnMyModuleEnable");
+    //EventMgr_RegisterEvent(g_module<ModuleVarName>, Event_OnModuleDisable,         "<FuncPrefix>_OnModuleDisable");
+    //EventMgr_RegisterEvent(g_module<ModuleVarName>, Event_OnModuleMyDisable,       "<FuncPrefix>_OnMyModuleDisable");
+    //EventMgr_RegisterEvent(g_module<ModuleVarName>, Event_OnMapStart,              "<FuncPrefix>_OnMapStart");
+    //EventMgr_RegisterEvent(g_module<ModuleVarName>, Event_OnMapEnd,                "<FuncPrefix>_OnMapEnd");
+    //EventMgr_RegisterEvent(g_module<ModuleVarName>, Event_OnAutoConfigsBuffered,   "<FuncPrefix>_OnAutoConfigsBuffered");
+    //EventMgr_RegisterEvent(g_module<ModuleVarName>, Event_OnConfigsExecuted,       "<FuncPrefix>_OnConfigsExecuted");
+    //EventMgr_RegisterEvent(g_module<ModuleVarName>, Event_OnClientPutInServer,     "<FuncPrefix>_OnClientPutInServer");
+    //EventMgr_RegisterEvent(g_module<ModuleVarName>, Event_OnClientDisconnect,      "<FuncPrefix>_OnClientDisconnect");
+    //EventMgr_RegisterEvent(g_module<ModuleVarName>, Event_RoundStart,              "<FuncPrefix>_RoundStart");
+    //EventMgr_RegisterEvent(g_module<ModuleVarName>, Event_RoundFreezeEnd,          "<FuncPrefix>_RoundFreezeEnd");
+    //EventMgr_RegisterEvent(g_module<ModuleVarName>, Event_RoundEnd,                "<FuncPrefix>_RoundEnd");
+    //EventMgr_RegisterEvent(g_module<ModuleVarName>, Event_PlayerTeam,              "<FuncPrefix>_PlayerTeam");
+    //EventMgr_RegisterEvent(g_module<ModuleVarName>, Event_PlayerSpawn,             "<FuncPrefix>_PlayerSpawn");
+    //EventMgr_RegisterEvent(g_module<ModuleVarName>, Event_PlayerHurt,              "<FuncPrefix>_PlayerHurt");
+    //EventMgr_RegisterEvent(g_module<ModuleVarName>, Event_PlayerDeath,             "<FuncPrefix>_PlayerDeath");
+    //EventMgr_RegisterEvent(g_module<ModuleVarName>, Event_PlayerJump,              "<FuncPrefix>_PlayerJump");
+    //EventMgr_RegisterEvent(g_module<ModuleVarName>, Event_WeaponFire,              "<FuncPrefix>_WeaponFire");
     
     // Register config file(s) that this module will use.
-    // ConfigMgr_Register(g_moduleModule, "_OnConfigReload", "configs/<projectshortname>/<config>.txt");
+    // ConfigMgr_Register(g_module<ModuleVarName>, "<FuncPrefix>_OnConfigReload", "configs/<projectshortname>/<config>.txt");
 }
 
 /**
  * Plugin is loading.
  */
-_OnPluginStart()
+<FuncPrefix>_OnPluginStart()
 {
     // Register the module.
-    _Register();
+    <FuncPrefix>_Register();
 }
 
 /**
  * All plugins have loaded.
  */
-public _OnAllPluginsLoaded()
+public <FuncPrefix>_OnAllPluginsLoaded()
 {
 }
 
 /**
  * Plugin is ending.
  */
-public _OnPluginEnd()
+public <FuncPrefix>_OnPluginEnd()
+{
+}
+
+/**
+ * All modules have been registered.
+ */
+public <FuncPrefix>_OnAllModulesLoaded()
+{
+}
+
+/**
+ * A module has been enabled.
+ */
+public <FuncPrefix>_OnModuleEnable(Module:module)
+{
+}
+
+/**
+ * The module that hooked this event callback has been enabled.
+ */
+public <FuncPrefix>_OnMyModuleEnable()
+{
+}
+
+/**
+ * A module has been disabled.
+ */
+public <FuncPrefix>_OnModuleDisable(Module:module)
+{
+}
+
+/**
+ * The module that hooked this event callback has been disabled.
+ */
+public <FuncPrefix>_OnMyModuleDisable()
 {
 }
 
 /**
  * The map has started.
  */
-public _OnMapStart()
+public <FuncPrefix>_OnMapStart()
 {
 }
 
 /**
  * The map has ended.
  */
-public _OnMapEnd()
+public <FuncPrefix>_OnMapEnd()
 {
 }
 
@@ -116,21 +167,21 @@ public _OnMapEnd()
  * This is called before OnConfigsExecuted but any time after OnMapStart.
  * Per-map settings should be set here. 
  */
-public _OnAutoConfigsBuffered()
+public <FuncPrefix>_OnAutoConfigsBuffered()
 {
 }
 
 /**
  * All convars are set, cvar-dependent code should use this.
  */
-public _OnConfigsExecuted()
+public <FuncPrefix>_OnConfigsExecuted()
 {
 }
 
 /**
  * Called when a registered config file (by this module) is manually.
  */
-public _OnConfigReload(configindex)
+public <FuncPrefix>_OnConfigReload(configindex)
 {
 }
 
@@ -139,7 +190,7 @@ public _OnConfigReload(configindex)
  * 
  * @param client    The client index.
  */
-public _OnClientPutInServer(client)
+public <FuncPrefix>_OnClientPutInServer(client)
 {
 }
 
@@ -148,28 +199,28 @@ public _OnClientPutInServer(client)
  * 
  * @param client    The client index.
  */
-public _OnClientDisconnect(client)
+public <FuncPrefix>_OnClientDisconnect(client)
 {
 }
 
 /**
  * Round has started.
  */
-public _RoundStart()
+public <FuncPrefix>_RoundStart()
 {
 }
 
 /**
  * Pre-round has freezetime has finished.
  */
-public _RoundFreezeEnd()
+public <FuncPrefix>_RoundFreezeEnd()
 {
 }
 
 /**
  * Round has ended.
  */
-public _RoundEnd()
+public <FuncPrefix>_RoundEnd()
 {
 }
 
@@ -181,7 +232,7 @@ public _RoundEnd()
  * @param oldteam       The team the client is switching from.
  * @param disconnect    True if the client is disconnecting, false if switching to a team.
  */
-public _PlayerTeam(client, team, oldteam, bool:disconnect)
+public <FuncPrefix>_PlayerTeam(client, team, oldteam, bool:disconnect)
 {
 }
 
@@ -191,7 +242,7 @@ public _PlayerTeam(client, team, oldteam, bool:disconnect)
  * @param client    The client index.
  * 
  */
-public _PlayerSpawn(client)
+public <FuncPrefix>_PlayerSpawn(client)
 {
 }
 
@@ -207,7 +258,7 @@ public _PlayerSpawn(client)
  * @param dmg_armor     The amount of armor the victim lost.
  * @param hitgroup      The hitgroup index of the victim that was damaged.
  */
-public _PlayerHurt(victim, attacker, health, armor, const String:weapon[], dmg_health, dmg_armor, hitgroup)
+public <FuncPrefix>_PlayerHurt(victim, attacker, health, armor, const String:weapon[], dmg_health, dmg_armor, hitgroup)
 {
 }
 
@@ -219,7 +270,7 @@ public _PlayerHurt(victim, attacker, health, armor, const String:weapon[], dmg_h
  * @param weapon    The weapon classname used to kill the victim. (No weapon_ prefix)
  * @param headshot  True if the death was by headshot, false if not.
  */
-public _PlayerDeath(victim, attacker, const String:weapon[], bool:headshot)
+public <FuncPrefix>_PlayerDeath(victim, attacker, const String:weapon[], bool:headshot)
 {
 }
 
@@ -228,7 +279,7 @@ public _PlayerDeath(victim, attacker, const String:weapon[], bool:headshot)
  * 
  * @param client        The client index.
  */
-public _PlayerJump(client)
+public <FuncPrefix>_PlayerJump(client)
 {
 }
 
@@ -238,6 +289,6 @@ public _PlayerJump(client)
  * @param client        The client index.
  * @param weapon        The weapon classname fired. (No weapon_ prefix)
  */
-public _WeaponFire(client, const String:weapon[])
+public <FuncPrefix>_WeaponFire(client, const String:weapon[])
 {
 }

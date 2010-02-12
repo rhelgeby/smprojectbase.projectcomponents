@@ -91,31 +91,6 @@ enum PhraseToBool
 //     Private
 // ---------------
 
-/**
- * The max number of cells needed for the translations manager's allocated index.
- */
-#define TM_DATA_MAX_CELLS 1
-// Translations manager only needs 1 cell for a boolean value.
-
-/**
- * Defines the block of data in the module data arrays that contains whether a module uses translations or not.
- */
-#define TRANSLATIONS_DATA_ENABLED g_iTMAllocatedIndexes[0]
-
-/**
- * Array to store the index of the allocated space in the module data arrays for the translations manager.
- */
-new g_iTMAllocatedIndexes[1];
-
-/**
- * List of stock translations files that come with the project.
- */
-enum ProjectTransFiles
-{
-    TransFile_ProjectBase,    /** projectbase.phrases.txt, contains phrases used by the base project files. */
-    TransFile_Project,        /** <projectshortname>.phrases.txt, contains phrases general translations used by the plugin. */
-    TransFile_Module,         /** User-created translation file for a module. */
-}
 
 // **********************************************
 //                 Forwards
@@ -126,8 +101,8 @@ enum ProjectTransFiles
  */
 TransMgr_OnPluginStart()
 {
-    // Allocate 1 index for the data we want to store for each module.
-    ModuleMgr_Allocate(1, g_iTMAllocatedIndexes);
+    // Load all the translations for the project.
+    TransMgr_LoadTranslations();
     
     // Create translations commands.
     Project_RegServerCmd("reload_translations", Command_ReloadTranslations, "Reload all project translation files.");
@@ -141,26 +116,6 @@ TransMgr_OnPluginEnd()
 }
 
 /**
- * A module was just registered.  This is being called before the module has been assigned a module identifier.
- * 
- * @param adtModule The adt array of the module being registered.
- */
-stock TransMgr_OnModuleRegister(Handle:adtModule)
-{
-    // Push the 'false' into our allocated space to signify if this module is using translations or not.
-    PushArrayCell(adtModule, false);
-}
-
-/**
- * All of the project's modules have been registered.
- */
-TransMgr_OnModulesRegistered()
-{
-    // Load all the translations for the project.
-    TransMgr_LoadTranslations();
-}
-
-/**
  * Base command is printing a module's info.
  * Print the module data allocated by the translation manager.
  * Note: |stock| tag will stop this function from being compiled if the base command is disabled.
@@ -170,31 +125,11 @@ TransMgr_OnModulesRegistered()
  */
 stock TransMgr_OnPrintModuleInfo(client, Module:module)
 {
-    decl String:translationfile[PLATFORM_MAX_PATH];
-    
-    if (TransMgr_IsEnabled(module))
-        TransMgr_BuildTranslationPath(TransFile_Module, module, translationfile, sizeof(translationfile), true);
-    else
-        Format(translationfile, sizeof(translationfile), "%t", "_None");
-    
-    // Print the module event info.
-    PrintToServer("%T", "TransMgr cmd base lvl2 modules info print", LANG_SERVER, translationfile);
 }
 
 // **********************************************
 //                Public API
 // **********************************************
-
-/**
- * Register your module to use translations.
- * Your module's translation file path is defined as: project/<moduleshortname>.phrases.txt
- * 
- * @param module    The module identifier to register for translations.
- */
-stock TransMgr_Register(Module:module)
-{
-    TransMgr_SetEnabled(module, true);
-}
 
 /**
  * Print text to a client with special formatting and translated text.
@@ -415,91 +350,46 @@ stock PhraseToBool:TransMgr_TranslatePhraseToBool(target, BoolPhrases:boolphrase
 // **********************************************
 
 /**
- * Check if the specified module has translations enabled.
- * 
- * @param module        The module to check.
- * 
- * @return              True if enabled, false otherwise. 
- */
-stock bool:TransMgr_IsEnabled(Module:module)
-{
-    return bool:GetArrayCell(ModuleMgr_GetModuleArray(module), TRANSLATIONS_DATA_ENABLED);
-}
-
-/**
- * Change if translations is enabled for a module.
- * 
- * @param module        The module to change.
- * @param enable        True to enable translations in this module, false to disable.
- */
-stock TransMgr_SetEnabled(Module:module, bool:enable)
-{
-    SetArrayCell(ModuleMgr_GetModuleArray(module), TRANSLATIONS_DATA_ENABLED, _:enable);
-}
-
-/**
  * (Re)loads all project translation files.
  */
 stock TransMgr_LoadTranslations()
 {
-    // Loads extra translations from the main project.inc file.
-    Project_LoadExtraTranslations();
+    // Build a path to the directory with translations.
+    decl String:fulltransfilepath[PLATFORM_MAX_PATH];
+    BuildPath(Path_SM, fulltransfilepath, sizeof(fulltransfilepath), "translations/%s", TM_BASE_DIR);
     
-    decl String:translationfile[PLATFORM_MAX_PATH];
-    
-    // Load project base component translations.
-    TransMgr_BuildTranslationPath(TransFile_ProjectBase, _, translationfile, sizeof(translationfile));
-    LoadTranslations(translationfile);
-    
-    // Load general plugin translations.
-    TransMgr_BuildTranslationPath(TransFile_Project, _, translationfile, sizeof(translationfile));
-    LoadTranslations(translationfile);
-    
-    new Module:module;
-    
-    // Loop through all the modules.
-    new count = MODULE_COUNT;
-    for (new moduleindex = 0; moduleindex < count; moduleindex++)
+    // Open directory, log errors if it doesn't exist.
+    new Handle:hDir = OpenDirectory(fulltransfilepath);
+    if (hDir == INVALID_HANDLE)
     {
-        // Read moduleindex as a Module type.
-        module = Module:moduleindex;
-        
-        // If the module doesn't have translations enabled, then skip to next module identifier.
-        if (!TransMgr_IsEnabled(module))
+        LogError("Translations file directory (%s) does not exist on the server", fulltransfilepath);
+        return;
+    }
+    
+    decl String:filename[64];
+    new const String:fileext[32] = ".phrases.txt";
+    new FileType:type;
+    decl String:transfilepath[PLATFORM_MAX_PATH];
+    
+    // Loop through all the files in the directory.
+    while (ReadDirEntry(hDir, filename, sizeof(filename), type))
+    {
+        if (type != FileType_File)
             continue;
         
-        TransMgr_BuildTranslationPath(TransFile_Module, module, translationfile, sizeof(translationfile));
-        LoadTranslations(translationfile);
-    }
-}
-
-/**
- * Return a path to the project's, or module's, translation file.
- * 
- * @param transfile The translation file to build path to.  See enum ProjectTransFiles.
- * @param module    The module of the translation file that is sought.  Leave as INVALID_MODULE for a file not affiliated with any module.
- * @param path      The path to the translation file.
- * @param maxlen    The max length of the output string.
- * @param txt       True to return the .txt extension, false to ignore it.
- */
-stock TransMgr_BuildTranslationPath(ProjectTransFiles:transfile, Module:module = INVALID_MODULE, String:path[], maxlen, bool:txt = false)
-{
-    
-    switch (transfile)
-    {
-        case TransFile_ProjectBase: Format(path, maxlen, TM_BASE_PATH);
-        case TransFile_Project:     Format(path, maxlen, TM_PROJECT_PATH);
-        case TransFile_Module:
+        // Load the file if it ends with ".phrases.txt"
+        if (StrContains(filename, fileext, false) == strlen(filename) - strlen(fileext))
         {
-            // Get the module's shortname to use as the translations name.
-            decl String:moduleshortname[CM_DATA_SHORTNAME];
-            ModuleMgr_ReadString(module, ModuleData_ShortName, moduleshortname, sizeof(moduleshortname));
-            Format(path, maxlen, TM_MODULE_PATH);
+            // Format a path to the file, relative to the "translations" folder.
+            Format(transfilepath, sizeof(transfilepath), "%s/%s", TM_BASE_DIR, filename);
+            LoadTranslations(transfilepath);
+            
+            LogMessage("[Translations Manager] Loaded \"%s\"", transfilepath);
         }
     }
     
-    if (txt)
-        Format(path, maxlen, "%s.txt", path);
+    // Loads extra translations from the main project.inc file.
+    Project_LoadExtraTranslations();
 }
 
 /**

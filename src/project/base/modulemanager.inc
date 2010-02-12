@@ -106,18 +106,10 @@ ModuleMgr_OnPluginStart()
             g_iMMMaxBlockSize = CM_DATA_MAX_CELLS;
     #endif
     
-    #if defined TRANSLATIONS_MANAGER
-        if (TM_DATA_MAX_CELLS > g_iMMMaxBlockSize)
-            g_iMMMaxBlockSize = TM_DATA_MAX_CELLS;
-    #endif
-    
     #if defined LOG_MANAGER
         if (LM_DATA_MAX_CELLS > g_iMMMaxBlockSize)
             g_iMMMaxBlockSize = LM_DATA_MAX_CELLS;
     #endif
-    
-    // Log the blocksize.
-    LogMessage("[Module Manager] Module data array blocksize: %d", g_iMMMaxBlockSize);
     
     // Create base command.
     #if defined PROJECT_BASE_CMD
@@ -180,10 +172,6 @@ stock Module:ModuleMgr_Register(moduledata[ModuleData])
         ConfigMgr_OnModuleRegister(adtModule);
     #endif
     
-    #if defined TRANSLATIONS_MANAGER
-        TransMgr_OnModuleRegister(adtModule);
-    #endif
-    
     #if defined LOG_MANAGER
         LogMgr_OnModuleRegister(adtModule);
     #endif
@@ -221,6 +209,19 @@ stock ModuleMgr_Disable(Module:module)
 {
     // Set the ModuleData_Disabled data to 'true'.
     ModuleMgr_WriteCell(module, ModuleData_Disabled, true);
+    
+    #if defined EVENT_MANAGER
+        // Forward event to all modules.
+        new any:eventdata[1][1];
+        eventdata[0][0] = module;
+        
+        EventMgr_Forward(Event_OnModuleDisable, eventdata, sizeof(eventdata), sizeof(eventdata[]), g_CommonDataType2);
+        
+        // Send this event only to the module being disabled.
+        new Module:modules[2] = {INVALID_MODULE, ...};
+        modules[0] = module;
+        EventMgr_Forward(Event_OnMyModuleDisable, g_CommonEventData1, 0, 0, g_CommonDataType1, modules);
+    #endif
 }
 
 /**
@@ -233,6 +234,19 @@ stock ModuleMgr_Enable(Module:module)
 {
     // Set the ModuleData_Disabled data to 'false'.
     ModuleMgr_WriteCell(module, ModuleData_Disabled, false);
+    
+    #if defined EVENT_MANAGER
+        // Forward event to all modules.
+        new any:eventdata[1][1];
+        eventdata[0][0] = module;
+        
+        EventMgr_Forward(Event_OnModuleEnable, eventdata, sizeof(eventdata), sizeof(eventdata[]), g_CommonDataType2);
+        
+        // Send this event only to the module being enabled.
+        new Module:modules[2] = {INVALID_MODULE, ...};
+        modules[0] = module;
+        EventMgr_Forward(Event_OnMyModuleEnable, g_CommonEventData1, 0, 0, g_CommonDataType1, modules);
+    #endif
 }
 
 /**
@@ -679,9 +693,6 @@ new const String:g_BaseCmdsLvl2[][][32] = {
  */
 #define BASECMD_LEVEL(%1) %1 - 1
 #define BASECMD_ARG(%1) %1 - 1
-/**
- * @endsection
- */
 
 /**
  * A list that indicates if any of the above sub-commands are commands or section accessors.
@@ -1102,10 +1113,6 @@ stock ModuleMgr_PrintModules(client)
         // Read moduleindex as a Module type.
         module = Module:moduleindex;
         
-        // If the module is hidden then don't list it.
-        if (bool:ModuleMgr_ReadCell(module, ModuleData_Hidden))
-            continue;
-        
         // Get the module's module ID for client interaction.
         moduleID = MODULE_TO_ID(module);
         ModuleMgr_ReadString(module, ModuleData_FullName, modulefullname, sizeof(modulefullname));
@@ -1118,7 +1125,12 @@ stock ModuleMgr_PrintModules(client)
             IntToString(_:!bModuleDisabled, strModuleEnabled, sizeof(strModuleEnabled));
         #endif
         
-        Format(line, sizeof(line), "%T", "ModuleMgr cmd base lvl2 modules list print", client, modulefullname, strModuleEnabled, moduleshortname);
+        // If the module is hidden then don't list it.
+        if (bool:ModuleMgr_ReadCell(module, ModuleData_Hidden))
+            Format(line, sizeof(line), "%T", "ModuleMgr cmd base lvl2 modules list print hidden", client);
+        
+        else
+            Format(line, sizeof(line), "%T", "ModuleMgr cmd base lvl2 modules list print", client, modulefullname, strModuleEnabled, moduleshortname);
         
         // Format on the moduleID?
         (client == SERVER_INDEX) ?  Format(line, sizeof(line), "  %02d %s", moduleID, line) :

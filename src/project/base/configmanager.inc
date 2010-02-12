@@ -60,14 +60,11 @@ enum ConfigData
 #define CM_MODULE_MAX_CONFIGS 3
 
 /**
- * @section Default defines for each config file index.
+ * Default defines for each config file index.
  */
 #define CM_CONFIGINDEX_FIRST    0
 #define CM_CONFIGINDEX_SECOND   1
 #define CM_CONFIGINDEX_THIRD    2
-/**
- * @endsection
- */
 
 /**
  * Config registration errors.

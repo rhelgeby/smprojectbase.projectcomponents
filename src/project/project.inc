@@ -26,6 +26,12 @@
  */
 
 /**
+ * Additional includes.
+ * Include files like sdktools.inc here.
+ */
+
+
+/**
  * This is where it all begins.
  * Forward the OnPluginStart event here to all modules so they can register.
  */
@@ -35,9 +41,9 @@ stock ForwardOnPluginStart()
     TestModule_OnPluginStart();
 }
 
-// ---------------
-//     General
-// ---------------
+// **********************************************
+//                   Reference
+// **********************************************
 
 /**
  * The client index of the server.
@@ -45,10 +51,9 @@ stock ForwardOnPluginStart()
 #define SERVER_INDEX 0
 
 
-// --------------------------------
-//        Module Reference
-// --------------------------------
-// Note: Treat this section like a stripper.  Look, don't touch.
+// **********************************************
+//                Module Manager
+// **********************************************
 
 /**
  * The amount of registered modules.
@@ -57,13 +62,10 @@ stock ForwardOnPluginStart()
 #define MODULE_COUNT GetArraySize(ModuleMgr_GetList())
 
 /**
- * @section Takes either a module ID or module identifier and converts it to its respective opposite.
+ * Takes either a module ID or module identifier and converts it to its respective opposite.
  */
 #define MODULE_TO_ID(%1) _:%1 + 1
 #define ID_TO_MODULE(%1) Module:(%1 - 1)
-/**
- * @endsection
- */
 
 /**
  * Module identifier tag.
@@ -74,19 +76,16 @@ enum Module
 }
 
 /**
- * @section Module data flags.
+ * Module data flags.
  */
 #define MODULE_DATA_DISABLED    (1 << 0)
 #define MODULE_DATA_HIDDEN      (1 << 1)
 #define MODULE_DATA_FULLNAME    (1 << 2)
 #define MODULE_DATA_SHORTNAME   (1 << 3)
 #define MODULE_DATA_DESCRIPTION (1 << 4)
-/**
- * @endsection
- */
 
 /**
- * @section The max string lengths of module data variables.
+ * The max string lengths of module data variables.
  */
 #define CM_DATA_FULLNAME    32
 #define CM_DATA_SHORTNAME   16
@@ -110,15 +109,14 @@ enum ModuleData
 #define MODULE_DATA_CELL_COUNT 1 + 1 + CM_DATA_FULLNAME + CM_DATA_SHORTNAME + CM_DATA_DESCRIPTION
 
 /**
- * The longest string that can be stored in the module's data. (Size of ModuleData_FullName)
+ * The longest string that can be stored in the module's data.
  */
 #define MODULE_DATA_LONGEST_STRING 256
 
-// --------------------------------
-//     Event Forwarding Stuff
-// --------------------------------
-// Note: Since event HOOKING is done here, you can touch this one ;) (you can change/add/remove stuff here)
-// Note: Ignore this section if eventmanager.inc won't be compiled into the plugin.
+// **********************************************
+//                 Event Manager
+// **********************************************
+// Note: Ignore this section if eventmanager.inc isn't included in the project.
 
 /**
  * This is a collection of ALL game and custom events.
@@ -127,25 +125,29 @@ enum ModuleData
  */
 enum ProjectEvents
 {
-    Event_OnPluginStart,
-    Event_OnAllPluginsLoaded,
-    Event_OnPluginEnd,
-    Event_OnMapStart,
-    Event_OnMapEnd,
-    Event_OnAutoConfigsBuffered,
-    Event_OnConfigsExecuted,
-    Event_OnClientPutInServer,
-    Event_OnClientDisconnect,
-    Event_RoundStart,
-    Event_RoundFreezeEnd,
-    Event_RoundEnd,
-    Event_PlayerTeam,
-    Event_PlayerSpawn,
-    Event_PlayerHurt,
-    Event_PlayerDeath,
-    Event_PlayerJump,
-    Event_WeaponFire
-    //Event_WeaponEntityFire
+    Event_OnAllPluginsLoaded,       /** All plugins have loaded. */
+    Event_OnPluginEnd,              /** Plugin is ending. */
+    Event_OnAllModulesLoaded,       /** All modules have been registered. */
+    Event_OnModuleEnable,           /** A module has been enabled. */
+    Event_OnMyModuleEnable,         /** The module that hooked this event callback has been enabled. */
+    Event_OnModuleDisable,          /** A module has been disabled. */
+    Event_OnMyModuleDisable,        /** The module that hooked this event callback has been disabled. */
+    Event_OnMapStart,               /** The map has started. */
+    Event_OnMapEnd,                 /** The map has ended. */
+    Event_OnAutoConfigsBuffered,    /** This is called before OnConfigsExecuted but any time after OnMapStart. */
+    Event_OnConfigsExecuted,        /** All convars are set, cvar-dependent code should use this. */
+    Event_OnClientPutInServer,      /** Client has joined the server. */
+    Event_OnClientDisconnect,       /** Client is disconnecting from the server. */
+    Event_RoundStart,               /** Round has started. */
+    Event_RoundFreezeEnd,           /** Pre-round has freezetime has finished. */
+    Event_RoundEnd,                 /** Round has ended. */
+    Event_PlayerTeam,               /** Client has joined a team. */
+    Event_PlayerSpawn,              /** Client has spawned. */
+    Event_PlayerHurt,               /** Client has been damaged. */
+    Event_PlayerDeath,              /** Client has been killed. */
+    Event_PlayerJump,               /** Client has jumped. */
+    Event_WeaponFire                /** Client has fired a weapon. */
+    //Event_WeaponEntityFire        /** Client has fired a weapon. (returns weapon entity index) */
 }
 
 /**
@@ -153,9 +155,13 @@ enum ProjectEvents
  * Keep this updated as ProjectEvents is modified.
  */
 stock String:g_ProjectEventDisplay[ProjectEvents][] = {
-    "OnPluginStart",
     "OnAllPluginsLoaded",
     "OnPluginEnd",
+    "OnAllModulesLoaded",
+    "OnModuleEnable",
+    "OnMyModuleEnable",
+    "OnModuleDisable",
+    "OnMyModuleDisable",
     "OnMapStart",
     "OnMapEnd",
     "OnAutoConfigsBuffered",
@@ -179,7 +185,7 @@ stock String:g_ProjectEventDisplay[ProjectEvents][] = {
  * To calculate this number, simply add up the number of items in enum ProjectEvents.
  * Keep this updated as ProjectEvents is modified. 
  */
-#define EVENT_DATA_CELL_COUNT 18
+#define EVENT_DATA_CELL_COUNT 22
 
 /**
  * Datatypes that can be passed with each event to modules.
@@ -194,7 +200,7 @@ enum EventDataTypes
 }
 
 /**
- * @section Common data type info.
+ * Common data type info.
  */
 
 // When forwarding custom events with no data, use this.
@@ -203,38 +209,44 @@ stock any:g_CommonEventData1[][] = {{0}};
 // When forwarding custom events whose data thats being passed matches these, you can use these.
 stock EventDataTypes:g_CommonDataType1[] = {};
 stock EventDataTypes:g_CommonDataType2[] = {DataType_Cell};
-/**
- * @endsection
- */
-
-// ---------------
-//    Editable
-// ---------------
 
 
-// General
+// **********************************************
+//                    General
+// **********************************************
 
 /**
  * If this is defined, then it should be in a mercurial repository.
  */
 #define PROJECT_MERCURIAL
-#define PROJECT_BRANCH "smprojectbase"  // Name of the Mercurial branch this is being developed in.
+
+// Name of the Mercurial branch this is being developed in.
+#define PROJECT_BRANCH "smprojectbase"
 
 /**
- * @section Basic project information.  This will also be displayed in 'sm plugins *' commands.
+ * Basic project information.  This will also be displayed in 'sm plugins *' commands.
  */
-#define PROJECT_FULLNAME    "Project"   // Used when printing the plugin name anywhere.
-#define PROJECT_SHORTNAME   "project"   // Used for filenames, etc.
+
+// Used when printing the plugin name anywhere.
+#define PROJECT_FULLNAME    "Project"
+
+// Shorter version of the full name, used in file paths, and other things.
+#define PROJECT_SHORTNAME   "project"
+
+// Author of the plugin.
 #define PROJECT_AUTHOR      "Jacque Strap"
+
+// Description of the plugin.
 #define PROJECT_DESCRIPTION "A base for large plugins to load modules and use its API."
-#define PROJECT_VERSION     "1.0.0"     // http://wiki.eclipse.org/Version_Numbering
+
+// http://wiki.eclipse.org/Version_Numbering
+#define PROJECT_VERSION     "1.0.0"
+
+// Any URL associated with the project.
 #define PROJECT_URL ""
-/**
- * @endsection
- */
 
 /**
- * @section Additional information displayed in the version info.
+ * Additional information displayed in the version info.
  */
 #define PROJECT_COPYRIGHT "Copyright (C) 2010  PROJECT_AUTHOR"
 #define PROJECT_LICENSE "GNU GPL, Version 3"
@@ -247,17 +259,12 @@ stock EventDataTypes:g_CommonDataType2[] = {DataType_Cell};
 #define PROJECT_CREDITS " Plugin was developed by Greyscale.\n Development would not have been possible without:\n  AlliedModders, LLC.\n  Andrew \"Greyscale\" Borba, plugin base developer\n  Richard \"rhelgeby\" Helgeby, compilation environment designer and advisor\n http://www.sourcemod.net/"
 
 /**
- * @section Base file message prefixes.
+ * Base file message prefixes.
  * 
- * See Project_PrintToServer in <projectname>.sp.
+ * See Project_PrintToServer in wrappers.inc.
  * 'formatted': The text being printed.
  */
 #define PROJECT_SERVER_PREFIX "[%s] %s", PROJECT_FULLNAME, formatted
-#define PROJECT_LOG_PREFIX "[%s] %s", PROJECT_FULLNAME, formatted
-#define PROJECT_ERROR_PREFIX "[%s] %s", PROJECT_FULLNAME, formatted
-/**
- * @endsection
- */
 
 /**
  * Your plugin's base command for module management.
@@ -268,25 +275,30 @@ stock EventDataTypes:g_CommonDataType2[] = {DataType_Cell};
 #define PROJECT_BASE_CMD PROJECT_SHORTNAME
 
 /**
- * @section The prefixes for any base cvars/commands.
+ * The prefixes for any base cvars/commands.
+ * These are strictly for project base cvars/commands.
+ * This will not affect cvars/commands created in your modules.
  */
 #define PROJECT_CVAR_PREFIX PROJECT_SHORTNAME
 #define PROJECT_CMD_PREFIX  PROJECT_SHORTNAME
 
-// Translations Manager
+
+// **********************************************
+//            Translations Manager
+// **********************************************
 
 /**
- * @section The formatting rules for the paths to the project translation files.
+ * The directory where the project's translation files will be in.
+ * All translations files in the format of *.phrases.txt will be automatically loaded.
+ * Example path: addons/sourcemod/translations/TM_BASE_DIR/projectbase.phrases.txt.
+ * If the resulting path doesn't exist, errors will be logged.
  * 
- * See TransMgr_BuildTranslationPath in translationsmanager.inc.
- * 'moduleshortname': The module's short name.
+ * Note: This only used if translationsmanager.inc is included.
  */
-#define TM_BASE_PATH "%s/projectbase.phrases", PROJECT_SHORTNAME
-#define TM_PROJECT_PATH "%s/%s.phrases", PROJECT_SHORTNAME, PROJECT_SHORTNAME
-#define TM_MODULE_PATH "%s/%s.phrases", PROJECT_SHORTNAME, moduleshortname
+#define TM_BASE_DIR PROJECT_SHORTNAME
 
 /**
- * @section The formatting string for each option in enum MsgFormatting.
+ * The formatting string for each option in enum MsgFormatting.
  * Note: These are only used if translationsmanager.inc is included.
  * 
  * See TransMgr_PrintText in translationsmanager.inc.
@@ -301,34 +313,24 @@ stock EventDataTypes:g_CommonDataType2[] = {DataType_Cell};
 #define TM_MSGFORMAT_MODULE_NOCOLOR    "[%s] %s", modulefullname, translated
 #define TM_MSGFORMAT_BOTH_COLOR        "\x04[%s::\x03%s] \x01%s", PROJECT_FULLNAME, modulefullname, translated
 #define TM_MSGFORMAT_BOTH_NOCOLOR      "[%s::%s] %s", PROJECT_FULLNAME, modulefullname, translated
-/**
- * @endsection
- */
 
 /**
  * Load any extra translation files here.
  *  
- * Automatically loaded translations files for the project are:
- * translations/<projectshortname>/<projectshortname>.phrases.txt
- * translations/<projectshortname>/projectbase.phrases.txt
- *  
- * Translation files for modules should be loaded via TransMgr_Register.
- *  
- * Note: None of the above applies if the translations manager isn't included.
- * You must load all translations here, if that's the case.
+ * All translations files in the format of *.phrases.txt will be automatically loaded
+ * from the "translations/TM_BASE_DIR/" dir.
+ * 
+ * Note: If the translations manager isn't included, you must load all your translations here.
  */
 stock Project_LoadExtraTranslations()
 {
-    // Load base and project translations if translations manager isn't included.
+    // Load translations we may need, if the translations manager isn't loaded.
     #if !defined TRANSLATIONS_MANAGER
-        decl String:basetranslations[PLATFORM_MAX_PATH];
-        decl String:projecttranslations[PLATFORM_MAX_PATH];
+        LoadTranslations("projectbase.phrases");
         
-        Format(basetranslations, sizeof(basetranslations), TM_BASE_PATH);
-        Format(projecttranslations, sizeof(projecttranslations), TM_PROJECT_PATH);
-        
-        LoadTranslations(basetranslations);
-        LoadTranslations(projecttranslations);
+        #if defined PROJECT_BASE_CMD
+            LoadTranslations("basecmd.phrases");
+        #endif
     #endif
     
     // Standard phrases provided by SM.
@@ -336,7 +338,9 @@ stock Project_LoadExtraTranslations()
 }
 
 
-// Log Manager
+// **********************************************
+//                 Log Manager
+// **********************************************
 
 /**
  * The formatting string for all logs.

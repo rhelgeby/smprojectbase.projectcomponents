@@ -333,7 +333,7 @@ stock EventMgr_Forward(ProjectEvents:event, any:eventdata[][], numValues, size, 
     
     #if defined PROFILE_EVENTS
         StopProfiling(profiler);
-        Project_LogMessage("PROFILER: Event %s: Forwarded to %d modules, taking %f seconds to do.", g_ProjectEventDisplay[event], count, GetProfilerTime(profiler));
+        LogMessage("PROFILER: Event %s: Forwarded to %d modules, taking %f seconds to do.", g_ProjectEventDisplay[event], count, GetProfilerTime(profiler));
         CloseHandle(profiler);
     #endif
 }
@@ -530,6 +530,7 @@ public GameEvent_PlayerSpawn(Handle:event, const String:name[], bool:dontBroadca
     // Forward event to all modules.
     new any:eventdata[1][1];
     eventdata[0][0] = GetClientOfUserId(GetEventInt(event, "userid"));
+    
     EventMgr_Forward(Event_PlayerSpawn, eventdata, sizeof(eventdata), sizeof(eventdata[]), g_CommonDataType2);
 }
 
@@ -593,7 +594,6 @@ public GameEvent_PlayerJump(Handle:event, const String:name[], bool:dontBroadcas
 {
     // Forward event to all modules.
     new any:eventdata[1][1];
-    
     eventdata[0][0] = GetClientOfUserId(GetEventInt(event, "userid"));
     
     EventMgr_Forward(Event_PlayerJump, eventdata, 1, 1, g_CommonDataType2);
