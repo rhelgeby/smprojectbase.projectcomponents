@@ -1,0 +1,299 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+	<head>
+		<meta http-equiv="Content-Language" content="en" />
+		<meta http-equiv="Content-Type" content="text/xhtml; charset=utf-8" />
+		<link rel="stylesheet" type="text/css" href="projectbase.css" />
+		<title>Project Base User Manual</title>
+	</head>
+<body>
+
+<div class="container">
+<div class="shadow">
+<div class="content">
+<h1><a name="top" />Project Base User Manual</h1>
+
+<p class="headerinfo">Written by Greyscale & Richard Helgeby</p>
+<p class="headerinfo">Manual last modified: 2010.2.13</p>
+
+<h2>Table of Contents</h2>
+
+<ol>
+	<li>
+		<a href="#1">Introduction</a>
+		<ol>
+            <li><a href="#1.1">Terminology</a></li>
+            <ol>
+                <li><a href="#1.1.1">Manager</a></li>
+                <li><a href="#1.1.2">Library (lib)</a></li>
+                <li><a href="#1.1.3">Module</a></li>
+            </ol>
+            <li><a href="#1.2">Why use this?</a></li>
+            <li><a href="#1.3">Stock Components</a></li>
+            <ol>
+                <li><a href="#1.3.1">Module Manager</a></li>
+                <li><a href="#1.3.2">Event Manager</a></li>
+                <li><a href="#1.3.3">Config Manager</a></li>
+                <li><a href="#1.3.4">Translations Manager</a></li>
+                <li><a href="#1.3.5">Log Manager</a></li>
+                <li><a href="#1.3.6">Access Manager</a></li>
+            </ol>
+			<li><a href="#1.4">Credits</a></li>
+		</ol>
+	</li>
+	
+	<li>
+		<a href="#2">Setting up your project</a>
+		<ol>
+		</ol>
+	</li>
+	
+	<li>
+		<a href="#3">Troubleshooting</a>
+		<ol>
+			<li><a href="#3.1">Error and Warning Messages</a></li>
+		</ol>
+	</li>
+    
+    <li>
+		<a href="#4">Server Administration Guide</a>
+		<ol>
+			<li><a href="#4.1">Access Manager</a></li>
+		</ol>
+	</li>
+	
+	<li><a href="#5">Reporting Bugs and Improvements</a></li>
+</ol>
+
+<h2><a name="1" />1. Introduction</h2>
+
+<h3><a name="1.1" />1.1 Terminology</h3>
+<p>A few words that might be unfamiliar to new users include:</p>
+
+<h6><a name="1.1.1" />Manager</h6>
+<p><strong>Examples: Module Manager, modulemanager.inc</strong></p>
+<p>Managers are components of the project base that deal with all modules by storing data for each one, or creating things based off of
+modules.<br />
+<strong>Examples:</strong>
+<ol>
+    <li>Module Manager - Self explanatory.</li>
+    <li>Event Manager - Manages events for each module.</li>
+    <li>Access Manager - Creates cvars and admin groups for each module.</li>
+</ol>
+</p>
+
+<h6><a name="1.1.2" />Library (lib)</h6>
+<p><strong>Examples: [blank]</strong></p>
+<p>Libraries are components of the project base that simply contain a ready-to-use API.  These don't depend on any modules or contain any events.  Modules should use this, not
+vice versa.<br />
+<strong>Examples:</strong>
+<ol>
+    <li>Weapons Library (weaponslib.inc) -  A set of functions designed to deal with weapons.</li>
+</ol>
+</p>
+
+<h6><a name="1.1.3" />Module</h6>
+<p><strong>Examples: Strip Objectives, stripobjectives.inc</strong></p>
+<p>Modules are components of the project that complete a specific task in-game. These module can easily be managed with the base command. <-- [LINK THIS]
+That is unless the module is set to be hidden.  These are usually modules that are required for the plugin to function correctly.<br />
+<strong>Examples:</strong>
+<ol>
+ <li>Strip Objectives - Simply included into your project to have your plugin support stripping objectives from the map.</li>
+</ol>
+</p>
+
+<h3><a name="1.2" />1.2 Why use this?</h3>
+<p>The answer to this is pretty simple; a lot of the work is done for you!  In big plugins, entropy will inevitably stomp through it.
+Imagine your nice, clean plugin as a popsicle you just got from your freezer, after a while that once tidy popsicle is now an amorphous
+blob of slush that looks a lot like your source code!  Well there's good news, a solution to this issue is here.  It's called the project
+base and it will assist in rebuilding those popsicles into rock solid [modular] structures.  The project base is a collaborative project
+in which anybody can develop for.  All stock managers, libraries, and modules are listed and explained <a href="#1.3">below</a>.  Keep in mind
+that these are all completely independent of each other.  You can pick and choose the components you need to include in your project.
+If your plugin isn't big enough to fully appreciate the benefits of the log manager, then don't include it in your project.  Having it
+would just be increasing the plugin size and compilation time.  This modularity is a benefit in itself.  Two plugins using the project
+base can easily swap modules, instead of coding the exact same thing twice.  Simply place the file, include it, and forward the plugin start
+callback.  Your plugin just inherited a new feature with 5 minutes of work.  Lets recall some reasons why you should use the project base:
+<ol>
+    <li><strong>The work is done for you.</strong></li>
+    <li><strong>Keeps your source code organized.</strong></li>
+    <li><strong>Always expanding with new managers and libraries to make coding even easier.</strong></li>
+    <li><strong>Pick and choose your needs.</strong></li>
+    <li><strong>Module sharing.</strong></li>
+    <li><strong>Easier debugging.</strong></li>
+</ol>
+</p>
+
+<h3><a name="1.3" />1.2 Stock Components</h3>
+<p>About</p>
+
+<h6><a name="1.3.1" />1.3.1 Module Manager</h6>
+<p>This is the heart of the whole plugin base concept.  This file along with project.inc wrappers.inc are the two main requirements for the
+project base.  Here lies the central API for loading and managing your project's modules.
+
+</p>
+
+<h6><a name="1.3.2" />1.3.2 Event Manager</h6>
+<p>About</p>
+
+<h6><a name="1.3.3" />1.3.3 Config Manager</h6>
+<p>About</p>
+
+<h6><a name="1.3.4" />1.3.4 Translations Manager</h6>
+<p>About</p>
+
+<h6><a name="1.3.5" />1.3.5 Log Manager</h6>
+<p>About</p>
+
+<h6><a name="1.3.6" />1.3.6 Access Manager</h6>
+<p>About</p>
+
+<h3><a name="1.4" />1.3 Credits</h3>
+<h6>Concept</h6>
+<ul>
+	<li>
+		<p><strong>Richard Helgeby</strong></p>
+		<p>Created the compilation environment and integration into the plugin code. (originally for Zombie:Reloaded)</p>
+        <p>Also author of some code used in the log manager. (logmanager.inc)</p>
+	</li>
+</ul>
+
+<h6>Developers and testers</h6>
+<ul>
+	<li>
+		<p><strong>Greyscale</strong></p>
+		<p>Designed and coded the entire project base. (with the exception of Richard's logging code)</p>
+	</li>
+
+	<li>
+		<p><strong>Richard Helgeby</strong></p>
+        <p>Contributed many ideas during development.</p>
+		<p>Indirectly contributed to logmanager.inc.</p>
+	</li>
+</ul>
+
+<h6>Public plugins using the project base</h6>
+<ul>
+	<li><strong><a href="http://forums.alliedmods.net/showthread.php?t=118624">Red Rover</a> by Greyscale</strong></li>
+    <li><strong>Eager to add more to this list..</strong></li>
+</ul>
+
+
+<h2><a name="2" />2. Setting up your project</h2>
+
+<h2><a name="3" />3. Troubleshooting</h2>
+
+<h3><a name="3.1" />3.1 Verifying Requirements</h3>
+<h3><a name="3.2" />3.2 Startup</h3>
+
+<h3><a name="3.3" />3.3 Error Messages</h3>
+
+<p></p>
+
+<blockquote><table>
+	<caption>Error Messages</caption>
+	<tr>
+		<th class="mediumwidth">Module:</th>
+		<th class="tinywidth">Type:</th>
+		<th>Message:</th>
+	</tr>
+	
+	<tr>
+		<td class="commandheader">Name of the module</td>
+		<td class="commandheader">log message type (error, warning)</td>
+		<td class="commandheader">error message</td>
+	</tr>
+	<tr>
+		<td class="indent" colspan="3">
+			<p><strong>Description:</strong> Description of the error.</p>
+			<p><strong>Cause:</strong> Cause of the error.</p>
+            <p><strong>Fix: How to fix it.</strong></p>
+		</td>
+	</tr>
+</table></blockquote>
+
+
+<h3><a name="3.4" />3.4 Common Problems</h3>
+
+<h4>Problem description</h4>
+
+<p>Explanation</p>
+
+<p><strong>Solution:</strong> Solution</p>
+
+
+<h4>Do not run ESTools, it's not compatible with SourceMod</h4>
+<p>ESTools is causing wierd problems when running along with SourceMod.</p>
+
+
+<h2><a name="4" />4. Server Administration Guide</h2>
+
+<h3><a name="4.1" />4.1 Access Manager</h3>
+
+<h2><a name="5" />5. Reporting Bugs And Problems</h2>
+
+<p>Link to the issue tracker</p>
+
+<p>A few guidelines while posing issues or questions:</p>
+<ul>
+	<li>Stuff</li>
+</ul>
+
+<p>Browseable source code repositories: <a href="http://link">Googe Code Repository</a></p>
+
+
+<p><a href="http://validator.w3.org/check?uri=referer"><img src="http://www.w3.org/Icons/valid-xhtml10"
+height="31" width="88" alt="Valid XHTML 1.0 Strict" class="noborder" /></a></p>
+
+<!-- Templates:
+<h4><a name="a" /></h4>
+<p></p>
+<blockquote><p><code></code></p></blockquote>
+
+			<table>
+				<tr><td></td><td></td></tr>
+			</table>
+
+<blockquote><table>
+	<caption></caption>
+	<tr>
+		<th>Console variable:</th>
+		<th>Default:</th>
+	</tr>
+	
+	<tr>
+		<td class="commandheader"></td>
+		<td class="commandheader"></td>
+	</tr>
+	<tr>
+		<td class="indent" colspan="2">
+			<p></p>
+			<p>Options:<br />
+			0 or 1</p>
+		</td>
+	</tr>
+</table></blockquote>
+
+<blockquote><table>
+	<caption></caption>
+	<tr>
+		<th>Syntax:</th>
+	</tr>
+	
+	<tr>
+		<td class="commandheader"></td>
+	</tr>
+	<tr>
+		<td class="indent">
+			<p></p>
+		</td>
+	</tr>
+</table></blockquote>
+-->
+
+</div>
+</div>
+</div>
+
+</body>
+</html>
