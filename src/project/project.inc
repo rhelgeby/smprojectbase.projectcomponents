@@ -216,14 +216,6 @@ stock EventDataTypes:g_CommonDataType2[] = {DataType_Cell};
 // **********************************************
 
 /**
- * If this is defined, then it should be in a mercurial repository.
- */
-#define PROJECT_MERCURIAL
-
-// Name of the Mercurial branch this is being developed in.
-#define PROJECT_BRANCH "smprojectbase"
-
-/**
  * Basic project information.  This will also be displayed in 'sm plugins *' commands.
  */
 
@@ -365,3 +357,21 @@ stock Project_LoadExtraTranslations()
  */
 #define AM_FORMAT_GROUP "%s_access_%s", PROJECT_CVAR_PREFIX, moduleshortname
 #define AM_FORMAT_CVAR  "%s_access_%s", PROJECT_CVAR_PREFIX, moduleshortname
+
+// **********************************************
+//                Version Info
+// **********************************************
+
+/**
+ * If this is defined, then it should be in a mercurial repository.
+ */
+#define PROJECT_MERCURIAL
+
+// Name of the Mercurial branch this is being developed in.
+#define PROJECT_BRANCH "smprojectbase"
+
+/**
+ * Name of the public cvar for the plugin.
+ * Comment this define out to not create a public cvar.
+ */
+#define PROJECT_PUBLIC_CVAR "project_version_public"

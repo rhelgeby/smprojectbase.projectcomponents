@@ -44,6 +44,17 @@ VersionInfo_OnPluginStart()
         // Create a version information print command.
         Project_RegConsoleCmd("version", Command_Version, "Prints version info about this project.");
     }
+    
+    #if defined PROJECT_PUBLIC_CVAR
+        decl String:publiccvarvalue[32];
+        strcopy(publiccvarvalue, sizeof(publiccvarvalue), PROJECT_VERSION);
+        
+        #if defined PROJECT_MERCURIAL
+            Format(publiccvarvalue, sizeof(publiccvarvalue), "%s r%s", publiccvarvalue, PROJECT_MERCURIAL_REVISION);
+        #endif
+        
+        CreateConVar(PROJECT_PUBLIC_CVAR, publiccvarvalue, "Project version information.", FCVAR_PLUGIN|FCVAR_SPONLY|FCVAR_UNLOGGED|FCVAR_DONTRECORD|FCVAR_REPLICATED|FCVAR_NOTIFY);
+    #endif
 }
 
 /**
