@@ -10,27 +10,9 @@ AbsolutePath=0
 FileFormat=0
 ProjectFilesOnly=0
 [Project tree]
-Project
-	+Plugin
-		-Base Includes
-			..\src\project\base\accessmanager.inc
-			..\src\project\base\configmanager.inc
-			..\src\project\base\eventmanager.inc
-			..\src\project\base\logmanager.inc
-			..\src\project\base\modulemanager.inc
-			..\src\project\base\translationsmanager.inc
-			..\src\project\base\versioninfo.inc
-			..\src\project\base\wrappers.inc
-		-Module Includes
-			..\src\project\moduletemplate.inc
-			..\src\project\testmodule.inc
-		..\src\project.sp
-		..\src\project\project.inc
-	-Translations
-		..\cstrike\addons\sourcemod\translations\project\projectbase.phrases.txt
-		..\cstrike\addons\sourcemod\translations\project\basecmd.phrases.txt
-		..\cstrike\addons\sourcemod\translations\project\translationsmanager.phrases.txt
-		..\cstrike\addons\sourcemod\translations\project\logmanager.phrases.txt
+Project Components
+	+Components
+		..\src\project\libraries\weaponlib.inc
 	-SM Includes
 		..\env\include\admin.inc
 		..\env\include\adminmenu.inc
@@ -91,10 +73,10 @@ Project
 		..\env\include\vector.inc
 		..\env\include\version.inc
 [Open project files]
-0=..\src\project.sp
+0=..\src\project\libraries\weaponlib.inc
 [Selected Project Files]
 Main=
-Selected=..\src\project.sp
-[..\src\project.sp]
-TopLine=9
-Caret=1,27
+Selected=..\src\project\libraries\weaponlib.inc
+[..\src\project\libraries\weaponlib.inc]
+TopLine=1
+Caret=12,4
