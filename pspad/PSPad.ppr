@@ -12,7 +12,10 @@ ProjectFilesOnly=0
 [Project tree]
 Project Components
 	+Components
-		..\src\project\libraries\weaponlib.inc
+		..\src\libraries\overlaylib.inc
+		..\src\libraries\weaponlib.inc
+	+Tests
+		..\src\overlaylibtest.sp
 	-SM Includes
 		..\env\include\admin.inc
 		..\env\include\adminmenu.inc
@@ -73,10 +76,18 @@ Project Components
 		..\env\include\vector.inc
 		..\env\include\version.inc
 [Open project files]
-0=..\src\project\libraries\weaponlib.inc
+0=..\src\libraries\weaponlib.inc
+1=..\src\libraries\overlaylib.inc
+2=..\src\overlaylibtest.sp
 [Selected Project Files]
 Main=
-Selected=..\src\project\libraries\weaponlib.inc
-[..\src\project\libraries\weaponlib.inc]
+Selected=..\src\libraries\overlaylib.inc
+[..\src\libraries\weaponlib.inc]
+TopLine=187
+Caret=1,1
+[..\src\libraries\overlaylib.inc]
+TopLine=87
+Caret=1,192
+[..\src\overlaylibtest.sp]
 TopLine=1
-Caret=12,4
+Caret=2,71
