@@ -3,7 +3,7 @@
  *
  *  <Project Name>
  *
- *  File:          overlay.inc
+ *  File:          overlaylib.inc
  *  Type:          Library
  *  Description:   Helps to properly display multiple overlays at once.
  *
@@ -89,6 +89,22 @@ stock OverlayLib_Register(const String:path[], priority, bool:addtodownloads = f
     OverlayLib_FreePriorityLevel(priority);
     
     return PushArrayArray(g_hOverlays, overlayinfo[0], sizeof(overlayinfo));
+}
+
+/**
+ * Destroys all data stored by this library.
+ * This should normally be used if the plugin is being unloaded.
+ */
+stock OverlayLib_Cleanup()
+{
+    // Destroy all information stored per-client.
+    for (new index = 0; index < sizeof(g_iClientOverlays); index++)
+    {
+        OverlayLib_ClientDestroyInfo(index);
+    }
+    
+    // Destroy all overlay info.
+    CloseHandle(g_hOverlays);
 }
 
 /**

@@ -12,82 +12,83 @@ ProjectFilesOnly=0
 [Project tree]
 Project Components
 	+Components
+		..\src\libraries\cookielib.inc
 		..\src\libraries\overlaylib.inc
 		..\src\libraries\weaponlib.inc
-	+Tests
+	-Tests
 		..\src\overlaylibtest.sp
 	-SM Includes
-		..\env\include\admin.inc
-		..\env\include\adminmenu.inc
-		..\env\include\adt.inc
-		..\env\include\adt_array.inc
-		..\env\include\adt_stack.inc
-		..\env\include\adt_trie.inc
-		..\env\include\banning.inc
-		..\env\include\bitbuffer.inc
-		..\env\include\clientprefs.inc
-		..\env\include\clients.inc
-		..\env\include\commandfilters.inc
-		..\env\include\console.inc
-		..\env\include\core.inc
-		..\env\include\cstrike.inc
-		..\env\include\datapack.inc
-		..\env\include\dbi.inc
-		..\env\include\entity.inc
-		..\env\include\entity_prop_stocks.inc
-		..\env\include\events.inc
-		..\env\include\files.inc
-		..\env\include\float.inc
-		..\env\include\functions.inc
-		..\env\include\geoip.inc
-		..\env\include\halflife.inc
-		..\env\include\handles.inc
-		..\env\include\helpers.inc
-		..\env\include\keyvalues.inc
-		..\env\include\lang.inc
-		..\env\include\logging.inc
-		..\env\include\mapchooser.inc
-		..\env\include\menus.inc
-		..\env\include\nextmap.inc
-		..\env\include\profiler.inc
-		..\env\include\regex.inc
-		..\env\include\sdktools.inc
-		..\env\include\sdktools_engine.inc
-		..\env\include\sdktools_entinput.inc
-		..\env\include\sdktools_entoutput.inc
-		..\env\include\sdktools_functions.inc
-		..\env\include\sdktools_hooks.inc
-		..\env\include\sdktools_sound.inc
-		..\env\include\sdktools_stocks.inc
-		..\env\include\sdktools_stringtables.inc
-		..\env\include\sdktools_tempents.inc
-		..\env\include\sdktools_tempents_stocks.inc
-		..\env\include\sdktools_trace.inc
-		..\env\include\sdktools_voice.inc
-		..\env\include\sorting.inc
-		..\env\include\sourcemod.inc
-		..\env\include\string.inc
-		..\env\include\textparse.inc
-		..\env\include\tf2.inc
-		..\env\include\tf2_stocks.inc
-		..\env\include\timers.inc
-		..\env\include\topmenus.inc
-		..\env\include\usermessages.inc
-		..\env\include\vector.inc
-		..\env\include\version.inc
+		..\src\include\admin.inc
+		..\src\include\adminmenu.inc
+		..\src\include\adt.inc
+		..\src\include\adt_array.inc
+		..\src\include\adt_stack.inc
+		..\src\include\adt_trie.inc
+		..\src\include\banning.inc
+		..\src\include\bitbuffer.inc
+		..\src\include\clientprefs.inc
+		..\src\include\clients.inc
+		..\src\include\commandfilters.inc
+		..\src\include\console.inc
+		..\src\include\core.inc
+		..\src\include\cstrike.inc
+		..\src\include\datapack.inc
+		..\src\include\dbi.inc
+		..\src\include\entity.inc
+		..\src\include\entity_prop_stocks.inc
+		..\src\include\events.inc
+		..\src\include\files.inc
+		..\src\include\float.inc
+		..\src\include\functions.inc
+		..\src\include\geoip.inc
+		..\src\include\halflife.inc
+		..\src\include\handles.inc
+		..\src\include\helpers.inc
+		..\src\include\keyvalues.inc
+		..\src\include\lang.inc
+		..\src\include\logging.inc
+		..\src\include\mapchooser.inc
+		..\src\include\menus.inc
+		..\src\include\nextmap.inc
+		..\src\include\profiler.inc
+		..\src\include\regex.inc
+		..\src\include\sdktools.inc
+		..\src\include\sdktools_engine.inc
+		..\src\include\sdktools_entinput.inc
+		..\src\include\sdktools_entoutput.inc
+		..\src\include\sdktools_functions.inc
+		..\src\include\sdktools_hooks.inc
+		..\src\include\sdktools_sound.inc
+		..\src\include\sdktools_stocks.inc
+		..\src\include\sdktools_stringtables.inc
+		..\src\include\sdktools_tempents.inc
+		..\src\include\sdktools_tempents_stocks.inc
+		..\src\include\sdktools_trace.inc
+		..\src\include\sdktools_voice.inc
+		..\src\include\sorting.inc
+		..\src\include\sourcemod.inc
+		..\src\include\string.inc
+		..\src\include\textparse.inc
+		..\src\include\tf2.inc
+		..\src\include\tf2_stocks.inc
+		..\src\include\timers.inc
+		..\src\include\topmenus.inc
+		..\src\include\usermessages.inc
+		..\src\include\vector.inc
+		..\src\include\version.inc
 [Open project files]
 0=..\src\libraries\weaponlib.inc
 1=..\src\libraries\overlaylib.inc
-2=..\src\overlaylibtest.sp
+2=..\src\libraries\cookielib.inc
 [Selected Project Files]
 Main=
-Selected=..\src\libraries\overlaylib.inc
+Selected=..\src\libraries\weaponlib.inc
 [..\src\libraries\weaponlib.inc]
-TopLine=187
-Caret=1,1
-[..\src\libraries\overlaylib.inc]
-TopLine=87
-Caret=1,192
-[..\src\overlaylibtest.sp]
 TopLine=1
-Caret=2,71
+Caret=19,4
+[..\src\libraries\overlaylib.inc]
+TopLine=1
+Caret=11,4
+[..\src\libraries\cookielib.inc]
+TopLine=1
+Caret=13,4

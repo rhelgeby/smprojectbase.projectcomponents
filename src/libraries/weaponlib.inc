@@ -134,7 +134,7 @@ stock WepLib_Slots:WeaponsGetDeployedWeaponSlot(client)
  * 
  * @param client    The client index.
  */
-public WepLib_RemoveGrenades(client)
+stock WepLib_RemoveGrenades(client)
 {
     // While GetPlayerWeaponSlot returns a valid projectile, remove it and then test again.
     new grenade = GetPlayerWeaponSlot(client, _:Slot_Projectile);
