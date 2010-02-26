@@ -219,7 +219,7 @@ stock bool:WepLib_InBuyZone(client)
 {
     // This offset will only be found once.
     static iBuyZoneOffset;
-    if (iBuyZoneOffset = 0)
+    if (iBuyZoneOffset == 0)
         iBuyZoneOffset = FindSendPropInfo("CCSPlayer", "m_bInBuyZone");
     
     // Return if client is in buyzone.

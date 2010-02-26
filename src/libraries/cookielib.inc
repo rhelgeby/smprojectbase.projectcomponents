@@ -104,7 +104,7 @@ stock CookieLib_GetInt(client, Handle:cookie)
  * @param cookie    The cookie handle.
  * @param value     The integer value.
  */
-stock CookieLib_SetFloat(client, Handle:cookie, value)
+stock CookieLib_SetInt(client, Handle:cookie, value)
 {
     // Convert value to string.
     decl String:strValue[16];
@@ -138,7 +138,7 @@ stock Float:CookieLib_GetFloat(client, Handle:cookie)
  * @param cookie    The cookie handle.
  * @param value     The float value.
  */
-stock CookieLib_SetInt(client, Handle:cookie, Float:value)
+stock CookieLib_SetFloat(client, Handle:cookie, Float:value)
 {
     // Convert value to string.
     decl String:strValue[16];
@@ -146,4 +146,39 @@ stock CookieLib_SetInt(client, Handle:cookie, Float:value)
     
     // Set string value.
     SetClientCookie(client, cookie, strValue);
+}
+
+/**
+ * Set an array of string values to an array of client cookies.
+ * 
+ * @param client    The client index.
+ * @param cookies   The array of cookie handles to store each value.
+ * @param numCookies    The number of cookies to get the values of.
+ * @param values    The array of string values.
+ */
+stock CookieLib_SetArray(client, Handle:cookies[], String:values[][], numCookies)
+{
+    for (new cindex = 0; cindex < numCookies; cindex++)
+    {
+        // Set string value.
+        SetClientCookie(client, cookies[cindex], values[cindex]);
+    }
+}
+
+/**
+ * Get an array of string values from an array of client cookies.
+ * 
+ * @param client        The client index.
+ * @param cookies       The array of cookie handles to get each value from.
+ * @param values        The array of returned string values.
+ * @param numCookies    The number of cookies to get the values of.
+ * @param maxlen        The max length of each value.
+ */
+stock CookieLib_GetArray(client, Handle:cookies[], String:values[][], numCookies, maxlen)
+{
+    for (new cindex = 0; cindex < numCookies; cindex++)
+    {
+        // Set string value.
+        GetClientCookie(client, cookies[cindex], values[cindex], maxlen);
+    }
 }
