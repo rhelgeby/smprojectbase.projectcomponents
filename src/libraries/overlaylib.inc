@@ -32,8 +32,8 @@
  */
 enum OverlayLib_Info
 {
-    String:Info_Path[PLATFORM_MAX_PATH],    /** The path to the overlay file.  (No extension) */
-    Info_Priority                           /** The priority level of the overlay */
+    String:OLibInfo_Path[PLATFORM_MAX_PATH],    /** The path to the overlay file.  (No extension) */
+    OLibInfo_Priority                           /** The priority level of the overlay */
 }
 
 /**
@@ -82,8 +82,8 @@ stock OverlayLib_Register(const String:path[], priority, bool:addtodownloads = f
     
     // Push overlay info into the array, the adt array index is the overlay index.
     new overlayinfo[OverlayLib_Info];
-    strcopy(overlayinfo[Info_Path], sizeof(overlayinfo[Info_Path]), path);
-    overlayinfo[Info_Priority] = priority;
+    strcopy(overlayinfo[OLibInfo_Path], sizeof(overlayinfo[OLibInfo_Path]), path);
+    overlayinfo[OLibInfo_Priority] = priority;
     
     // Free up the priority level thats about to be set.
     OverlayLib_FreePriorityLevel(priority);
@@ -264,7 +264,7 @@ stock OverlayLib_ReadPath(overlay, String:path[], maxlen, materials = true)
     new overlayinfo[OverlayLib_Info];
     GetArrayArray(g_hOverlays, overlay, overlayinfo[0], sizeof(overlayinfo));
     
-    strcopy(path, maxlen, overlayinfo[Info_Path]);
+    strcopy(path, maxlen, overlayinfo[OLibInfo_Path]);
     
     // If relative to the materials folder, then strip off materials/ from the path.
     if (materials)
@@ -285,7 +285,7 @@ stock OverlayLib_WritePath(overlay, const String:path[])
     new overlayinfo[OverlayLib_Info];
     GetArrayArray(g_hOverlays, overlay, overlayinfo[0], sizeof(overlayinfo));
     
-    strcopy(overlayinfo[Info_Path], sizeof(overlayinfo[Info_Path]), path);
+    strcopy(overlayinfo[OLibInfo_Path], sizeof(overlayinfo[OLibInfo_Path]), path);
     
     SetArrayArray(g_hOverlays, overlay, overlayinfo[0], sizeof(overlayinfo));
 }
@@ -302,7 +302,7 @@ stock OverlayLib_ReadPriority(overlay)
     new overlayinfo[OverlayLib_Info];
     GetArrayArray(g_hOverlays, overlay, overlayinfo[0], sizeof(overlayinfo));
     
-    return overlayinfo[Info_Priority];
+    return overlayinfo[OLibInfo_Priority];
 }
 
 /**
@@ -317,7 +317,7 @@ stock OverlayLib_WritePriority(overlay, priority)
     new overlayinfo[OverlayLib_Info];
     GetArrayArray(g_hOverlays, overlay, overlayinfo[0], sizeof(overlayinfo));
     
-    overlayinfo[Info_Priority] = priority;
+    overlayinfo[OLibInfo_Priority] = priority;
     
     SetArrayArray(g_hOverlays, overlay, overlayinfo[0], sizeof(overlayinfo));
 }
