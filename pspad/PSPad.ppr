@@ -13,6 +13,7 @@ ProjectFilesOnly=0
 Project Components
 	+Components
 		..\src\libraries\cookielib.inc
+		..\src\libraries\offsetlib.inc
 		..\src\libraries\overlaylib.inc
 		..\src\libraries\weaponlib.inc
 	-Tests
@@ -78,17 +79,21 @@ Project Components
 		..\src\include\version.inc
 [Open project files]
 0=..\src\libraries\weaponlib.inc
-1=..\src\libraries\overlaylib.inc
-2=..\src\libraries\cookielib.inc
+1=..\src\libraries\cookielib.inc
+2=..\src\libraries\offsetlib.inc
+3=..\src\libraries\overlaylib.inc
 [Selected Project Files]
 Main=
 Selected=..\src\libraries\weaponlib.inc
 [..\src\libraries\weaponlib.inc]
 TopLine=1
 Caret=19,4
-[..\src\libraries\overlaylib.inc]
-TopLine=1
-Caret=11,4
 [..\src\libraries\cookielib.inc]
 TopLine=1
-Caret=13,4
+Caret=19,4
+[..\src\libraries\offsetlib.inc]
+TopLine=1
+Caret=19,4
+[..\src\libraries\overlaylib.inc]
+TopLine=1
+Caret=19,4
