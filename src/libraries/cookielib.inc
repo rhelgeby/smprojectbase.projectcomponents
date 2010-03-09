@@ -151,10 +151,10 @@ stock CookieLib_SetFloat(client, Handle:cookie, Float:value)
 /**
  * Set an array of string values to an array of client cookies.
  * 
- * @param client    The client index.
- * @param cookies   The array of cookie handles to store each value.
+ * @param client        The client index.
+ * @param cookies       The array of cookie handles to store each value.
  * @param numCookies    The number of cookies to get the values of.
- * @param values    The array of string values.
+ * @param values        The array of string values.
  */
 stock CookieLib_SetArray(client, Handle:cookies[], String:values[][], numCookies)
 {

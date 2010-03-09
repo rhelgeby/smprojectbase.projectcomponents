@@ -55,3 +55,36 @@ stock OffsLib_GetEntityColor(entity, color[4])
 	
 	GetEntDataArray(entity, offset, color, sizeof(color), 1);
 }
+
+// **********************************************
+//              CS:S Offset Stocks
+// **********************************************
+
+#if defined PROJECT_GAME_CSS
+
+/**
+ * Get the amount of cash a client has.
+ * 
+ * @param client    The client index.
+ * 
+ * @return          The amount of cash the client has.
+ */
+stock OffsLib_GetCash(client)
+{
+    new offsAccount = FindSendPropInfo("CCSPlayer", "m_iAccount");
+    return GetEntData(client, offsAccount);
+}
+
+/**
+ * Set the amount of cash a client has.
+ * 
+ * @param client    The client index.
+ * @param amount    The amount of cash to set.
+ */
+stock OffsLib_SetCash(client, amount)
+{
+    new offsAccount = FindSendPropInfo("CCSPlayer", "m_iAccount");
+    SetEntData(client, offsAccount, amount);
+}
+
+#endif

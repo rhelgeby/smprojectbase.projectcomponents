@@ -46,6 +46,15 @@ enum WepLib_Slots
 }
 
 /**
+ * Defines for grenade counts for use in WepLib_Set/GetAmmoEx. (CS:S)
+ */
+#if defined PROJECT_GAME_CSS
+  #define AMMO_INDEX_HE 11
+  #define AMMO_INDEX_FLASH 12
+  #define AMMO_INDEX_SMOKE 13
+#endif
+
+/**
  * Checks if a client has a specific weapon.
  * 
  * @param client    The client index.
@@ -58,7 +67,7 @@ stock bool:WepLib_HasWeapon(client, const String:weapon[])
     // x = slot index
     new weaponindex;
     decl String:classname[64];
-    for (new weaponslot = 0; weaponslot < WEPLIB_SLOT_COUNT; x++)
+    for (new weaponslot = 0; weaponslot < WEPLIB_SLOT_COUNT; weaponslot++)
     {
         weaponindex = GetPlayerWeaponSlot(client, weaponslot);
         
@@ -127,22 +136,6 @@ stock WepLib_Slots:WeaponsGetDeployedWeaponSlot(client)
     }
     
     return Slot_Invalid;
-}
-
-/**
- * Used to explicitly remove projectile weapons from a client.
- * 
- * @param client    The client index.
- */
-stock WepLib_RemoveGrenades(client)
-{
-    // While GetPlayerWeaponSlot returns a valid projectile, remove it and then test again.
-    new grenade = GetPlayerWeaponSlot(client, _:Slot_Projectile);
-    while (grenade != -1)
-    {
-        RemovePlayerItem(client, grenade);
-        grenade = GetPlayerWeaponSlot(client, _:Slot_Projectile);
-    }
 }
 
 /**
@@ -217,11 +210,165 @@ stock WepLib_RefreshAllWeapons(client)
  */
 stock bool:WepLib_InBuyZone(client)
 {
-    // This offset will only be found once.
-    static iBuyZoneOffset;
-    if (iBuyZoneOffset == 0)
-        iBuyZoneOffset = FindSendPropInfo("CCSPlayer", "m_bInBuyZone");
-    
-    // Return if client is in buyzone.
+    new iBuyZoneOffset = FindSendPropInfo("CCSPlayer", "m_bInBuyZone");
     return bool:GetEntData(client, iBuyZoneOffset);
 }
+
+// **********************************************
+//            Weapon Ammo Stocks
+// **********************************************
+
+/**
+ * Get clip/reserve ammo on a weapon.
+ * 
+ * @param weapon    The weapon index.
+ * @param clip      True gets clip ammo, false gets reserve.
+ */
+stock WepLib_GetAmmo(weapon, bool:clip)
+{
+    // Initialize a variable with the offset name for the given clip.
+    new String:offset[16];
+    if (clip)
+        offset = "m_iClip1";
+    else
+        offset = "m_iClip2";
+    
+    // Return ammo value.
+    return GetEntProp(weapon, Prop_Data, offset);
+}
+
+/**
+ * Get the amount of ammo in a weapon given the client and an array index for the weapon.
+ * 
+ * @param client    The client index.
+ * @param index     The array index of the game's m_iAmmo offset to get.
+ */
+stock WepLib_GetAmmoEx(client, index)
+{
+    new offsAmmo = FindSendPropInfo("CBasePlayer", "m_iAmmo");
+    return GetEntData(client, offsAmmo + (index * 4));
+}
+
+/**
+ * Returns an 32-element array that contains the ammo counts for each array index for m_iAmmo on a client.
+ * 
+ * @param client            The client index.
+ * @param grenadecounts     The output array.
+ * @param startindex        Only copies the data from this index on.
+ * @param endindex          Stops copying data once this index is reached.
+ */
+stock WepLib_GetAmmoArray(client, weapons[32], startindex = 0, endindex = 31)
+{
+    new offsAmmo = FindSendPropInfo("CBasePlayer", "m_iAmmo");
+    for (new ammoindex = startindex; ammoindex < endindex + 1; ammoindex++)
+        weapons[ammoindex] = GetEntData(client, offsAmmo + (ammoindex * 4));
+}
+
+/**
+ * Set clip/reserve ammo on a weapon.
+ * 
+ * @param weapon    The weapon index.
+ * @param clip      True sets clip ammo, false sets reserve.
+ * @param value     The amount of ammo to set to.
+ * @param add       True to add to current value, false to overwrite.
+ */
+stock WepLib_SetAmmo(weapon, bool:clip, value, bool:add = false)
+{
+    // Initialize a variable with the offset name for the given clip.
+    new String:offset[16];
+    if (clip)
+        offset = "m_iClip1";
+    else
+        offset = "m_iClip2";
+    
+    // Handle adding or setting.
+    new ammovalue = 0;
+    if (add)
+        ammovalue = WepLib_GetAmmo(weapon, clip);
+    
+    // Set new ammo.
+    SetEntProp(weapon, Prop_Data, offset, ammovalue + value);
+}
+
+/**
+ * Set the amount of ammo in a weapon given the client and an array index for the weapon.
+ * 
+ * @param client    The client index.
+ * @param index     The array index of the game's m_iAmmo offset to set.
+ * @param value     The amount of ammo to set to.
+ * @param add       True to add to current value, false to overwrite.
+ */
+stock WepLib_SetAmmoEx(client, index, value, bool:add = false)
+{
+    new offsAmmo = FindSendPropInfo("CBasePlayer", "m_iAmmo");
+    
+    // Handle adding or setting.
+    new ammovalue = 0;
+    if (add)
+        ammovalue = WeaponAmmoGetGrenadeCount(client, type);
+    
+    SetEntData(client, offsAmmo + (index * 4), ammovalue + value, _, true);
+}
+
+// **********************************************
+//              Grenade Stocks
+// **********************************************
+
+#if defined PROJECT_GAME_CSS
+
+/**
+ * Used to explicitly remove projectile weapons from a client.
+ * 
+ * @param client    The client index.
+ */
+stock WepLib_GrenadeStripAll(client)
+{
+    // While GetPlayerWeaponSlot returns a valid projectile, remove it and then test again.
+    new grenade = GetPlayerWeaponSlot(client, _:Slot_Projectile);
+    while (grenade != -1)
+    {
+        RemovePlayerItem(client, grenade);
+        grenade = GetPlayerWeaponSlot(client, _:Slot_Projectile);
+    }
+}
+
+/**
+ * Take a grenade entity and return the index used in WepLib_SetAmmoEx
+ * 
+ * @param grenadeent    The entity name of the grenade.
+ * 
+ * @return              The ammo index associated with the grenade.  -1 if invalid grenade entity.
+ */
+stock WepLib_GrenadeEntToIndex(const String:grenadeent[])
+{
+    if (StrEqual(grenadeent, "weapon_hegrenade"))
+        return AMMO_INDEX_HE;
+    
+    else if (StrEqual(grenadeent, "weapon_flashbang"))
+        return AMMO_INDEX_FLASH;
+    
+    else if (StrEqual(grenadeent, "weapon_smokegrenade"))
+        return AMMO_INDEX_SMOKE;
+    
+    return -1;
+}
+
+/**
+ * Take the index used in WepLib_SetAmmoEx and return a grenade entity.
+ * 
+ * @param index         The ammo index associated with the grenade.
+ * @param grenadeent    The entity name of the grenade.  "" if not found.
+ * @param maxlen        The max length of the output string. 
+ */
+stock WepLib_IndexToGrenadeEnt(index, String:grenadeent[], maxlen)
+{
+    switch(index)
+    {
+        case AMMO_INDEX_HE:     strcopy(grenadeent, maxlen, "weapon_hegrenade");
+        case AMMO_INDEX_FLASH:  strcopy(grenadeent, maxlen, "weapon_flashbang");
+        case AMMO_INDEX_SMOKE:  strcopy(grenadeent, maxlen, "weapon_smokegrenade");
+        default:                strcopy(grenadeent, maxlen, "");
+    }
+}
+
+#endif
