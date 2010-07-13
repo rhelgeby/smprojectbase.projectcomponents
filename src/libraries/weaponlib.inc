@@ -25,6 +25,9 @@
  * ============================================================================
  */
 
+// This entire file is CS:S-specific.
+#if defined PROJECT_GAME_CSS
+
 #include <sdktools>
 
 /**
@@ -48,11 +51,9 @@ enum WepLib_Slots
 /**
  * Defines for grenade counts for use in WepLib_Set/GetAmmoEx. (CS:S)
  */
-#if defined PROJECT_GAME_CSS
-  #define AMMO_INDEX_HE 11
-  #define AMMO_INDEX_FLASH 12
-  #define AMMO_INDEX_SMOKE 13
-#endif
+#define AMMO_INDEX_HE 11
+#define AMMO_INDEX_FLASH 12
+#define AMMO_INDEX_SMOKE 13
 
 /**
  * Checks if a client has a specific weapon.
@@ -119,10 +120,10 @@ stock WepLib_GetDeployedWeaponIndex(client)
  *  
  * @return          The slot number of deployed weapon.
  */
-stock WepLib_Slots:WeaponsGetDeployedWeaponSlot(client)
+stock WepLib_Slots:Weplib_GetDeployedWeaponSlot(client)
 {
     // Get client's deployed weapon.
-    new deployedweapon = WeaponsGetDeployedWeaponIndex(client);
+    new deployedweapon = WepLib_GetDeployedWeaponIndex(client);
     
     // If client has no deployed weapon, then stop.
     if (deployedweapon == -1)
@@ -164,8 +165,9 @@ stock WepLib_RefreshWeapon(client, WepLib_Slots:slot)
  * Remove all weapons.
  * 
  * @param client        The client index.
+ * @param drop          True to force drop of weapons, false to strip.
  */
-stock WepLib_RemoveAllWeapons(client)
+stock WepLib_RemoveAllWeapons(client, bool:drop)
 {
     new weaponindex;
     for (new weaponslot = 0; weaponslot < WEPLIB_SLOT_COUNT; weaponslot++)
@@ -174,14 +176,18 @@ stock WepLib_RemoveAllWeapons(client)
         if (weaponindex == -1)
             continue;
         
-        RemovePlayerItem(client, weaponindex);
+        if (drop)
+        {
+            GameData_CSDropWeapon(client, weaponindex);
+        }
+        else
+        {
+            RemovePlayerItem(client, weaponindex);
+        }
     }
     
     // Remove left-over projectiles.
-    WeaponsRemoveClientGrenades(client, weaponsdrop);
-    
-    // Give zombie a new knife. (If you leave the old one there will be glitches with the knife positioning)
-    GivePlayerItem(client, "weapon_knife");
+    WepLib_GrenadeStripAll(client, drop);
 }
 
 /**
@@ -198,7 +204,7 @@ stock WepLib_RefreshAllWeapons(client)
         if (weaponindex == -1)
             continue;
         
-        WeaponsRefreshClientWeapon(client, WepLib_Slots:weaponindex);
+        WepLib_RefreshWeapon(client, WepLib_Slots:weaponindex);
     }
 }
 
@@ -314,20 +320,27 @@ stock WepLib_SetAmmoEx(client, index, value, bool:add = false)
 //              Grenade Stocks
 // **********************************************
 
-#if defined PROJECT_GAME_CSS
-
 /**
  * Used to explicitly remove projectile weapons from a client.
  * 
  * @param client    The client index.
+ * @param drop      True to force drop of grenades, false to strip.
  */
-stock WepLib_GrenadeStripAll(client)
+stock WepLib_GrenadeStripAll(client, bool:drop)
 {
     // While GetPlayerWeaponSlot returns a valid projectile, remove it and then test again.
     new grenade = GetPlayerWeaponSlot(client, _:Slot_Projectile);
     while (grenade != -1)
     {
-        RemovePlayerItem(client, grenade);
+        if (drop)
+        {
+            GameData_CSDropWeapon(client, grenade);
+        }
+        else
+        {
+            RemovePlayerItem(client, grenade);
+        }
+        
         grenade = GetPlayerWeaponSlot(client, _:Slot_Projectile);
     }
 }
