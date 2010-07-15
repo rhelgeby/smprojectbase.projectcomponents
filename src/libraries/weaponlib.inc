@@ -34,6 +34,7 @@
 #if defined PROJECT_GAME_CSS
 
 #include <sdktools>
+#include <sdktoolslib>
 
 /**
  * The number of slots for weapons to be stored in.  (CS:S)
@@ -174,6 +175,12 @@ stock WepLib_RefreshWeapon(client, WepLib_Slots:slot)
  */
 stock WepLib_RemoveAllWeapons(client, bool:drop)
 {
+    // Check if CBasePlayer::CSWeaponDrop is available before trying to use it.
+    if (drop && !SDKToolsLib_IsAvailable(SDKLibCall_CSWeaponDrop))
+    {
+        ThrowError("WepLib_RemoveAllWeapons requires SDKCall \"CSWeaponDrop\".");
+    }
+    
     new weaponindex;
     for (new weaponslot = 0; weaponslot < WEPLIB_SLOT_COUNT; weaponslot++)
     {
@@ -183,7 +190,7 @@ stock WepLib_RemoveAllWeapons(client, bool:drop)
         
         if (drop)
         {
-            GameData_CSDropWeapon(client, weaponindex);
+            SDKToolsLib_CSWeaponDrop(client, weaponindex);
         }
         else
         {
@@ -333,13 +340,19 @@ stock WepLib_SetAmmoEx(client, index, value, bool:add = false)
  */
 stock WepLib_GrenadeStripAll(client, bool:drop)
 {
+    // Check if CBasePlayer::CSWeaponDrop is available before trying to use it.
+    if (drop && !SDKToolsLib_IsAvailable(SDKLibCall_CSWeaponDrop))
+    {
+        ThrowError("WepLib_GrenadeStripAll requires SDKCall \"CSWeaponDrop\".");
+    }
+    
     // While GetPlayerWeaponSlot returns a valid projectile, remove it and then test again.
     new grenade = GetPlayerWeaponSlot(client, _:Slot_Projectile);
     while (grenade != -1)
     {
         if (drop)
         {
-            GameData_CSDropWeapon(client, grenade);
+            SDKToolsLib_CSWeaponDrop(client, grenade);
         }
         else
         {
