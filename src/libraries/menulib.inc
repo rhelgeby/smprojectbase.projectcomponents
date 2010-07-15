@@ -25,6 +25,11 @@
  * ============================================================================
  */
 
+#if defined _menulib_included
+ #endinput
+#endif
+#define _menulib_included
+
 /**
  * Shows a list of all clients to a client, different handlers can be used for this, as well as title.
  * 

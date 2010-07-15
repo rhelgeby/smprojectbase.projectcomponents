@@ -25,6 +25,11 @@
  * ============================================================================
  */
 
+#if defined _overlaylib_included
+ #endinput
+#endif
+#define _overlaylib_included
+
 #include <sdktools>
 
 /**

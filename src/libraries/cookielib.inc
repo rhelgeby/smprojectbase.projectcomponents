@@ -5,7 +5,7 @@
  *
  *  File:          cookielib.inc
  *  Type:          Library
- *  Description:   
+ *  Description:   Extended client cookie API.
  *
  *  Copyright (C) 2009-2010  Greyscale
  *
@@ -24,6 +24,11 @@
  *
  * ============================================================================
  */
+
+#if defined _cookielib_included
+ #endinput
+#endif
+#define _cookielib_included
 
 #include <clientprefs>
 

@@ -1,13 +1,13 @@
 /*
  * ============================================================================
  *
- *  Zombie:Reloaded
+ *  <Project Name>
  *
  *  File:          shoppinglistlib.inc
  *  Type:          Library
  *  Description:   Formats raw strings into shopping list-styled lists.
  *
- *  Copyright (C) 2009-2010  Greyscale, Richard Helgeby
+ *  Copyright (C) 2009-2010  Greyscale
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -24,6 +24,11 @@
  *
  * ============================================================================
  */
+
+#if defined _shoppinglistlib_included
+ #endinput
+#endif
+#define _shoppinglistlib_included
 
 /**
  * This file is meant for formatting a given string into a list formatted around the style of a shopping

@@ -25,6 +25,11 @@
  * ============================================================================
  */
 
+#if defined _weaponlib_included
+ #endinput
+#endif
+#define _weaponlib_included
+
 // This entire file is CS:S-specific.
 #if defined PROJECT_GAME_CSS
 

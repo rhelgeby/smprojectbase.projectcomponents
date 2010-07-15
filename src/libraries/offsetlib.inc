@@ -25,6 +25,11 @@
  * ============================================================================
  */
 
+#if defined _offsetlib_included
+ #endinput
+#endif
+#define _offsetlib_included
+
 /**
  * Gets an client's velocity.
  * 

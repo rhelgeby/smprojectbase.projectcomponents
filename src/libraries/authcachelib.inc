@@ -36,6 +36,11 @@
  * from exploiting.
  */
 
+#if defined _authcachelib_included
+ #endinput
+#endif
+#define _authcachelib_included
+
 /**
  * Creates a cache to store clients.
  * 
