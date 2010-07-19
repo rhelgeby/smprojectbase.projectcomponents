@@ -30,13 +30,16 @@
 #endif
 #define _menulib_included
 
+// Include libraries.
+#include "zr/libraries/utilities"
+
 /**
  * Shows a list of all clients to a client, different handlers can be used for this, as well as title.
  * 
  * @param client    The client index.
  * @param handler   The menu handler.
  * @param title     The title of the menu.
- * @param filters   A bit field made up of MENULIB_FILTER_* defines.  See utilities.inc.
+ * @param filters   A bit field made up of UTILS_FILTER_* defines.  See utilities.inc.
  *                  Note: This is only checked at time of menu creation.  It is
  *                  recommended to re-check these filters in the callback.
  */
@@ -54,7 +57,7 @@ stock MenuLib_ClientMenu(client, MenuHandler:handler, const String:title[], filt
     for (new cindex = 0; cindex < count; cindex++)
     {
         // Get the client index from the array.
-        menuclient = GetArrayCell(adtClients);
+        menuclient = GetArrayCell(adtClients, cindex);
         
         // Get client info.
         GetClientName(menuclient, clientoption, sizeof(clientoption));
