@@ -30,25 +30,25 @@
 #endif
 #define _conversionlib_included
 
-enum Float:ConvertLib_Units
+enum ConvertLibUnits
 {
-    Units_GameUnit,
-    Units_Inch,
-    Units_Foot,
-    Units_Yard,
-    Units_Mile,
-    Units_Milimeter,
-    Units_Centimeter,
-    Units_Meter,
-    Units_Kilometer
+    ConvertLibUnit_GameUnit,
+    ConvertLibUnit_Inch,
+    ConvertLibUnit_Foot,
+    ConvertLibUnit_Yard,
+    ConvertLibUnit_Mile,
+    ConvertLibUnit_Milimeter,
+    ConvertLibUnit_Centimeter,
+    ConvertLibUnit_Meter,
+    ConvertLibUnit_Kilometer
 }
 
 /**
  * Conversion table multiplers between all units.
- * The compiler doesn't like when I index the 2nd dimension with ConvertLib_Units.
- * I bypass this by indexing it as normal integer elements and then reading ConvertLib_Units as an int for the 2nd dimension.
+ * The compiler doesn't like when I index the 2nd dimension with ConvertLibUnits.
+ * I bypass this by indexing it as normal integer elements and then reading ConvertLibUnits as an int for the 2nd dimension.
  */
-new const Float:g_fConversionFactors[ConvertLib_Units][] =
+new const Float:g_fConversionFactors[ConvertLibUnits][] =
 {
     {   1.0, 0.75, 9.0, 27.0, 47520.0, 19.05, 1.905, 0.01905, 0.00001905                }, // Game units to x
     {   1.3333, 1.0, 0.08333, 0.027778, 0.0000157, 25.4, 2.54, 0.0254, 0.0000254        }, // Inches to x
@@ -64,7 +64,7 @@ new const Float:g_fConversionFactors[ConvertLib_Units][] =
 /**
  * The abbreviation for each of the supported units.
  */
-new const String:g_strUnits[ConvertLib_Units][] =
+new const String:g_strUnits[ConvertLibUnits][] =
 {
     "game units",
     "in",
@@ -79,27 +79,85 @@ new const String:g_strUnits[ConvertLib_Units][] =
 
 /**
  * Convert a number of x units to a number of y units.
- * See enum ConvertLib_Units at top of file.
+ * See enum ConvertLibUnits at top of file.
  * 
- * @param units_from    The units of the number being inputted.
- * @param units_to      The units to convert the number to.
+ * @param units_in      The units of the number being inputted.
+ * @param units_out     The units to convert the number to.
  * @param number        The number with the units given in 'units_from'.
  * 
  * @return              Result with the units given in 'units_to'.
  */
-stock Float:ConvertLib_Convert(ConvertLib_Units:units_from, ConvertLib_Units:units_to, Float:number)
+stock Float:ConvertLib_Convert(ConvertLibUnits:units_in, ConvertLibUnits:units_out, Float:number)
 {
-    return number * g_fConversionFactors[units_from][_:units_to];
+    return number * g_fConversionFactors[units_in][_:units_out];
+}
+
+/**
+ * Looks up the abbreviation for a given symbol from ConvertLibUnits
+ * 
+ * @param units     The symbol to look up abbreviation for.
+ * @param abbrev    The output string for the abbreviation for the units.
+ * @param maxlen    The max length of the abbreviation.
+ */
+stock ConvertLib_SymbolToAbbrev(ConvertLibUnits:units, String:abbrev[], maxlen)
+{
+    strcopy(abbrev, maxlen, g_strUnits[units]);
 }
 
 /**
  * Looks up the abbreviation for certain units.
  * 
- * @param units     The units to look up abbreviation for.
- * @param abbrev    The abbreviation for the units.
- * @param maxlen    The max length of the abbreviation. 
+ * @param abbrev    The abbreviation to find symbol for.
+ * 
+ * @return          The symbol for the abbreviation or -1 if symbol can't be found.
  */
-stock ConvertLib_GetUnitAbbrev(ConvertLib_Units:units, String:abbrev[], maxlen)
+stock ConvertLibUnits:ConvertLib_AbbrevToSymbol(const String:abbrev[])
 {
-    strcopy(abbrev, maxlen, g_strUnits[units]);
+    for (new uindex; uindex < sizeof(g_strUnits); uindex++)
+    {
+        if (StrEqual(abbrev, g_strUnits[ConvertLibUnits:uindex], false))
+            return ConvertLibUnits:uindex;
+    }
+    
+    return ConvertLibUnits:-1;
+}
+
+/**
+ * Detects number and units in a string and outputs as any units.
+ * 
+ * @param number    The number with units to convert.  E.g. "10cm" or "5 in"
+ * @param assume    Units to assume if valid units can't be detected.
+ * @param units_out The units to convert to.
+ * 
+ * @return          The converted value.
+ */
+stock Float:ConvertLib_DetectAndConvert(const String:number[], ConvertLibUnits:assume, ConvertLibUnits:units_out)
+{
+    new chr;
+    new length = strlen(number);
+    
+    // Extract number.
+    decl String:strNumber[12];
+    new Float:flNumber;
+    for (chr = 0; chr < length; chr++)
+    {
+        if (!IsCharNumeric(number[chr]) && number[chr] != '.')
+        {
+            strcopy(strNumber, chr + 1, number);
+            flNumber = StringToFloat(strNumber);
+            break;
+        }
+    }
+    
+    // Extract units.
+    decl String:strUnits[16];
+    strcopy(strUnits, sizeof(strUnits), number[chr]);
+    TrimString(strUnits);
+    
+    // Find symbol for abbreviation, if it fails then use value in 'assume'
+    new ConvertLibUnits:detected_units = ConvertLib_AbbrevToSymbol(strUnits);
+    if (_:detected_units == -1)
+        detected_units = assume;
+    
+    return ConvertLib_Convert(detected_units, units_out, flNumber);
 }
