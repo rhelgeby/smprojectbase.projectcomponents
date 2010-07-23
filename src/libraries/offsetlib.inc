@@ -203,8 +203,7 @@ stock OffsLib_AddEntityFlag(entity, flag)
     new flags = GetEntityFlags(entity);
     
     // Add the flag if it's not already there.
-    // TODO: Check if (flags ~& flag) is equivalent.
-    if (!(flags & flag))
+    if (flag & ~flags)
         flags |= flag;
     
     SetEntProp(entity, Prop_Data, "m_fFlags", flags);
