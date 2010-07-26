@@ -150,24 +150,6 @@ stock TLib_GTeamStringToIndex(const String:teamstring[])
 #if defined PROJECT_GAME_CSS
 
 /**
- * Return a round end reason for a virtual team.
- * 
- * @param team  The virtual team to return round reason for.
- * 
- * @return      The round end reason, ROUNDEND_GAME_COMMENCING if no round end reason is associated with the virtual team.
- */
-stock RoundEndReasons:TLib_VTeamRoundEndReason(VTeam:team)
-{
-    if (g_iTLibGameTeamIndex[team] == CS_TEAM_T)
-        return ROUNDEND_TERRORISTS_WIN;
-    
-    else if (g_iTLibGameTeamIndex[team] == CS_TEAM_CT)
-        return ROUNDEND_CTS_WIN;
-    
-    return ROUNDEND_GAME_COMMENCING;
-}
-
-/**
  * Set a client's game team to the one bound to their virtual team.
  * 
  * @param client    The client index.
