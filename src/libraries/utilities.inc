@@ -126,6 +126,18 @@ stock bool:Util_IsClientOnTeam(client)
 }
 
 /**
+ * Fully remove a weapon from a client's inventory and the world.
+ * 
+ * @param client        The client whose weapon to remove.
+ * @param weaponindex   The weapon index.
+ */
+stock Util_RemovePlayerItem(client, weaponindex)
+{
+    RemovePlayerItem(client, weaponindex);
+    RemoveEdict(weaponindex);
+}
+
+/**
  * Closes a handle and sets it to invalid handle.
  * 
  * @param handle    The handle to close.
@@ -138,3 +150,74 @@ stock Util_CloseHandle(&Handle:handle)
         handle = INVALID_HANDLE;
     }
 }
+
+/**
+ * Checks if a vector exists in a vector array.
+ * 
+ * @param vec       Vector to search for in array
+ * @param vecs      Array to search in.
+ * @param numvecs   Number of vectors in the array.
+ * 
+ * @return          Index in array that the vector is in, -1 if not found.
+ */
+stock Util_IsVecInArray(Float:vec[3], Float:vecs[][3], numvecs)
+{
+    for (new vindex; vindex < numvecs; vindex++)
+    {
+        if (vec[0] == vecs[vindex][0]
+            && vec[1] == vecs[vindex][1]
+            && vec[2] == vecs[vindex][2])
+        {
+            return vindex;
+        }
+    }
+    
+    return -1;
+}
+
+#if defined PROJECT_GAME_CSS
+
+/**
+ * Takes a winning team index and returns its corresponding round end reason.
+ * Ex: Takes index '2' and returns the Terrorists_Win round end reason.
+ * 
+ * @param teamindex     The team index that won the round.
+ * 
+ * @return              The round end reason.  ROUNDEND_GAME_COMMENCING if invalid teamindex.
+ */
+stock RoundEndReasons:Util_TeamToReason(teamindex)
+{
+    if (teamindex == TEAM_2)
+        return ROUNDEND_TERRORISTS_WIN;
+    
+    else if (teamindex == TEAM_3)
+        return ROUNDEND_CTS_WIN;
+    
+    return ROUNDEND_GAME_COMMENCING;
+}
+
+#endif
+
+#if defined PROJECT_GAME_TF2
+
+/**
+ * Terminates the round. (TF2)
+ * Credits to toazron1 for this one :)
+ * 
+ * @team    The team index of the winner.
+ */
+stock Util_TerminateRound(teamindex)
+{
+    new ent = FindEntityByClassname(-1, "team_control_point_master");
+    if (ent == -1)
+    {
+        ent = CreateEntityByName("team_control_point_master");
+        DispatchSpawn(ent);
+        AcceptEntityInput(ent, "Enable");
+    }
+    
+    SetVariantInt(teamindex);
+    AcceptEntityInput(ent, "SetWinner");
+}
+
+#endif

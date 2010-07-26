@@ -34,7 +34,9 @@
 #if defined PROJECT_GAME_CSS
 
 #include <sdktools>
-#include <sdktoolslib>
+
+// Include libraries
+#include "zr/libraries/sdktoolslib"
 
 /**
  * The number of slots for weapons to be stored in.  (CS:S)
@@ -168,56 +170,85 @@ stock WepLib_RefreshWeapon(client, WepLib_Slots:slot)
 }
 
 /**
- * Remove all weapons.
- * 
- * @param client        The client index.
- * @param drop          True to force drop of weapons, false to strip.
- */
-stock WepLib_RemoveAllWeapons(client, bool:drop)
-{
-    // Check if CBasePlayer::CSWeaponDrop is available before trying to use it.
-    if (drop && !SDKToolsLib_IsAvailable(SDKLibCall_CSWeaponDrop))
-    {
-        ThrowError("WepLib_RemoveAllWeapons requires SDKCall \"CSWeaponDrop\".");
-    }
-    
-    new weaponindex;
-    for (new weaponslot = 0; weaponslot < WEPLIB_SLOT_COUNT; weaponslot++)
-    {
-        weaponindex = GetPlayerWeaponSlot(client, weaponslot);
-        if (weaponindex == -1)
-            continue;
-        
-        if (drop)
-        {
-            SDKToolsLib_CSWeaponDrop(client, weaponindex);
-        }
-        else
-        {
-            RemovePlayerItem(client, weaponindex);
-        }
-    }
-    
-    // Remove left-over projectiles.
-    WepLib_GrenadeStripAll(client, drop);
-}
-
-/**
  * Refresh all weapons by taking them and giving them back.
  * 
  * @param client        The client index.
+ * @param weapons       An array of boolean values for each weapon slot.  True means remove, false means ignore. 
  */
-stock WepLib_RefreshAllWeapons(client)
+stock WepLib_RefreshAllWeapons(client, bool:weapons[WEPLIB_SLOT_COUNT] = {true, ...})
 {
     new weaponindex;
     for (new weaponslot = 0; weaponslot < WEPLIB_SLOT_COUNT; weaponslot++)
     {
+        // Check if caller wants to ignore this slot.
+        if (!weapons[weaponslot])
+            continue;
+        
         weaponindex = GetPlayerWeaponSlot(client, weaponslot);
         if (weaponindex == -1)
             continue;
         
         WepLib_RefreshWeapon(client, WepLib_Slots:weaponindex);
     }
+}
+
+/**
+ * Remove all weapons.
+ * 
+ * @param client        The client index.
+ * @param weapons       An array of boolean values for each weapon slot.  True means remove, false means ignore.
+ *  
+ */
+stock WepLib_RemoveAllWeapons(client, bool:weapons[WEPLIB_SLOT_COUNT] = {true, ...})
+{
+    new weaponindex;
+    for (new weaponslot = 0; weaponslot < WEPLIB_SLOT_COUNT; weaponslot++)
+    {
+        // Check if caller wants to ignore this slot.
+        if (!weapons[weaponslot])
+            continue;
+        
+        weaponindex = GetPlayerWeaponSlot(client, weaponslot);
+        if (weaponindex != -1)
+        {
+            Util_RemovePlayerItem(client, weaponindex);
+        }
+    }
+    
+    // Remove left-over projectiles.
+    WepLib_GrenadeStripAll(client);
+}
+
+/**
+ * Force a client to drop all weapons.
+ * 
+ * @param client        The client index.
+ * @param weapons       An array of boolean values for each weapon slot.  True means remove, false means ignore.
+ */
+stock WepLib_DropAllWeapons(client, bool:weapons[WEPLIB_SLOT_COUNT] = {true, ...})
+{
+    // Check if CBasePlayer::CSWeaponDrop is available before trying to use it.
+    if (!SDKToolsLib_IsAvailable(SDKLibCall_CSWeaponDrop))
+    {
+        ThrowError("WepLib_DropAllWeapons requires SDKCall \"CSWeaponDrop\".");
+    }
+    
+    new weaponindex;
+    for (new weaponslot = 0; weaponslot < WEPLIB_SLOT_COUNT; weaponslot++)
+    {
+        // Check if caller wants to ignore this slot.
+        if (!weapons[weaponslot])
+            continue;
+        
+        weaponindex = GetPlayerWeaponSlot(client, weaponslot);
+        if (weaponindex != -1)
+        {
+            SDKToolsLib_CSWeaponDrop(client, weaponindex);
+        }
+    }
+    
+    // Drop left-over projectiles.
+    WepLib_GrenadeDropAll(client);
 }
 
 /**
@@ -333,32 +364,39 @@ stock WepLib_SetAmmoEx(client, index, value, bool:add = false)
 // **********************************************
 
 /**
- * Used to explicitly remove projectile weapons from a client.
+ * Used to explicitly remove projectiles from a client.
  * 
  * @param client    The client index.
- * @param drop      True to force drop of grenades, false to strip.
  */
-stock WepLib_GrenadeStripAll(client, bool:drop)
+stock WepLib_GrenadeStripAll(client)
+{
+    // While GetPlayerWeaponSlot returns a valid projectile, remove it and then test again.
+    new grenade = GetPlayerWeaponSlot(client, _:Slot_Projectile);
+    while (grenade != -1)
+    {
+        Util_RemovePlayerItem(client, grenade);
+        grenade = GetPlayerWeaponSlot(client, _:Slot_Projectile);
+    }
+}
+
+/**
+ * Used to explicitly force a client to drop all projectiles.
+ * 
+ * @param client    The client index.
+ */
+stock WepLib_GrenadeDropAll(client)
 {
     // Check if CBasePlayer::CSWeaponDrop is available before trying to use it.
-    if (drop && !SDKToolsLib_IsAvailable(SDKLibCall_CSWeaponDrop))
+    if (!SDKToolsLib_IsAvailable(SDKLibCall_CSWeaponDrop))
     {
-        ThrowError("WepLib_GrenadeStripAll requires SDKCall \"CSWeaponDrop\".");
+        ThrowError("WepLib_GrenadeDropAll requires SDKCall \"CSWeaponDrop\".");
     }
     
     // While GetPlayerWeaponSlot returns a valid projectile, remove it and then test again.
     new grenade = GetPlayerWeaponSlot(client, _:Slot_Projectile);
     while (grenade != -1)
     {
-        if (drop)
-        {
-            SDKToolsLib_CSWeaponDrop(client, grenade);
-        }
-        else
-        {
-            RemovePlayerItem(client, grenade);
-        }
-        
+        SDKToolsLib_CSWeaponDrop(client, grenade);
         grenade = GetPlayerWeaponSlot(client, _:Slot_Projectile);
     }
 }
