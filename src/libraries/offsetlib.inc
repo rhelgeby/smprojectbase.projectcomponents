@@ -345,15 +345,15 @@ stock Float:OffsLib_GetFadeMaxDist(client)
 }
 
 /**
- * Sets the client's minimum fade distance.
+ * Sets the client's maximum fade distance.
  *  
  * @param client    The client index.
- * @param minDist   Minimum fade distance.
+ * @param maxDist   Maximum fade distance.
  */
-stock Float:OffsLib_SetFadeMinDist(client, Float:minDist)
+stock Float:OffsLib_SetFadeMaxDist(client, Float:maxDist)
 {
-    new offsFadeMaxDist = FindSendPropInfo("CCSPlayer", "m_fadeMinDist");
-    SetEntDataFloat(client, offsFadeMaxDist, minDist, true);
+    new offsFadeMaxDist = FindSendPropInfo("CCSPlayer", "m_fadeMaxDist");
+    SetEntDataFloat(client, offsFadeMaxDist, maxDist, true);
 }
 
 #endif
