@@ -111,15 +111,15 @@ stock TLib_CountTeam(VTeam:team, bool:alive)
 new g_iTLibGameTeamIndex[VTeam];
 
 /**
- * Function to return the game team index for a virtual team.
+ * Gets the game team index for a virtual team.
  */
 stock TLib_GetGameTeamIndex(VTeam:team) { return g_iTLibGameTeamIndex[team]; }
 
 /**
- * Set a client's team.
+ * Set the game team index for a virtual team.
  * 
- * @param client    The client index.
- * @param team      The team from enum VTeam to set.
+ * @param team			Team to set.
+ * @param teamindex		Team index to set.
  */
 stock TLib_SetGameTeamIndex(VTeam:team, teamindex) { g_iTLibGameTeamIndex[team] = teamindex; }
 
@@ -181,3 +181,5 @@ stock TLib_UpdateClientTeams()
         TLib_UpdateClientTeam(client);
     }
 }
+
+#endif
