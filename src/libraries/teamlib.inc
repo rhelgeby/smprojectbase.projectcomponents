@@ -118,8 +118,8 @@ stock TLib_GetGameTeamIndex(VTeam:team) { return g_iTLibGameTeamIndex[team]; }
 /**
  * Set the game team index for a virtual team.
  * 
- * @param team			Team to set.
- * @param teamindex		Team index to set.
+ * @param team          Team to set.
+ * @param teamindex     Team index to set.
  */
 stock TLib_SetGameTeamIndex(VTeam:team, teamindex) { g_iTLibGameTeamIndex[team] = teamindex; }
 
