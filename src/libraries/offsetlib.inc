@@ -117,6 +117,26 @@ stock OffsLib_SetClientDFOV(client, dfov)
 }
 
 /**
+ * OffsLib_GetClientWaterLevel (m_nWaterLevel) returns.
+ */
+#define OFFS_WATERLEVEL_DRY 0
+#define OFFS_WATERLEVEL_FEET 1
+#define OFFS_WATERLEVEL_HALF 2
+#define OFFS_WATERLEVEL_FULL 3
+
+/**
+ * Get a client's current water level flag
+ * 
+ * @param client    The client index.
+ * 
+ * @return          A water level.  See OFFS_WATERLEVEL_* defines.
+ */
+stock OffsLib_GetClientWaterLevel(client)
+{
+    return GetEntProp(client, Prop_Data, "m_nWaterLevel");
+}
+
+/**
  * Get a client's frag count.
  * 
  * @param client    The client index.
