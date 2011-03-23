@@ -5,7 +5,7 @@
  *
  *  File:          damagelib.inc
  *  Type:          Library
- *  Description:   Function-related API.
+ *  Description:   Damage-related API.
  *
  *  Copyright (C) 2009-2010  Greyscale, Richard Helgeby
  *
