@@ -63,7 +63,7 @@ stock Function:FuncLib_IsFunctionAvailable(const String:functionname[], Handle:a
         return func;
     
     // Get function ID.
-    func = GetFunctionByName(GetMyHandle(), functionname)
+    func = GetFunctionByName(GetMyHandle(), functionname);
     if (func == INVALID_FUNCTION)
         return INVALID_FUNCTION;
     
