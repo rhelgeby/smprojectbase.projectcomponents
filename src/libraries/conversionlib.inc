@@ -173,7 +173,7 @@ stock ConvertLib_SymbolToAbbrev(ConvLibMeasurements:measurement, units, String:a
  */
 stock ConvertLib_AbbrevToSymbol(ConvLibMeasurements:measurement, const String:abbrev[])
 {
-    for (new uindex; uindex < sizeof(g_strUnits); uindex++)
+    for (new uindex; uindex < sizeof(g_strUnits[]); uindex++)
     {
         if (StrEqual(abbrev, g_strUnits[measurement][uindex], false))
             return uindex;
@@ -217,7 +217,7 @@ stock Float:ConvertLib_DetectAndConvert(ConvLibMeasurements:measurement, const S
     
     // Find symbol for abbreviation, if it fails then use value in 'assume'
     new detected_units = ConvertLib_AbbrevToSymbol(measurement, strUnits);
-    if (detected_units != -1)
+    if (detected_units == -1)
         detected_units = assume;
     
     return ConvertLib_Convert(measurement, detected_units, units_out, flNumber);
