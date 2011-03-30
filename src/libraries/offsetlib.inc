@@ -286,7 +286,7 @@ stock OffsLib_SetCash(client, amount)
 stock bool:OffsLib_GetHasNVGs(client)
 {
     new offsHasNVGs = FindSendPropInfo("CCSPlayer", "m_bHasNightVision");
-    return bool:GetEntData(client, offsHasNVGs, 1);
+    return bool:(GetEntData(client, offsHasNVGs, 1) & 1); // only read the LSB because the net prop is 1 bit, not 1 byte.
 }
 
 /**
@@ -311,7 +311,7 @@ stock OffsLib_SetHasNVGs(client, bool:hasnvgs)
 stock bool:OffsLib_GetNVGsOn(client)
 {
     new offsNVGsOn = FindSendPropInfo("CCSPlayer", "m_bNightVisionOn");
-    return bool:GetEntData(client, offsNVGsOn, 1);
+    return bool:(GetEntData(client, offsNVGsOn, 1) & 1); // only read the LSB because the net prop is 1 bit, not 1 byte.
 }
 
 /**
