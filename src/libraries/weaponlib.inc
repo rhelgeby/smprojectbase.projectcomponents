@@ -53,7 +53,7 @@ enum WepLib_Slots
     Slot_Secondary      = 1,    /** Secondary weapon slot. */
     Slot_Melee          = 2,    /** Melee (knife) weapon slot. */
     Slot_Projectile     = 3,    /** Projectile (grenades, flashbangs, etc) weapon slot. */
-    Slot_Explosive      = 4,    /** Explosive (c4) weapon slot. */
+    Slot_Explosive      = 4,    /** Explosive (c4) weapon slot, NVGs. */
 }
 
 /**

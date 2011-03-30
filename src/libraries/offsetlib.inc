@@ -286,7 +286,7 @@ stock OffsLib_SetCash(client, amount)
 stock bool:OffsLib_GetHasNVGs(client)
 {
     new offsHasNVGs = FindSendPropInfo("CCSPlayer", "m_bHasNightVision");
-    return bool:GetEntData(client, offsHasNVGs);
+    return bool:GetEntData(client, offsHasNVGs, 1);
 }
 
 /**
@@ -311,7 +311,7 @@ stock OffsLib_SetHasNVGs(client, bool:hasnvgs)
 stock bool:OffsLib_GetNVGsOn(client)
 {
     new offsNVGsOn = FindSendPropInfo("CCSPlayer", "m_bNightVisionOn");
-    return bool:GetEntData(client, offsNVGsOn);
+    return bool:GetEntData(client, offsNVGsOn, 1);
 }
 
 /**
