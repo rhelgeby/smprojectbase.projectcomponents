@@ -315,3 +315,70 @@ stock bool:Auth_IsClientAuthorized(client, const String:groupList[], const Strin
     // Invalid comparision mode.
     return false;
 }
+
+/**
+ * Validates a string with flag names.
+ *
+ * @param flagList      List of flag names.
+ * @param separator     Flag separator.
+ *
+ * @return              -1 if all valid, or entry index of invalid flag.
+ */
+stock Auth_ValidateFlags(const String:flagList[], const String:separator[])
+{
+    if (strlen(flagList) == 0)
+    {
+        // Empty list is valid.
+        return -1;
+    }
+    
+    // Split flag list.
+    decl String:flags[AdminFlags_TOTAL][AUTHLIB_FLAG_LEN];
+    new count = ExplodeString(flagList, separator, flags, AdminFlags_TOTAL, AUTHLIB_FLAG_LEN);
+    new AdminFlag:dummy;
+    
+    // Validate each flag.
+    for (new flag = 0; flag < count; flag++)
+    {
+        if (!FindFlagByName(flags[flag], dummy))
+        {
+            return flag;
+        }
+    }
+    
+    // All flags valid.
+    return -1;
+}
+
+/**
+ * Validates a string with group names.
+ *
+ * @param groupList     List of group names.
+ * @param separator     Flag separator.
+ *
+ * @return              -1 if all valid, or entry index of invalid group.
+ */
+stock Auth_ValidateGroups(const String:groupList[], const String:separator[])
+{
+    if (strlen(groupList) == 0)
+    {
+        // Empty list is valid.
+        return -1;
+    }
+    
+    // Split group list.
+    decl String:groups[AUTHLIB_MAX_GROUPS][AUTHLIB_GROUP_LEN];
+    new count = ExplodeString(groupList, separator, groups, AUTHLIB_MAX_GROUPS, AUTHLIB_GROUP_LEN);
+    
+    // Validate each group.
+    for (new group = 0; group < count; group++)
+    {
+        if (FindAdmGroup(groups[group]) == INVALID_GROUP_ID)
+        {
+            return group;
+        }
+    }
+    
+    // All groups valid.
+    return -1;
+}
