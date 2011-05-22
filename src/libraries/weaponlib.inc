@@ -1,7 +1,7 @@
 /*
  * ============================================================================
  *
- *  <Project Name>
+ *  SourceMod Project Base
  *
  *  File:          weaponlib.inc
  *  Type:          Library

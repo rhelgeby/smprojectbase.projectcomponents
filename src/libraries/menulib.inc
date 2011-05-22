@@ -1,7 +1,7 @@
 /*
  * ============================================================================
  *
- *  <Project Name>
+ *  SourceMod Project Base
  *
  *  File:          menulib.inc
  *  Type:          Library

@@ -1,7 +1,7 @@
 /*
  * ============================================================================
  *
- *  <Project Name>
+ *  SourceMod Project Base
  *
  *  File:          offsetlib.inc
  *  Type:          Library
