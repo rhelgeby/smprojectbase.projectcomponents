@@ -1,7 +1,7 @@
 /*
  * ============================================================================
  *
- *  <Project Name>
+ *  SourceMod Project Base
  *
  *  File:          conversionlib.inc
  *  Type:          Library
