@@ -27,12 +27,13 @@
 
 // Include libraries.
 #include "project/libraries/sdktoolslib"
+#include "project/libraries/utilities"
 
 /**
  * Team defines.
  */
 #if defined PROJECT_GAME_CSS
-  #define TEAM_0 CS_TEAM_NON
+  #define TEAM_0 CS_TEAM_NONE
   #define TEAM_1 CS_TEAM_SPECTATOR
   #define TEAM_2 CS_TEAM_T
   #define TEAM_3 CS_TEAM_CT
@@ -156,16 +157,9 @@ stock TLib_GTeamStringToIndex(const String:teamstring[])
  */
 stock TLib_UpdateClientTeam(client)
 {
-    new VTeam:vteam = TLib_GetClientTeam(client);
-    new gteam = GetClientTeam(client);
-    
-    // Check if the client is already on the game team before trying to switch them to it.
-    if (gteam != g_iTLibGameTeamIndex[vteam])
-    {
-        #if defined PROJECT_GAME_CSS
-            CS_SwitchTeam(client, g_iTLibGameTeamIndex[vteam]);
-        #endif
-    }
+    // Can't switch a player to any team index lessthan 1 in any game.
+    if (g_iTLibGameTeamIndex[TLib_GetClientTeam(client)] > 0)
+        Util_SwitchTeam(client, g_iTLibGameTeamIndex[TLib_GetClientTeam(client)]);
 }
 
 /**

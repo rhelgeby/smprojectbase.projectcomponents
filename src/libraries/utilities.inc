@@ -7,7 +7,7 @@
  *  Type:          Utilities
  *  Description:   Place for various utility functions.
  *
- *  Copyright (C) 2009-2011  Greyscale
+ *  Copyright (C) 2009-2011  Greyscale, Richard Helgeby
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -29,6 +29,11 @@
  #endinput
 #endif
 #define _utilities_included
+
+/**
+ * Max len of string printed to console. Excludes newline and null terminator.
+ */
+#define UTIL_CONSOLE_MAX_LEN    1022
 
 /**
  * Filters.
@@ -138,6 +143,22 @@ stock Util_RemovePlayerItem(client, weaponindex)
 }
 
 /**
+ * Switch a clients team only if their current one differs.
+ * 
+ * @param client    The client to switch.
+ * @param team      The team index to switch client to.
+ */
+stock Util_SwitchTeam(client, team)
+{
+    if (GetClientTeam(client) != team)
+    {
+        #if defined PROJECT_GAME_CSS
+            CS_SwitchTeam(client, team);
+        #endif
+    }
+}
+
+/**
  * Closes a handle and sets it to invalid handle.
  * 
  * @param handle    The handle to close.
@@ -175,6 +196,100 @@ stock Util_IsVecInArray(Float:vec[3], Float:vecs[][3], numvecs)
     return -1;
 }
 
+/**
+ * Prints strings longer than 1022 bytes to the console. Max 4 KB.
+ *
+ * @param client        Client index, or 0 for server.
+ * @param format        Formatting rules.
+ * @param ...           Variable number of format parameters.
+ */
+stock Util_ReplyToCommandEx(client, const String:format[], any:...)
+{
+    decl String:buffer[4095];   // Excludes newline added by ReplyToCommand.
+    buffer[0] = 0;
+    new bufferLen;
+    
+    decl String:window[UTIL_CONSOLE_MAX_LEN];   // Window buffer.
+    new windowPos;      // Current position of the 1022 byte window.
+    new windowLen;      // How many charaters to print in the current window.
+    new bool:shiftWindow;   // Shift window one character extra when moving.
+    
+    new nextLine;       // Position to next line.
+    new lastLine;       // Position to last line break within the window.
+    
+    new searchPos;      // Temp position.
+    
+    // Prepare buffer.
+    VFormat(buffer, sizeof(buffer), format, 3);
+    bufferLen = strlen(buffer);
+    
+    // Print as many whole lines as possible within a window of 1022 bytes.
+    new bool:done;
+    while (!done)
+    {
+        // Get the position of last line break in the window.
+        searchPos = windowPos;
+        while (searchPos >= 0)
+        {
+            // Get next line.
+            nextLine = FindCharInString(buffer[searchPos], '\n');
+            
+            if (nextLine < 0)
+            {
+                // The whole string (or the rest of it) is one line. Just break
+                // the string.
+                if (windowPos + UTIL_CONSOLE_MAX_LEN <= bufferLen)
+                {
+                    // Line ends after this window, fill the whole window.
+                    windowLen = UTIL_CONSOLE_MAX_LEN;
+                    shiftWindow = false;
+                    break;
+                }
+                else
+                {
+                    // Line ends within this window, fill it until buffer ends.
+                    windowLen = strlen(buffer[windowPos]);
+                    shiftWindow = false;
+                    break;
+                }
+            }
+            else if (searchPos + nextLine < windowPos + UTIL_CONSOLE_MAX_LEN)
+            {
+                // Still more space in window, search for another line.
+                // Adding 1 to skip the line break character.
+                searchPos += nextLine + 1;
+                lastLine = searchPos;
+            }
+            else
+            {
+                // No space for the next line. Fill window up to last line.
+                windowLen = lastLine - windowPos;
+                shiftWindow = true;
+                break;
+            }
+        }
+        
+        // Print the current window.
+        strcopy(window, windowLen, buffer[windowPos]);
+        ReplyToCommand(client, window);
+        
+        // Check if done.
+        if (windowPos + windowLen >= bufferLen)
+        {
+            break;
+        }
+        
+        // Move window.
+        windowPos = windowPos + windowLen - 1;
+        
+        if (shiftWindow)
+        {
+            // Move window one extra character to move past the last line break.
+            windowPos++;
+        }
+    }
+}
+
 #if defined PROJECT_GAME_CSS
 
 /**
@@ -201,12 +316,33 @@ stock RoundEndReasons:Util_TeamToReason(teamindex)
 #if defined PROJECT_GAME_TF2
 
 /**
+ * Ends a TF2 game in a stalemate when this is passed to the function.
+ */
+#define ROUNDEND_STALEMATE 0
+
+/**
+ * Takes a winning team index and returns its corresponding round end reason.
+ * Ex: Takes index '2' and returns the Terrorists_Win round end reason.
+ * 
+ * @param teamindex     The team index that won the round.
+ * 
+ * @return              Returns 'teamindex' unless it is invalid, in which case ROUNDEND_STALEMATE is returned.
+ */
+stock Util_TeamToReason(teamindex)
+{
+    if (teamindex == TEAM_2 || teamindex == TEAM_3)
+        return teamindex;
+    
+    return ROUNDEND_STALEMATE;
+}
+
+/**
  * Terminates the round. (TF2)
  * Credits to toazron1 for this one :)
  * 
  * @team    The team index of the winner.
  */
-stock Util_TerminateRound(teamindex)
+stock TF2_TerminateRound(teamindex)
 {
     new ent = FindEntityByClassname(-1, "team_control_point_master");
     if (ent == -1)
