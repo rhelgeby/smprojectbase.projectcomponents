@@ -127,7 +127,7 @@ stock bool:Util_IsClientInGame(client)
 stock bool:Util_IsClientOnTeam(client)
 {
     new cteam = GetClientTeam(client);
-    return (cteam == TEAM_2 || cteam == TEAM_3);
+    return (cteam > 1);
 }
 
 /**
