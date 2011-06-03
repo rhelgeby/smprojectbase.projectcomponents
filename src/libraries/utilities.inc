@@ -86,7 +86,7 @@ stock Util_BuildClientList(&Handle:adtClients, filters, targetclient = 0)
         else
         {
             // The client is dead, so check if the filter is asking only for alive clients.
-            if (filters & UTILS_FILTER_TEAM)
+            if (filters & UTILS_FILTER_ALIVE)
                 continue;
         }
         
