@@ -37,27 +37,23 @@
  * The max string/array lengths of module data variables.
  */
 #define ML_DATA_LABEL       32
-#define ML_DATA_STRINFO     128
-
-enum MenuLib_ButtonType
-{
-    ButtonType_ActionNoInput,   // Calls a function with no parameters.
-    ButtonType_ActionOneInput,  // Calls a function with a single input.
-    ButtonType_LinkMenu         // Opens another menu.
-}
 
 enum MenuLib_Button
 {
     String:Button_Label[ML_DATA_LABEL],     // What to display for this menu button.
-    MenuLib_ButtonType:Button_Type,         // See enum MenuLib_ButtonType.
-    Handle:hButton_Info,                    // Data associated with this button. (Depends on ButtonType)
-    String:strButton_Info[ML_DATA_STRINFO]  // ^^
+    Handle:Button_LinkedMenu,               // Menu to link this button to.  INVALID_HANDLE if this button doesn't link to another menu.
+    Function:Button_Function                // Function to call when this button is selected.  INVALID_FUNCTION to call no function.
 }
+
+/**
+ * Keeps track of the last menu the user had open.
+ */
+new Handle:g_hPrevMenus[MAXPLAYERS + 1];
 
 /**
  * Dummy array used as a way to count the cells required to store menu data.
  */
-stock g_DummyMenuButtonData[MenuLib_Button];
+stock g_DummyMenuBtnData[MenuLib_Button];
 
 /**
  * Creates a menu ready to be filled with menu buttons.
@@ -68,7 +64,7 @@ stock g_DummyMenuButtonData[MenuLib_Button];
  */
 stock Handle:MenuLib_CreateMenu(const String:title[])
 {
-    new Handle:hMenu = CreateArray(sizeof(g_DummyMenuButtonData));
+    new Handle:hMenu = CreateArray(sizeof(g_DummyMenuBtnData));
     PushArrayString(hMenu, title);
     return hMenu;
 }
@@ -85,26 +81,6 @@ stock MenuLib_DeleteMenu(Handle:hMenu)
     CloseHandle(hMenu);
 }
 
-static stock MenuLib_ExplodeMenuR(Handle:hMenu)
-{
-    if (hMenu == INVALID_HANDLE)
-        return;
-    
-    new buttoninfo[MenuLib_Button];
-    new count = GetArraySize(hMenu);
-    for (new bindex = 1; bindex < count; bindex++)
-    {
-        // Get all info about this menu button.
-        MenuLib_GetMenuButton(hMenu, bindex, buttoninfo);
-        
-        // If it links to another menu, recurse into it.
-        if (buttoninfo[Button_Type] == ButtonType_LinkMenu)
-            MenuLib_ExplodeMenuR(buttoninfo[hButton_Info]);
-    }
-    
-    CloseHandle(hMenu);
-}
-
 /**
  * Deletes a menu page and all menu pages it links to, recursively.
  * 
@@ -114,7 +90,22 @@ static stock MenuLib_ExplodeMenuR(Handle:hMenu)
  */
 stock MenuLib_ExplodeMenu(Handle:hMenu)
 {
-    MenuLib_ExplodeMenuR(hMenu);
+    if (hMenu == INVALID_HANDLE)
+        return;
+    
+    new buttoninfo[MenuLib_Button];
+    new count = GetArraySize(hMenu);
+    for (new bindex = 1; bindex < count; bindex++)
+    {
+        // Get all info about this menu button.
+        MenuLib_GetMenuBtn(hMenu, bindex, buttoninfo);
+        
+        // If it links to another menu, recurse into it.
+        if (buttoninfo[Button_LinkedMenu] == INVALID_HANDLE)
+            MenuLib_ExplodeMenu(buttoninfo[Button_LinkedMenu]);
+    }
+    
+    CloseHandle(hMenu);
 }
 
 /**
@@ -123,7 +114,7 @@ stock MenuLib_ExplodeMenu(Handle:hMenu)
  * @param hMenu         Menu to add button to.
  * @param buttoninfo    Array containing button data.  See enum MenuLib_Button.
  */
-stock MenuLib_AddMenuButton(Handle:hMenu, buttoninfo[MenuLib_Button])
+stock MenuLib_AddMenuBtn(Handle:hMenu, buttoninfo[MenuLib_Button])
 {
     PushArrayArray(hMenu, buttoninfo[0]);
 }
@@ -133,51 +124,16 @@ stock MenuLib_AddMenuButton(Handle:hMenu, buttoninfo[MenuLib_Button])
  * 
  * @param hMenu         Menu to add button to.
  * @param label         What to display for this menu button.
+ * @param hLinkedMenu   The handle of the menu to link this button to.  INVALID_HANDLE to link to no other menu.
+ * @param funcCallback  The function to call when this button is selected.  INVALID_FUNCTION to call no function.
  */
-stock MenuLib_AddMenuButtonNoInput(Handle:hMenu, String:label[])
+stock MenuLib_AddMenuBtnEx(Handle:hMenu, String:label[], Handle:hLinkedMenu = INVALID_HANDLE, Function:funcCallback = INVALID_FUNCTION)
 {
     // Create array.
     new buttoninfo[MenuLib_Button];
     strcopy(buttoninfo[Button_Label], sizeof(buttoninfo[Button_Label]), label);
-    buttoninfo[Button_Type] = ButtonType_ActionNoInput;
-    
-    PushArrayArray(hMenu, buttoninfo[0]);
-}
-
-/**
- * Adds a menu button that performs an action with one input.
- * 
- * @param hMenu         Menu to add button to.
- * @param label         What to display for this menu button.
- * @param input         
- */
-/*
-stock MenuLib_AddMenuButtonOneInput(Handle:hMenu, String:label[], String:input[])
-{
-    // Create array.
-    new buttoninfo[MenuLib_Button];
-    strcopy(buttoninfo[Button_Label], sizeof(buttoninfo[ButtonLabel]), label);
-    buttoninfo[Button_Type] = ButtonType_ActionOneInput;
-    strcopy(buttoninfo[strButton_Info], sizeof(buttoninfo[ButtonLabel]), label);
-    
-    PushArrayArray(hMenu, buttoninfo[0]);
-}
-*/
-
-/**
- * Adds a menu button that performs an action with no input.
- * 
- * @param hMenu         Menu to add button to.
- * @param label         What to display for this menu button.
- * @param hLinkedMenu   The menu to link this button to. 
- */
-stock MenuLib_AddMenuButtonLinkMenu(Handle:hMenu, String:label[], Handle:hLinkedMenu)
-{
-    // Create array.
-    new buttoninfo[MenuLib_Button];
-    strcopy(buttoninfo[Button_Label], sizeof(buttoninfo[Button_Label]), label);
-    buttoninfo[Button_Type] = ButtonType_LinkMenu;
-    buttoninfo[hButton_Info] = hLinkedMenu;
+    buttoninfo[Button_LinkedMenu] = hLinkedMenu;
+    buttoninfo[Button_Function] = funcCallback;
     
     PushArrayArray(hMenu, buttoninfo[0]);
 }
@@ -203,10 +159,10 @@ stock MenuLib_GetMenuTitle(Handle:hMenu, String:title[], maxlen)
  * 
  * @error               Invalid button.
  */
-stock MenuLib_GetMenuButton(Handle:hMenu, buttonindex, buttoninfo[MenuLib_Button])
+stock MenuLib_GetMenuBtn(Handle:hMenu, buttonindex, buttoninfo[MenuLib_Button])
 {
     if (buttonindex <= 0 || buttonindex >= GetArraySize(hMenu))
-        ThrowError("Invalid button index given to function MenuLib_GetMenuButton (menulib.inc)");
+        ThrowError("Invalid button index given to function MenuLib_GetMenuBtn (menulib.inc)");
     
     GetArrayArray(hMenu, buttonindex, buttoninfo[0], sizeof(buttoninfo));
 }
@@ -221,10 +177,10 @@ stock MenuLib_GetMenuButton(Handle:hMenu, buttonindex, buttoninfo[MenuLib_Button
  * 
  * @error               Invalid button.
  */
-stock MenuLib_GetMenuButtonLabel(Handle:hMenu, buttonindex, String:label[], maxlen)
+stock MenuLib_GetMenuBtnLabel(Handle:hMenu, buttonindex, String:label[], maxlen)
 {
     if (buttonindex <= 0 || buttonindex >= GetArraySize(hMenu))
-        ThrowError("Invalid button index given to function MenuLib_GetMenuButton (menulib.inc)");
+        ThrowError("Invalid button index given to function MenuLib_GetMenuBtnLabel (menulib.inc)");
     
     new buttoninfo[MenuLib_Button];
     GetArrayArray(hMenu, buttonindex, buttoninfo[0], sizeof(buttoninfo));
@@ -233,64 +189,43 @@ stock MenuLib_GetMenuButtonLabel(Handle:hMenu, buttonindex, String:label[], maxl
 }
 
 /**
- * Get a menu button's type.
+ * Get a menu button's linked menu.
  * 
  * @param hMenu         Menu to get button from.
  * @param buttonindex   The index of the button to get data for. (Button 1 = 1, Button 2 = 2, etc)
  * 
  * @error               Invalid button.
- * @return              The type of the button.  See enum MenuLib_ButtonType.
+ * @return              Handle of the menu linked to this button, INVALID_HANDLE if no menu is linked.
  */
-stock MenuLib_ButtonType:MenuLib_GetMenuButtonType(Handle:hMenu, buttonindex)
+stock Handle:MenuLib_GetMenuBtnLinkedMenu(Handle:hMenu, buttonindex)
 {
     if (buttonindex <= 0 || buttonindex >= GetArraySize(hMenu))
-        ThrowError("Invalid button index given to function MenuLib_GetMenuButton (menulib.inc)");
+        ThrowError("Invalid button index given to function MenuLib_GetMenuBtnLinkedMenu (menulib.inc)");
     
     new buttoninfo[MenuLib_Button];
     GetArrayArray(hMenu, buttonindex, buttoninfo[0], sizeof(buttoninfo));
     
-    return buttoninfo[Button_Type];
+    return buttoninfo[Button_LinkedMenu];
 }
 
 /**
- * Get the menu linked to a menu button.
+ * Get the menu button's function.
  * 
  * @param hMenu         Menu to get button from.
  * @param buttonindex   The index of the button to get data for. (Button 1 = 1, Button 2 = 2, etc)
  * 
  * @error               Invalid button.
- * @return              The handle to the menu this button is linked to.
+ * @return              The function ID of the function attached to this button, INVALID_FUNCTION if no function is attached.
  */
-stock Handle:MenuLib_GetMenuButtonInfoHndl(Handle:hMenu, buttonindex)
+stock Function:MenuLib_GetMenuBtnFunction(Handle:hMenu, buttonindex)
 {
     if (buttonindex <= 0 || buttonindex >= GetArraySize(hMenu))
-        ThrowError("Invalid button index given to function MenuLib_GetMenuButton (menulib.inc)");
+        ThrowError("Invalid button index given to function MenuLib_GetMenuBtnFunction (menulib.inc)");
     
     new buttoninfo[MenuLib_Button];
     GetArrayArray(hMenu, buttonindex, buttoninfo[0], sizeof(buttoninfo));
     
-    return buttoninfo[hButton_Info];
-}
-
-/**
- * Get the <CLARIFY THIS>
- * 
- * @param hMenu         Menu to get button from.
- * @param buttonindex   The index of the button to get data for. (Button 1 = 1, Button 2 = 2, etc)
- * @param info          <CLARIFY>
- * @param maxlen        The max length of the return string. 
- * 
- * @error               Invalid button.
- */
-stock MenuLib_GetMenuButtonInfoStr(Handle:hMenu, buttonindex, String:info[], maxlen)
-{
-    if (buttonindex <= 0 || buttonindex >= GetArraySize(hMenu))
-        ThrowError("Invalid button index given to function MenuLib_GetMenuButton (menulib.inc)");
-    
-    new buttoninfo[MenuLib_Button];
-    GetArrayArray(hMenu, buttonindex, buttoninfo[0], sizeof(buttoninfo));
-    
-    strcopy(info, maxlen, buttoninfo[strButton_Info]);
+    return buttoninfo[Button_Function];
 }
 
 /**
@@ -311,10 +246,10 @@ stock MenuLib_EditMenuTitle(Handle:hMenu, const String:title[])
  * @param buttonindex   The index of the button to modify in the menu. (Button 1 = 1, Button 2 = 2, etc)
  * @param buttoninfo    Array containing button data.  See enum MenuLib_Button.
  */
-stock MenuLib_EditMenuButton(Handle:hMenu, buttonindex, buttoninfo[MenuLib_Button])
+stock MenuLib_EditMenuBtn(Handle:hMenu, buttonindex, buttoninfo[MenuLib_Button])
 {
     if (buttonindex <= 0 || buttonindex >= GetArraySize(hMenu))
-        ThrowError("Invalid button index given to function MenuLib_GetMenuButton (menulib.inc)");
+        ThrowError("Invalid button index given to function MenuLib_EditMenuBtn (menulib.inc)");
     
     SetArrayArray(hMenu, buttonindex, buttoninfo[0], sizeof(buttoninfo));
 }
@@ -326,10 +261,10 @@ stock MenuLib_EditMenuButton(Handle:hMenu, buttonindex, buttoninfo[MenuLib_Butto
  * @param buttonindex   The index of the button to modify in the menu. (Button 1 = 1, Button 2 = 2, etc)
  * @param label         New menu button label.
  */
-stock MenuLib_EditMenuButtonLabel(Handle:hMenu, buttonindex, String:label[])
+stock MenuLib_EditMenuBtnLabel(Handle:hMenu, buttonindex, String:label[])
 {
     if (buttonindex <= 0 || buttonindex >= GetArraySize(hMenu))
-        ThrowError("Invalid button index given to function MenuLib_GetMenuButton (menulib.inc)");
+        ThrowError("Invalid button index given to function MenuLib_EditMenuBtnLabel (menulib.inc)");
     
     new buttoninfo[MenuLib_Button];
     GetArrayArray(hMenu, buttonindex, buttoninfo[0], sizeof(buttoninfo));
@@ -338,57 +273,56 @@ stock MenuLib_EditMenuButtonLabel(Handle:hMenu, buttonindex, String:label[])
 }
 
 /**
- * Edits the type of a menu button.
+ * Edits the menu linked to this button.
  * 
  * @param hMenu         Menu containing the button we want to edit.
  * @param buttonindex   The index of the button to modify in the menu. (Button 1 = 1, Button 2 = 2, etc)
- * @param buttontype    New menu button type.
+ * @param hLinkedMenu   New menu that this button is linked to.
  */
-stock MenuLib_EditMenuButtonType(Handle:hMenu, buttonindex, MenuLib_ButtonType:buttontype)
+stock MenuLib_EditMenuBtnLinkedMenu(Handle:hMenu, buttonindex, Handle:hLinkedMenu)
 {
     if (buttonindex <= 0 || buttonindex >= GetArraySize(hMenu))
-        ThrowError("Invalid button index given to function MenuLib_GetMenuButton (menulib.inc)");
+        ThrowError("Invalid button index given to function MenuLib_GetMenuBtnLinkedMenu (menulib.inc)");
     
     new buttoninfo[MenuLib_Button];
     GetArrayArray(hMenu, buttonindex, buttoninfo[0], sizeof(buttoninfo));
-    buttoninfo[Button_Type] = buttontype;
+    buttoninfo[Button_LinkedMenu] = hLinkedMenu;
     SetArrayArray(hMenu, buttonindex, buttoninfo[0], sizeof(buttoninfo));
 }
 
 /**
- * Edits the menu this button is linked to.
+ * Edits the function that is attached to this button.
  * 
  * @param hMenu         Menu containing the button we want to edit.
  * @param buttonindex   The index of the button to modify in the menu. (Button 1 = 1, Button 2 = 2, etc)
- * @param hInfo         New menu to link button to.
+ * @param funcCallback  New function attached to this button.
  */
-stock MenuLib_EditMenuButtonInfoHndl(Handle:hMenu, buttonindex, Handle:hInfo)
+stock MenuLib_EditMenuBtnFunction(Handle:hMenu, buttonindex, Function:funcCallback)
 {
     if (buttonindex <= 0 || buttonindex >= GetArraySize(hMenu))
-        ThrowError("Invalid button index given to function MenuLib_GetMenuButton (menulib.inc)");
+        ThrowError("Invalid button index given to function MenuLib_EditMenuBtnFunction (menulib.inc)");
     
     new buttoninfo[MenuLib_Button];
     GetArrayArray(hMenu, buttonindex, buttoninfo[0], sizeof(buttoninfo));
-    buttoninfo[hButton_Info] = hInfo;
+    buttoninfo[Button_Function] = funcCallback;
     SetArrayArray(hMenu, buttonindex, buttoninfo[0], sizeof(buttoninfo));
 }
 
 /**
- * <CLARIFY>
+ * Use this to send menus to clients!
+ * Displays a menulib-built menu to a client.
  * 
- * @param hMenu         Menu containing the button we want to edit.
- * @param buttonindex   The index of the button to modify in the menu. (Button 1 = 1, Button 2 = 2, etc)
- * @param strInfo       <CLARIFY>
+ * @param hMenu     The handle of the menu to send.
+ * @param client    The client to send the menu to.
+ * @param time      The time the menu will stay on screen before expiring.
  */
-stock MenuLib_EditMenuButtonInfoStr(Handle:hMenu, buttonindex, String:strInfo[])
+stock MenuLib_DisplayMenu(Handle:hMenu, client, time)
 {
-    if (buttonindex <= 0 || buttonindex >= GetArraySize(hMenu))
-        ThrowError("Invalid button index given to function MenuLib_GetMenuButton (menulib.inc)");
+    if (g_hPrevMenus[client] != INVALID_HANDLE)
+        CloseHandle(g_hPrevMenus[client]);
+    g_hPrevMenus[client] = CreateStack();
     
-    new buttoninfo[MenuLib_Button];
-    GetArrayArray(hMenu, buttonindex, buttoninfo[0], sizeof(buttoninfo));
-    strcopy(buttoninfo[strButton_Info], sizeof(buttoninfo[strButton_Info]), strInfo);
-    SetArrayArray(hMenu, buttonindex, buttoninfo[0], sizeof(buttoninfo));
+    MenuLib_SendMenu(Handle:hMenu, client, time);
 }
 
 /**
@@ -396,8 +330,9 @@ stock MenuLib_EditMenuButtonInfoStr(Handle:hMenu, buttonindex, String:strInfo[])
  * 
  * @param hMenu     The handle of the menu to send.
  * @param client    The client to send the menu to.
+ * @param time      The time the menu will stay on screen before expiring.
  */
-stock MenuLib_SendMenu(Handle:hMenu, client)
+static stock MenuLib_SendMenu(Handle:hMenu, client, time)
 {
     // Get menu title.
     decl String:title[ML_DATA_LABEL];
@@ -407,25 +342,58 @@ stock MenuLib_SendMenu(Handle:hMenu, client)
     new Handle:hSMMenu = CreateMenu(MenuLib_Handler);
     SetMenuTitle(hSMMenu, title);
     
+    // Add exit back button if applicable.
+    SetMenuExitBackButton(hSMMenu, !IsStackEmpty(g_hPrevMenus[client]));
+    
     // Add menu items.
-    decl String:blabel[ML_DATA_STRINFO];
+    decl String:blabel[ML_DATA_LABEL];
+    decl String:strHandle[16];
     new count = GetArraySize(hMenu);
     for (new bindex = 1; bindex < count; bindex++)
     {
-        MenuLib_GetMenuButtonLabel(hMenu, bindex, blabel, sizeof(blabel));
-        AddMenuItem(hSMMenu, "", blabel);
+        MenuLib_GetMenuBtnLabel(hMenu, bindex, blabel, sizeof(blabel));
+        IntToString(_:hMenu, strHandle, sizeof(strHandle));
+        AddMenuItem(hSMMenu, strHandle, blabel);
     }
+    
+    DisplayMenu(hSMMenu, client, time);
 }
 
-stock MenuLib_Handler(Handle:menu, MenuAction:action, client, slot)
+public MenuLib_Handler(Handle:menu, MenuAction:action, client, slot)
 {
     if (action == MenuAction_Select)
     {
+        // Resolve string into the handle of the menu this menu button is from.
+        decl String:strHandle[16];
+        GetMenuItem(menu, slot, strHandle, sizeof(strHandle));
+        new Handle:hMenu = Handle:StringToInt(strHandle);
+        
+        // Call the module's callback for this button.
+        new Function:funcCallback = MenuLib_GetMenuBtnFunction(hMenu, slot+1);
+        if (funcCallback != INVALID_FUNCTION)
+        {
+            Call_StartFunction(GetMyHandle(), funcCallback);
+            Call_PushCell(hMenu);
+            Call_PushCell(action);
+            Call_PushCell(client);
+            Call_PushCell(slot+1);
+            Call_Finish();
+        }
+        
+        new Handle:hLinkedMenu = MenuLib_GetMenuBtnLinkedMenu(hMenu, slot+1);
+        if (hLinkedMenu != INVALID_HANDLE)
+        {
+            PushStackCell(g_hPrevMenus[client], hMenu);
+            MenuLib_SendMenu(hLinkedMenu, client, MENU_TIME_FOREVER);
+        }
     }
     else if (action == MenuAction_Cancel)
     {
         if (slot == MenuCancel_ExitBack)
         {
+            new Handle:hPrevMenu;
+            if (PopStackCell(g_hPrevMenus[client], hPrevMenu))
+                MenuLib_SendMenu(hPrevMenu, client, MENU_TIME_FOREVER);
         }
     }
     else if (action == MenuAction_End)
