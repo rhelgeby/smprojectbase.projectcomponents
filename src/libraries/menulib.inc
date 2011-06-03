@@ -102,7 +102,7 @@ stock MenuLib_DeleteMenu(Handle:hMenu, bool:recursive = false)
 }
 
 /**
- * Adds a menu button to a menu. (See below for easier methods)
+ * Adds a menu button to a menu. (See below for easier method)
  * 
  * @param hMenu         Menu to add button to.
  * @param buttoninfo    Array containing button data.  See enum MenuLib_Button.
@@ -113,7 +113,7 @@ stock MenuLib_AddMenuBtn(Handle:hMenu, buttoninfo[MenuLib_Button])
 }
 
 /**
- * Adds a menu button that performs an action with no input.
+ * Adds a menu button with different parameters.
  * 
  * @param hMenu         Menu to add button to.
  * @param label         What to display for this menu button.
@@ -131,6 +131,31 @@ stock MenuLib_AddMenuBtnEx(Handle:hMenu, String:label[], const String:info[] = "
     buttoninfo[MenuBtn_Function] = funcCallback;
     
     PushArrayArray(hMenu, buttoninfo[0]);
+}
+
+/**
+ * Removes a menu button from the menu.
+ * 
+ * @param hMenu         Menu to add button to.
+ * @param buttonindex   The index of the button to modify in the menu. (Button 1 = 1, Button 2 = 2, etc)
+ */
+stock MenuLib_RemoveButton(Handle:hMenu, buttonindex)
+{
+    if (buttonindex <= 0 || buttonindex >= GetArraySize(hMenu))
+        ThrowError("Invalid button index.");
+    
+    RemoveFromArray(hMenu, buttonindex);
+}
+
+/**
+ * Removes all menu buttons from the menu.
+ * 
+ * @param hMenu         Menu to add button to.
+ */
+stock MenuLib_RemoveAllButtons(Handle:hMenu)
+{
+    while(GetArraySize(hMenu) > 1)
+        RemoveFromArray(hMenu, 1);
 }
 
 /**
