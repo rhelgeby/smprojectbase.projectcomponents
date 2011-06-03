@@ -9,6 +9,7 @@ new Handle:menu3;
 new Handle:menu4;
 new Handle:menu5;
 new Handle:menu6;
+new Handle:clientmenu;
 
 public OnPluginStart()
 {
@@ -18,14 +19,15 @@ public OnPluginStart()
     menu4 = MenuLib_CreateMenu("Menu4");
     menu5 = MenuLib_CreateMenu("Menu5");
     menu6 = MenuLib_CreateMenu("Menu6");
+    clientmenu = MenuLib_CreateMenu("Clients");
     
-    MenuLib_AddMenuBtnEx(menu1, "Menu2", _, menu2);
-    MenuLib_AddMenuBtnEx(menu2, "Nothing");
-    MenuLib_AddMenuBtnEx(menu1, "Menu3", _, menu3);
-    MenuLib_AddMenuBtnEx(menu3, "Menu4", _, menu4);
-    MenuLib_AddMenuBtnEx(menu4, "Menu5", _, menu5);
-    MenuLib_AddMenuBtnEx(menu5, "Menu6", _, menu6);
-    MenuLib_AddMenuBtnEx(menu6, "Nothing");
+    MenuLib_AddMenuBtnEx(menu1, "Menu2", "", INVALID_FUNCTION, BtnNextMenu_LinkBack, menu2);
+    MenuLib_AddMenuBtnEx(menu1, "Menu3", "", INVALID_FUNCTION, BtnNextMenu_LinkMenu, menu3);
+    MenuLib_AddMenuBtnEx(menu3, "Menu4", "", INVALID_FUNCTION, BtnNextMenu_LinkMenu, menu4);
+    MenuLib_AddMenuBtnEx(menu4, "Menu5", "", INVALID_FUNCTION, BtnNextMenu_LinkMenu, menu5);
+    MenuLib_AddMenuBtnEx(menu5, "Menu6", "", INVALID_FUNCTION, BtnNextMenu_LinkMenu, menu6);
+    MenuLib_AddMenuBtnEx(menu6, "All Clients", "", GetFunctionByName(GetMyHandle(), "PrepClients"), BtnNextMenu_LinkMenu, clientmenu);
+    MenuLib_AddMenuBtnEx(menu6, "All Clients 2", "", GetFunctionByName(GetMyHandle(), "PrepClients2"), BtnNextMenu_LinkMenu, clientmenu);
     
     HookEvent("player_spawn", PlayerSpawn);
 }
@@ -38,8 +40,23 @@ public OnClientDisconnect(client)
 {
 }
 
+public PrepClients(Handle:hMenu, MenuAction:action, client, slot)
+{
+    MenuLib_GenerateClientMenu(client, clientmenu, GetFunctionByName(GetMyHandle(), "ClientListHandler"), BtnNextMenu_LinkCurrent, INVALID_HANDLE, UTILS_FILTER_ALIVE);
+}
+
+public PrepClients2(Handle:hMenu, MenuAction:action, client, slot)
+{
+    MenuLib_GenerateClientMenu(client, clientmenu, GetFunctionByName(GetMyHandle(), "ClientListHandler"), BtnNextMenu_LinkBack, INVALID_HANDLE, UTILS_FILTER_ALIVE);
+}
+
 public PlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
 {
     new client = GetClientOfUserId(GetEventInt(event, "userid"));
     MenuLib_DisplayMenu(menu1, client);
+}
+
+public ClientListHandler(Handle:hMenu, MenuAction:action, client, buttonindex)
+{
+    PrintToChat(client, "Selected client %N", MenuLib_GetClientIndex(hMenu, buttonindex));
 }
