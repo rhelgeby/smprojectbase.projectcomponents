@@ -19,12 +19,12 @@ public OnPluginStart()
     menu5 = MenuLib_CreateMenu("Menu5");
     menu6 = MenuLib_CreateMenu("Menu6");
     
-    MenuLib_AddMenuBtnEx(menu1, "Menu2", menu2);
+    MenuLib_AddMenuBtnEx(menu1, "Menu2", _, menu2);
     MenuLib_AddMenuBtnEx(menu2, "Nothing");
-    MenuLib_AddMenuBtnEx(menu1, "Menu3", menu3);
-    MenuLib_AddMenuBtnEx(menu3, "Menu4", menu4);
-    MenuLib_AddMenuBtnEx(menu4, "Menu5", menu5);
-    MenuLib_AddMenuBtnEx(menu5, "Menu6", menu6);
+    MenuLib_AddMenuBtnEx(menu1, "Menu3", _, menu3);
+    MenuLib_AddMenuBtnEx(menu3, "Menu4", _, menu4);
+    MenuLib_AddMenuBtnEx(menu4, "Menu5", _, menu5);
+    MenuLib_AddMenuBtnEx(menu5, "Menu6", _, menu6);
     MenuLib_AddMenuBtnEx(menu6, "Nothing");
     
     HookEvent("player_spawn", PlayerSpawn);
@@ -41,5 +41,5 @@ public OnClientDisconnect(client)
 public PlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
 {
     new client = GetClientOfUserId(GetEventInt(event, "userid"));
-    MenuLib_DisplayMenu(menu1, client, MENU_TIME_FOREVER);
+    MenuLib_DisplayMenu(menu1, client);
 }
