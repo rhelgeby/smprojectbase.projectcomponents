@@ -31,13 +31,13 @@
 #define _menulib_included
 
 // Include libraries.
-#include "<project>/libraries/utilities"
+#include "libraries/utilities"
 
 /**
  * The max string/array lengths of module data variables.
  */
 #define ML_DATA_LABEL       32
-#define ML_DATA_INFO        64
+#define ML_DATA_INFO        128
 
 /**
  * What menu should a button open.
@@ -57,6 +57,7 @@ enum MenuLib_Button
 {
     String:MenuBtn_Label[ML_DATA_LABEL],    // What to display for this menu button.
     String:MenuBtn_Info[ML_DATA_INFO],      // Identical to the "info" parameter in AddMenuItem, see that.
+    MenuBtn_Style,                          // See SM include menus.inc ITEMDRAW_* defines.
     Function:MenuBtn_Function,              // Function to call when this button is selected.  INVALID_FUNCTION to call no function.
     MenuLib_BtnNextMenu:MenuBtn_NextMenu,   // See enum MenuLib_BtnNextMenu.
     Handle:MenuBtn_LinkedMenu               // If MenuBtn_NextMenu = BtnNextMenu_LinkMenu, this is the menu that is linked.
@@ -133,16 +134,18 @@ stock MenuLib_AddMenuBtn(Handle:hMenu, buttoninfo[MenuLib_Button])
  * @param hMenu         Menu to add button to.
  * @param label         What to display for this menu button.
  * @param info          Identical to the "info" parameter in AddMenuItem, see that.
+ * @param style         See SM include menus.inc ITEMDRAW_* defines.
  * @param funcCallback  The function to call when this button is selected.  INVALID_FUNCTION to call no function.
  * @param NextMenu      Where this menu button wants to link to.
  * @param hLinkedMenu   The handle of the menu to link this button to if NextMenu = BtnNextMenu_LinkMenu, otherwise INVALID_HANDLE.
  */
-stock MenuLib_AddMenuBtnEx(Handle:hMenu, String:label[], const String:info[], Function:funcCallback, MenuLib_BtnNextMenu:NextMenu, Handle:hLinkedMenu)
+stock MenuLib_AddMenuBtnEx(Handle:hMenu, String:label[], const String:info[], style, Function:funcCallback, MenuLib_BtnNextMenu:NextMenu, Handle:hLinkedMenu)
 {
     // Create array.
     new buttoninfo[MenuLib_Button];
     strcopy(buttoninfo[MenuBtn_Label], sizeof(buttoninfo[MenuBtn_Label]), label);
     strcopy(buttoninfo[MenuBtn_Info], sizeof(buttoninfo[MenuBtn_Info]), info);
+    buttoninfo[MenuBtn_Style] = style;
     buttoninfo[MenuBtn_Function] = funcCallback;
     buttoninfo[MenuBtn_NextMenu] = NextMenu;
     buttoninfo[MenuBtn_LinkedMenu] = hLinkedMenu;
@@ -244,6 +247,26 @@ stock MenuLib_GetMenuBtnInfo(Handle:hMenu, buttonindex, String:info[], maxlen)
     GetArrayArray(hMenu, buttonindex, buttoninfo[0], sizeof(buttoninfo));
     
     strcopy(info, maxlen, buttoninfo[MenuBtn_Info]);
+}
+
+/**
+ * Get the menu button's style.
+ * 
+ * @param hMenu         Menu to get button from.
+ * @param buttonindex   The index of the button to get data for. (Button 1 = 1, Button 2 = 2, etc)
+ * 
+ * @error               Invalid button.
+ * @return              The style of the button.  Compare with an ITEMDRAW_* define.
+ */
+stock MenuLib_GetMenuBtnStyle(Handle:hMenu, buttonindex)
+{
+    if (buttonindex <= 0 || buttonindex >= GetArraySize(hMenu))
+        ThrowError("Invalid button index.");
+    
+    new buttoninfo[MenuLib_Button];
+    GetArrayArray(hMenu, buttonindex, buttoninfo[0], sizeof(buttoninfo));
+    
+    return buttoninfo[MenuBtn_Style];
 }
 
 /**
@@ -369,6 +392,24 @@ stock MenuLib_EditMenuBtnInfo(Handle:hMenu, buttonindex, String:info[])
 }
 
 /**
+ * Edits the style of the button.
+ * 
+ * @param hMenu         Menu containing the button we want to edit.
+ * @param buttonindex   The index of the button to modify in the menu. (Button 1 = 1, Button 2 = 2, etc)
+ * @param style         New style.  Use an ITEMDRAW_* define.
+ */
+stock MenuLib_EditMenuBtnStyle(Handle:hMenu, buttonindex, style)
+{
+    if (buttonindex <= 0 || buttonindex >= GetArraySize(hMenu))
+        ThrowError("Invalid button index.");
+    
+    new buttoninfo[MenuLib_Button];
+    GetArrayArray(hMenu, buttonindex, buttoninfo[0], sizeof(buttoninfo));
+    buttoninfo[MenuBtn_Style] = style;
+    SetArrayArray(hMenu, buttonindex, buttoninfo[0], sizeof(buttoninfo));
+}
+
+/**
  * Edits the function that is attached to this button.
  * 
  * @param hMenu         Menu containing the button we want to edit.
@@ -393,7 +434,7 @@ stock MenuLib_EditMenuBtnFunction(Handle:hMenu, buttonindex, Function:funcCallba
  * @param buttonindex   The index of the button to modify in the menu. (Button 1 = 1, Button 2 = 2, etc)
  * @param NextMenu      Set where this menu button wants to link to.
  */
-stock MenuLib_EditMenuBtnNextMenu(bool:hMenu, buttonindex, MenuLib_BtnNextMenu:NextMenu)
+stock MenuLib_EditMenuBtnNextMenu(Handle:hMenu, buttonindex, MenuLib_BtnNextMenu:NextMenu)
 {
     if (buttonindex <= 0 || buttonindex >= GetArraySize(hMenu))
         ThrowError("Invalid button index.");
@@ -461,8 +502,9 @@ stock MenuLib_SendMenu(Handle:hMenu, client)
     SetMenuExitBackButton(hSMMenu, !IsStackEmpty(g_hPrevMenus[client]));
     
     // Add menu items.
-    decl String:blabel[ML_DATA_LABEL];
     decl String:strHandle[16];
+    decl String:blabel[ML_DATA_LABEL];
+    new style;
     new count = GetArraySize(hMenu);
     if (count <= 1)
         AddMenuItem(hSMMenu, "", " ", ITEMDRAW_DISABLED);
@@ -471,8 +513,9 @@ stock MenuLib_SendMenu(Handle:hMenu, client)
         for (new bindex = 1; bindex < count; bindex++)
         {
             MenuLib_GetMenuBtnLabel(hMenu, bindex, blabel, sizeof(blabel));
+            style = MenuLib_GetMenuBtnStyle(hMenu, bindex);
             IntToString(_:hMenu, strHandle, sizeof(strHandle));
-            AddMenuItem(hSMMenu, strHandle, blabel);
+            AddMenuItem(hSMMenu, strHandle, blabel, style);
         }
     }
     
@@ -588,7 +631,7 @@ stock Handle:MenuLib_GenerateClientMenu(client, Handle:hClientMenu, Function:fun
         IntToString(GetClientUserId(menuclient), clientuserid, sizeof(clientuserid));
         
         // Add option to menu.
-        MenuLib_AddMenuBtnEx(hClientMenu, clientoption, clientuserid, funcCallback, NextMenu, hLinkedMenu);
+        MenuLib_AddMenuBtnEx(hClientMenu, clientoption, clientuserid, ITEMDRAW_DEFAULT, funcCallback, NextMenu, hLinkedMenu);
     }
     CloseHandle(adtClients);
 }

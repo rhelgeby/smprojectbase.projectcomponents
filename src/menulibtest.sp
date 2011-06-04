@@ -21,13 +21,13 @@ public OnPluginStart()
     menu6 = MenuLib_CreateMenu("Menu6");
     clientmenu = MenuLib_CreateMenu("Clients");
     
-    MenuLib_AddMenuBtnEx(menu1, "Menu2", "", INVALID_FUNCTION, BtnNextMenu_LinkBack, menu2);
-    MenuLib_AddMenuBtnEx(menu1, "Menu3", "", INVALID_FUNCTION, BtnNextMenu_LinkMenu, menu3);
-    MenuLib_AddMenuBtnEx(menu3, "Menu4", "", INVALID_FUNCTION, BtnNextMenu_LinkMenu, menu4);
-    MenuLib_AddMenuBtnEx(menu4, "Menu5", "", INVALID_FUNCTION, BtnNextMenu_LinkMenu, menu5);
-    MenuLib_AddMenuBtnEx(menu5, "Menu6", "", INVALID_FUNCTION, BtnNextMenu_LinkMenu, menu6);
-    MenuLib_AddMenuBtnEx(menu6, "All Clients", "", GetFunctionByName(GetMyHandle(), "PrepClients"), BtnNextMenu_LinkMenu, clientmenu);
-    MenuLib_AddMenuBtnEx(menu6, "All Clients 2", "", GetFunctionByName(GetMyHandle(), "PrepClients2"), BtnNextMenu_LinkMenu, clientmenu);
+    MenuLib_AddMenuBtnEx(menu1, "Menu2", "", ITEMDRAW_DEFAULT, INVALID_FUNCTION, BtnNextMenu_LinkBack, menu2);
+    MenuLib_AddMenuBtnEx(menu1, "Menu3", "", ITEMDRAW_DEFAULT, INVALID_FUNCTION, BtnNextMenu_LinkMenu, menu3);
+    MenuLib_AddMenuBtnEx(menu3, "Menu4", "", ITEMDRAW_DEFAULT, INVALID_FUNCTION, BtnNextMenu_LinkMenu, menu4);
+    MenuLib_AddMenuBtnEx(menu4, "Menu5", "", ITEMDRAW_DEFAULT, INVALID_FUNCTION, BtnNextMenu_LinkMenu, menu5);
+    MenuLib_AddMenuBtnEx(menu5, "Menu6", "", ITEMDRAW_DEFAULT, INVALID_FUNCTION, BtnNextMenu_LinkMenu, menu6);
+    MenuLib_AddMenuBtnEx(menu6, "All Clients", "", ITEMDRAW_DEFAULT, GetFunctionByName(GetMyHandle(), "PrepClients"), BtnNextMenu_LinkMenu, clientmenu);
+    MenuLib_AddMenuBtnEx(menu6, "All Clients 2", "", ITEMDRAW_DEFAULT, GetFunctionByName(GetMyHandle(), "PrepClients2"), BtnNextMenu_LinkMenu, clientmenu);
     
     HookEvent("player_spawn", PlayerSpawn);
 }
