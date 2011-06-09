@@ -51,9 +51,15 @@
  */
 enum VTeam
 {
+    VTeam_Invalid = -1,     /** Specify an invalid team. */
     VTeam_Team1,            /** A virtual team. */
     VTeam_Team2             /** Another virtual team. */
 }
+
+/**
+ * A string representation of the virtual teams.  Think cvar values or settings that specify a virtual team.
+ */
+new String:g_strTLibVTeamNames[VTeam][] = { "", "team1", "team2" };
 
 /**
  * Global array to store each client's virtual team.
@@ -148,7 +154,22 @@ stock TLib_GTeamStringToIndex(const String:teamstring[])
     #endif
 }
 
-#if defined PROJECT_GAME_CSS
+/**
+ * Convert a virtual team string into an index.
+ * 
+ * @param teamstring    The virtual team string to convert to a virtual team symbol.
+ * 
+ * @return              The virtual team index, -1 if no symbol is associated with the team string.
+ */
+stock VTeam:TLib_VTeamStringToIndex(const String:teamstring[])
+{
+    for (new vteam = 0; vteam < sizeof(g_strTLibVTeamNames); vteam++)
+    {
+        if (StrEqual(teamstring, g_strTLibVTeamNames[VTeam:vteam], false))
+            return VTeam:vteam;
+    }
+    return VTeam_Invalid;
+}
 
 /**
  * Set a client's game team to the one bound to their virtual team.
@@ -158,8 +179,9 @@ stock TLib_GTeamStringToIndex(const String:teamstring[])
 stock TLib_UpdateClientTeam(client)
 {
     // Can't switch a player to any team index lessthan 1 in any game.
-    if (g_iTLibGameTeamIndex[TLib_GetClientTeam(client)] > 0)
-        Util_SwitchTeam(client, g_iTLibGameTeamIndex[TLib_GetClientTeam(client)]);
+    new teamindex = g_iTLibGameTeamIndex[TLib_GetClientTeam(client)];
+    if (teamindex > 0)
+        Util_SwitchTeam(client, teamindex);
 }
 
 /**
@@ -175,5 +197,3 @@ stock TLib_UpdateClientTeams()
         TLib_UpdateClientTeam(client);
     }
 }
-
-#endif

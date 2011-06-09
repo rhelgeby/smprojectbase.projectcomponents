@@ -31,7 +31,7 @@
 #define _menulib_included
 
 // Include libraries.
-#include "libraries/utilities"
+#include "<project>/libraries/utilities"
 
 /**
  * The max string/array lengths of module data variables.
