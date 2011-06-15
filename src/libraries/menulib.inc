@@ -109,7 +109,7 @@ stock MenuLib_DeleteMenu(Handle:hMenu, bool:recursive = false)
             MenuLib_GetMenuBtn(hMenu, bindex, buttoninfo);
             
             // If it links to another menu, recurse into it.
-            if (buttoninfo[MenuBtn_LinkedMenu] == INVALID_HANDLE)
+            if (buttoninfo[MenuBtn_LinkedMenu] != INVALID_HANDLE)
                 MenuLib_DeleteMenu(buttoninfo[MenuBtn_LinkedMenu], true);
         }
     }
