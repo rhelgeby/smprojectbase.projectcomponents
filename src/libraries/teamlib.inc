@@ -197,3 +197,17 @@ stock TLib_UpdateClientTeams()
         TLib_UpdateClientTeam(client);
     }
 }
+
+/**
+ * Spawns a client on a given virtual team.
+ * Note: This also sets the client's virtual team to the given team.
+ * 
+ * @param client    The client to spawn.
+ * @param team      Virtual team to spawn on.
+ */   
+stock TLib_SpawnOnTeam(client, VTeam:team)
+{
+    g_TLibClientTeam[client] = team;    // Change virtual team.
+    TLib_UpdateClientTeam(client);      // Update game team to this team.
+    CS_RespawnPlayer(client);           // Spawn them in-game.
+}

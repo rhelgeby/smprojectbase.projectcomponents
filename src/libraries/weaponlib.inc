@@ -37,6 +37,7 @@
 
 // Include libraries
 #include "<project>/libraries/sdktoolslib"
+#include "<project>/libraries/utilities"
 
 /**
  * The number of slots for weapons to be stored in.  (CS:S)
