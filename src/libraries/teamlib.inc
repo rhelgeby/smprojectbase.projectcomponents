@@ -25,6 +25,11 @@
  * ============================================================================
  */
 
+#if defined _teamlib_included
+ #endinput
+#endif
+#define _teamlib_included
+
 // Include libraries.
 #include "project/libraries/sdktoolslib"
 #include "project/libraries/utilities"
