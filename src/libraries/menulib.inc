@@ -36,8 +36,18 @@
 /**
  * The max string/array lengths of module data variables.
  */
-#define ML_DATA_LABEL       32
+#define ML_DATA_TITLE       128
+#define ML_DATA_LABEL       64
 #define ML_DATA_INFO        128
+
+/**
+ * Menu data.
+ */
+enum MenuLib_Menu
+{
+    String:MenuData_Title[ML_DATA_TITLE],
+    bool:MenuData_Translate
+}
 
 /**
  * What menu should a button open.
@@ -57,6 +67,7 @@ enum MenuLib_Button
 {
     String:MenuBtn_Label[ML_DATA_LABEL],    // What to display for this menu button.
     String:MenuBtn_Info[ML_DATA_INFO],      // Identical to the "info" parameter in AddMenuItem, see that.
+    bool:MenuBtn_Translate,                 // Instead of printing MenuBtn_Label, it will print the translation phrase it points to.
     MenuBtn_Style,                          // See SM include menus.inc ITEMDRAW_* defines.
     Function:MenuBtn_Function,              // Function to call when this button is selected.  INVALID_FUNCTION to call no function.
     MenuLib_BtnNextMenu:MenuBtn_NextMenu,   // See enum MenuLib_BtnNextMenu.
@@ -71,49 +82,65 @@ new Handle:g_hPrevMenus[MAXPLAYERS + 1];
 /**
  * Dummy array used as a way to count the cells required to store menu data.
  */
+static stock g_DummyMenuData[MenuLib_Menu];
 static stock g_DummyMenuBtnData[MenuLib_Button];
 
 /**
  * Creates a menu ready to be filled with menu buttons.
  * 
- * @param title The menu title.
+ * @param title     The menu title.
+ * @param translate True if the title text is a translations phrase, false if just text.
  * 
  * @return      Handle to menu.
  */
-stock Handle:MenuLib_CreateMenu(const String:title[])
+stock Handle:MenuLib_CreateMenu(const String:title[], bool:translate)
 {
-    new Handle:hMenu = CreateArray(sizeof(g_DummyMenuBtnData));
-    PushArrayString(hMenu, title);
+    // Use the max value of both data structures.
+    new high = sizeof(g_DummyMenuData);
+    if (sizeof(g_DummyMenuBtnData) > high) high = sizeof(g_DummyMenuBtnData);
+    new Handle:hMenu = CreateArray(high);
+    
+    // Create menu data object.
+    new menudata[MenuLib_Menu];
+    strcopy(menudata[MenuData_Title], sizeof(menudata[MenuData_Title]), title);
+    menudata[MenuData_Translate] = translate;
+    
+    PushArrayArray(hMenu, menudata[0]);
     return hMenu;
 }
 
 /**
  * Deletes a menu page and all menu pages it links to, recursively.
  * 
- * @param   hMenu The handle to the menu page to delete.
+ * @param hMenu         The handle to the menu page to delete.
+ * @param recursive     True to delete all menus this links to, false to just delete this menu.
  * 
  * @error   Invalid menu handle.
  */
 stock MenuLib_DeleteMenu(Handle:hMenu, bool:recursive = false)
 {
     if (hMenu == INVALID_HANDLE)
-        return;
+        ThrowError("Invalid menu handle: %x", hMenu);
     
     if (recursive)
+        MenuLib_RecursiveDelete(hMenu);
+    else
+        CloseHandle(hMenu);
+}
+
+static stock MenuLib_RecursiveDelete(Handle:hMenu)
+{
+    new buttoninfo[MenuLib_Button];
+    new count = GetArraySize(hMenu);
+    for (new bindex = 1; bindex < count; bindex++)
     {
-        new buttoninfo[MenuLib_Button];
-        new count = GetArraySize(hMenu);
-        for (new bindex = 1; bindex < count; bindex++)
-        {
-            // Get all info about this menu button.
-            MenuLib_GetMenuBtn(hMenu, bindex, buttoninfo);
-            
-            // If it links to another menu, recurse into it.
-            if (buttoninfo[MenuBtn_LinkedMenu] != INVALID_HANDLE)
-                MenuLib_DeleteMenu(buttoninfo[MenuBtn_LinkedMenu], true);
-        }
+        // Get all info about this menu button.
+        MenuLib_GetMenuBtn(hMenu, bindex, buttoninfo);
+        
+        // If it links to another menu, recurse into it.
+        if (buttoninfo[MenuBtn_LinkedMenu] != INVALID_HANDLE)
+            MenuLib_RecursiveDelete(buttoninfo[MenuBtn_LinkedMenu]);
     }
-    
     CloseHandle(hMenu);
 }
 
@@ -134,17 +161,19 @@ stock MenuLib_AddMenuBtn(Handle:hMenu, buttoninfo[MenuLib_Button])
  * @param hMenu         Menu to add button to.
  * @param label         What to display for this menu button.
  * @param info          Identical to the "info" parameter in AddMenuItem, see that.
+ * @param translate     Instead of printing MenuBtn_Label, it will print the translation phrase it points to.
  * @param style         See SM include menus.inc ITEMDRAW_* defines.
  * @param funcCallback  The function to call when this button is selected.  INVALID_FUNCTION to call no function.
  * @param NextMenu      Where this menu button wants to link to.
  * @param hLinkedMenu   The handle of the menu to link this button to if NextMenu = BtnNextMenu_LinkMenu, otherwise INVALID_HANDLE.
  */
-stock MenuLib_AddMenuBtnEx(Handle:hMenu, String:label[], const String:info[], style, Function:funcCallback, MenuLib_BtnNextMenu:NextMenu, Handle:hLinkedMenu)
+stock MenuLib_AddMenuBtnEx(Handle:hMenu, String:label[], const String:info[], bool:translate, style, Function:funcCallback, MenuLib_BtnNextMenu:NextMenu, Handle:hLinkedMenu)
 {
     // Create array.
     new buttoninfo[MenuLib_Button];
     strcopy(buttoninfo[MenuBtn_Label], sizeof(buttoninfo[MenuBtn_Label]), label);
     strcopy(buttoninfo[MenuBtn_Info], sizeof(buttoninfo[MenuBtn_Info]), info);
+    buttoninfo[MenuBtn_Translate] = translate;
     buttoninfo[MenuBtn_Style] = style;
     buttoninfo[MenuBtn_Function] = funcCallback;
     buttoninfo[MenuBtn_NextMenu] = NextMenu;
@@ -179,15 +208,19 @@ stock MenuLib_RemoveAllButtons(Handle:hMenu)
 }
 
 /**
- * Get title of a menu.
+ * Get title of a menu and if its translated.
  * 
  * @param hMenu     The handle of menu whose title to get.
  * @param title     The returned menu title.
  * @param maxlen    The max length of the return string.
+ * @param translate True if the title text is a translation phrase.
  */
-stock MenuLib_GetMenuTitle(Handle:hMenu, String:title[], maxlen)
+stock MenuLib_GetMenuTitle(Handle:hMenu, String:title[], maxlen, &bool:translate = false)
 {
-    GetArrayString(hMenu, 0, title, maxlen);
+    new menudata[MenuLib_Menu];
+    GetArrayArray(hMenu, 0, menudata[0], sizeof(menudata));
+    strcopy(title, maxlen, menudata[MenuData_Title]);
+    translate = menudata[MenuData_Translate];
 }
 
 /**
@@ -247,6 +280,26 @@ stock MenuLib_GetMenuBtnInfo(Handle:hMenu, buttonindex, String:info[], maxlen)
     GetArrayArray(hMenu, buttonindex, buttoninfo[0], sizeof(buttoninfo));
     
     strcopy(info, maxlen, buttoninfo[MenuBtn_Info]);
+}
+
+/**
+ * Get if a menu button is translated or not.
+ * 
+ * @param hMenu         Menu to get button from.
+ * @param buttonindex   The index of the button to get data for. (Button 1 = 1, Button 2 = 2, etc)
+ * 
+ * @error               Invalid button.
+ * @return              True if translated, false if not.
+ */
+stock MenuLib_GetMenuBtnTranslate(Handle:hMenu, buttonindex)
+{
+    if (buttonindex <= 0 || buttonindex >= GetArraySize(hMenu))
+        ThrowError("Invalid button index.");
+    
+    new buttoninfo[MenuLib_Button];
+    GetArrayArray(hMenu, buttonindex, buttoninfo[0], sizeof(buttoninfo));
+    
+    return buttoninfo[MenuBtn_Translate];
 }
 
 /**
@@ -332,12 +385,29 @@ stock Handle:MenuLib_GetMenuBtnLinkedMenu(Handle:hMenu, buttonindex)
 /**
  * Edit title of a menu.
  * 
- * @param hMenu     The handle of menu whose title to edit. 
- * @param title     New menu title.
+ * @param hMenu     The handle of menu whose title to set.
+ * @param title     The new menu title.
  */
 stock MenuLib_EditMenuTitle(Handle:hMenu, const String:title[])
 {
-    SetArrayString(hMenu, 0, title);
+    new menudata[MenuLib_Menu];
+    GetArrayArray(hMenu, 0, menudata[0], sizeof(menudata));
+    strcopy(menudata[MenuData_Title], sizeof(menudata[MenuData_Title]), title);
+    SetArrayArray(hMenu, 0, menudata[0], sizeof(menudata));
+}
+
+/**
+ * Set if a menu title is translated
+ * 
+ * @param hMenu     The handle of menu whose title translate to set.
+ * @param translate True if title is a translation phrase, false if not.
+ */
+stock MenuLib_EditMenuTranslate(Handle:hMenu, bool:translate)
+{
+    new menudata[MenuLib_Menu];
+    GetArrayArray(hMenu, 0, menudata[0], sizeof(menudata));
+    menudata[MenuData_Translate] = translate;
+    SetArrayArray(hMenu, 0, menudata[0], sizeof(menudata));
 }
 
 /**
@@ -388,6 +458,24 @@ stock MenuLib_EditMenuBtnInfo(Handle:hMenu, buttonindex, String:info[])
     new buttoninfo[MenuLib_Button];
     GetArrayArray(hMenu, buttonindex, buttoninfo[0], sizeof(buttoninfo));
     strcopy(buttoninfo[MenuBtn_Info], sizeof(buttoninfo[MenuBtn_Info]), info);
+    SetArrayArray(hMenu, buttonindex, buttoninfo[0], sizeof(buttoninfo));
+}
+
+/**
+ * Edits if a button is a translated.
+ * 
+ * @param hMenu         Menu containing the button we want to edit.
+ * @param buttonindex   The index of the button to modify in the menu. (Button 1 = 1, Button 2 = 2, etc)
+ * @param style         True to translate, false to not.
+ */
+stock MenuLib_EditMenuBtnTranslate(Handle:hMenu, buttonindex, bool:translate)
+{
+    if (buttonindex <= 0 || buttonindex >= GetArraySize(hMenu))
+        ThrowError("Invalid button index.");
+    
+    new buttoninfo[MenuLib_Button];
+    GetArrayArray(hMenu, buttonindex, buttoninfo[0], sizeof(buttoninfo));
+    buttoninfo[MenuBtn_Translate] = translate;
     SetArrayArray(hMenu, buttonindex, buttoninfo[0], sizeof(buttoninfo));
 }
 
@@ -481,8 +569,8 @@ stock MenuLib_DisplayMenu(Handle:hMenu, client)
 /**
  * Send a menu to a client, without resetting the previous menu stack. (the "Back" button on this menu will point back to the menu currently open on their screen.)
  * 
- * @param hMenu     The handle of the menu to send.
- * @param client    The client to send the menu to.
+ * @param hMenu             The handle of the menu to send.
+ * @param client            The client to send the menu to.
  */
 stock MenuLib_SendMenu(Handle:hMenu, client)
 {
@@ -491,8 +579,13 @@ stock MenuLib_SendMenu(Handle:hMenu, client)
         g_hPrevMenus[client] = CreateStack();
     
     // Get menu title.
-    decl String:title[ML_DATA_LABEL];
-    GetArrayString(hMenu, 0, title, sizeof(title));
+    decl String:titletext[ML_DATA_TITLE];
+    new bool:translate;
+    MenuLib_GetMenuTitle(hMenu, titletext, sizeof(titletext), translate);
+    
+    decl String:title[ML_DATA_TITLE];
+    if (translate)  Format(title, sizeof(title), "%T", titletext, client);
+    else            strcopy(title, sizeof(title), titletext);
     
     // Create menu and set title.
     new Handle:hSMMenu = CreateMenu(MenuLib_Handler);
@@ -503,19 +596,23 @@ stock MenuLib_SendMenu(Handle:hMenu, client)
     
     // Add menu items.
     decl String:strHandle[16];
-    decl String:blabel[ML_DATA_LABEL];
-    new style;
+    decl String:buttontext[ML_DATA_LABEL];
     new count = GetArraySize(hMenu);
     if (count <= 1)
         AddMenuItem(hSMMenu, "", " ", ITEMDRAW_DISABLED);
     else
     {
+        new buttoninfo[MenuLib_Button];
         for (new bindex = 1; bindex < count; bindex++)
         {
-            MenuLib_GetMenuBtnLabel(hMenu, bindex, blabel, sizeof(blabel));
-            style = MenuLib_GetMenuBtnStyle(hMenu, bindex);
+            GetArrayArray(hMenu, bindex, buttoninfo[0], sizeof(buttoninfo));
             IntToString(_:hMenu, strHandle, sizeof(strHandle));
-            AddMenuItem(hSMMenu, strHandle, blabel, style);
+            
+            if (buttoninfo[MenuBtn_Translate])
+                Format(buttontext, sizeof(buttontext), "%T", buttoninfo[MenuBtn_Label], client);
+            else
+                strcopy(buttontext, sizeof(buttontext), buttoninfo[MenuBtn_Label]);
+            AddMenuItem(hSMMenu, strHandle, buttontext, buttoninfo[MenuBtn_Style]);
         }
     }
     
