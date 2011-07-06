@@ -36,14 +36,14 @@ public OnPluginStart()
     
 	// Deletion test.
     //MenuLib_DeleteMenu(menu2, true);
-    MenuLib_DeleteMenu(menu3, true);
+    //MenuLib_DeleteMenu(menu3, true);
     
     // Test lookup again.
     lookedup = MenuLib_FindMenuById("Menu2");
     if (menu2 == lookedup)  PrintToServer("Passed looked up test 2!");
     else                    PrintToServer("Failed looked up test!");
     
-    lookedup = MenuLib_FindMenuById("clientmenu");
+    lookedup = MenuLib_FindMenuById("ClientMenu");
     if (lookedup == INVALID_HANDLE) PrintToServer("Passed looked up test 3!");
     else                            PrintToServer("Failed looked up test!");
     
@@ -52,7 +52,7 @@ public OnPluginStart()
 
 public PrepClients(Handle:hMenu, MenuAction:action, client, slot)
 {
-    MenuLib_GenerateClientMenu(client, clientmenu, "ClientListHandler", BtnNextMenu_LinkCurrent, INVALID_HANDLE, UTILS_FILTER_ALIVE);
+    MenuLib_GenerateClientMenu(client, clientmenu, "ClientListHandler", BtnNextMenu_LinkCurrent, INVALID_HANDLE, UTILS_FILTER_ALIVE, "ClientListFilter");
 }
 
 public PrepClients2(Handle:hMenu, MenuAction:action, client, slot)
@@ -64,6 +64,12 @@ public PlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
 {
     new client = GetClientOfUserId(GetEventInt(event, "userid"));
     MenuLib_DisplayMenu(menu1, client);
+}
+
+public Action:ClientListFilter(client, String:buttontxt[], String:buttoninfo[])
+{
+    Format(buttontxt, 256, "<%s>", buttontxt);
+    return Plugin_Changed;
 }
 
 public ClientListHandler(Handle:hMenu, MenuAction:action, client, buttonindex)
