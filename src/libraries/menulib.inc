@@ -31,7 +31,7 @@
 #define _menulib_included
 
 // Include libraries.
-#include "<project>/libraries/utilities"
+#include "libraries/utilities"
 
 /**
  * The max string/array lengths of module data variables.
@@ -885,8 +885,8 @@ stock bool:MenuLib_ClientMenuCallFilter(Function:funcFilter, client, String:butt
     
     Call_StartFunction(GetMyHandle(), funcFilter);
     Call_PushCell(client);
-    Call_PushString(newbuttontxt);
-    Call_PushStringEx(newbuttoninfo, sizeof(newbuttoninfo), 0, SM_PARAM_COPYBACK);
+    Call_PushStringEx(newbuttontxt, sizeof(newbuttontxt), SM_PARAM_STRING_UTF8|SM_PARAM_STRING_COPY, SM_PARAM_COPYBACK);
+    Call_PushStringEx(newbuttoninfo, sizeof(newbuttoninfo), SM_PARAM_STRING_UTF8|SM_PARAM_STRING_COPY, SM_PARAM_COPYBACK);
     new Action:result;
     Call_Finish(result);
     
