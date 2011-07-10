@@ -214,5 +214,12 @@ stock TLib_SpawnOnTeam(client, VTeam:team)
 {
     g_TLibClientTeam[client] = team;    // Change virtual team.
     TLib_UpdateClientTeam(client);      // Update game team to this team.
-    CS_RespawnPlayer(client);           // Spawn them in-game.
+    
+    #if defined PROJECT_GAME_CSS
+        CS_RespawnPlayer(client);           // Spawn them in-game.
+    #endif
+    
+    #if defined PROJECT_GAME_TF2
+        TF2_RespawnPlayer(client);
+    #endif
 }
