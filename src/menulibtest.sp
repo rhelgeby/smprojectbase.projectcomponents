@@ -20,11 +20,11 @@ public OnPluginStart()
     menu6 = MenuLib_CreateMenu("Menu6", "Menu6", false, false);
     //clientmenu = MenuLib_CreateMenu("ClientMenu", "Clients", false, false);
     
-    MenuLib_AddMenuBtnEx(menu1, "Menu2", "", false, ITEMDRAW_DEFAULT, INVALID_FUNCTION, BtnNextMenu_LinkMenu, "Menu2");
-    MenuLib_AddMenuBtnEx(menu1, "Menu3", "", false, ITEMDRAW_DEFAULT, INVALID_FUNCTION, BtnNextMenu_LinkMenu, "Menu3");
-    MenuLib_AddMenuBtnEx(menu3, "Menu4", "", false, ITEMDRAW_DEFAULT, INVALID_FUNCTION, BtnNextMenu_LinkMenu, "Menu4");
-    MenuLib_AddMenuBtnEx(menu4, "Menu5", "", false, ITEMDRAW_DEFAULT, INVALID_FUNCTION, BtnNextMenu_LinkMenu, "Menu5");
-    MenuLib_AddMenuBtnEx(menu5, "Menu6", "", false, ITEMDRAW_DEFAULT, INVALID_FUNCTION, BtnNextMenu_LinkMenu, "Menu6");
+    MenuLib_AddMenuBtnEx(menu1, "Menu2", "", false, ITEMDRAW_DEFAULT, "", BtnNextMenu_LinkMenu, "Menu2");
+    MenuLib_AddMenuBtnEx(menu1, "Menu3", "", false, ITEMDRAW_DEFAULT, "", BtnNextMenu_LinkMenu, "Menu3");
+    MenuLib_AddMenuBtnEx(menu3, "Menu4", "", false, ITEMDRAW_DEFAULT, "", BtnNextMenu_LinkMenu, "Menu4");
+    MenuLib_AddMenuBtnEx(menu4, "Menu5", "", false, ITEMDRAW_DEFAULT, "", BtnNextMenu_LinkMenu, "Menu5");
+    MenuLib_AddMenuBtnEx(menu5, "Menu6", "", false, ITEMDRAW_DEFAULT, "", BtnNextMenu_LinkMenu, "Menu6");
     MenuLib_AddMenuBtnEx(menu6, "All Clients", "", false, ITEMDRAW_DEFAULT, "PrepClients", BtnNextMenu_None, "");
     MenuLib_AddMenuBtnEx(menu6, "All Clients 2", "", false, ITEMDRAW_DEFAULT, "PrepClients2", BtnNextMenu_None, "");
     
@@ -37,12 +37,14 @@ public OnPluginStart()
 
 public PrepClients(Handle:hMenu, MenuAction:action, client, slot)
 {
-    MenuLib_SendClientListMenu(client, "Clients", false, "ClientListHandler", BtnNextMenu_None, "", UTILS_FILTER_ALIVE, "ClientListFilter");
+    new Handle:hClientMenu = MenuLib_CreateClientListMenu(client, "Clients", false, "ClientListHandler", BtnNextMenu_None, "", UTILS_FILTER_ALIVE, "ClientListFilter");
+    MenuLib_SendMenu(hClientMenu, client, hMenu);
 }
 
 public PrepClients2(Handle:hMenu, MenuAction:action, client, slot)
 {
-    MenuLib_SendClientListMenu(client, "Clients", false, "ClientListHandler2", BtnNextMenu_LinkBack, "", UTILS_FILTER_ALIVE);
+    new Handle:hClientMenu = MenuLib_CreateClientListMenu(client, "Clients", false, "ClientListHandler2", BtnNextMenu_LinkBack, "", UTILS_FILTER_ALIVE);
+    MenuLib_SendMenu(hClientMenu, client, hMenu);
 }
 
 public PlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
@@ -60,7 +62,8 @@ public Action:ClientListFilter(client, String:buttontxt[], String:buttoninfo[])
 public ClientListHandler(Handle:hMenu, MenuAction:action, client, button)
 {
     PrintToChat(client, "Selected client %N", MenuLib_GetClientIndex(hMenu, button));
-    MenuLib_SendClientListMenu(client, "Clients", false, "ClientListHandler", BtnNextMenu_None, "", UTILS_FILTER_ALIVE, "ClientListFilter");
+    new Handle:hClientMenu = MenuLib_CreateClientListMenu(client, "Clients", false, "ClientListHandler", BtnNextMenu_None, "", UTILS_FILTER_ALIVE, "ClientListFilter");
+    MenuLib_SendMenu(hClientMenu, client);
 }
 
 public ClientListHandler2(Handle:hMenu, MenuAction:action, client, button)
