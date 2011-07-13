@@ -234,19 +234,24 @@ stock MenuLib_AddMenuBtn(Handle:hMenu, menubtndata[MenuLib_Button])
 /**
  * Adds a menu button with different parameters.
  * 
- * @param hMenu         Menu to add button to.
- * @param label         What to display for this menu button.
- * @param info          Identical to the "info" parameter in AddMenuItem, see that.
- * @param translate     Instead of printing MenuBtn_Label, it will print the translation phrase it points to.
- * @param style         See SM include menus.inc ITEMDRAW_* defines.
- * @param funcCallback  The function to call when this button is selected.  INVALID_FUNCTION to call no function.
- * @param NextMenu      Where this menu button wants to link to.
- * @param strLinkedMenu The id of the menu to link this button to if NextMenu = BtnNextMenu_LinkMenu, otherwise set to "".
+ * @param hMenu             Menu to add button to.
+ * @param label             What to display for this menu button.
+ * @param info              Identical to the "info" parameter in AddMenuItem, see that.
+ * @param translate         Instead of printing MenuBtn_Label, it will print the translation phrase it points to.
+ * @param style             See SM include menus.inc ITEMDRAW_* defines.
+ * @param strFuncCallback   The function to call when this button is selected.  "" to call no function.
+ * @param NextMenu          Where this menu button wants to link to.
+ * @param strLinkedMenu     The id of the menu to link this button to if NextMenu = BtnNextMenu_LinkMenu, otherwise set to "".
  * 
  * @return              Index of new button.
  */
-stock MenuLib_AddMenuBtnEx(Handle:hMenu, String:label[], const String:info[], bool:translate, style, Function:funcCallback, MenuLib_BtnNextMenu:NextMenu, String:strLinkedMenu[])
+stock MenuLib_AddMenuBtnEx(Handle:hMenu, String:label[], const String:info[], bool:translate, style, const String:strFuncCallback[], MenuLib_BtnNextMenu:NextMenu, String:strLinkedMenu[])
 {
+    // Verify callback function exists.
+    new Function:funcCallback = GetFunctionByName(GetMyHandle(), strFuncCallback);
+    if (strFuncCallback[0] && funcCallback == INVALID_FUNCTION)
+        ThrowError("Invalid callback function specified: \"%s\"", strFuncCallback);
+    
     // Create array.
     new menubtndata[MenuLib_Button];
     strcopy(menubtndata[MenuBtn_Label], sizeof(menubtndata[MenuBtn_Label]), label);
@@ -639,17 +644,6 @@ public MenuLib_Handler(Handle:menu, MenuAction:action, client, slot)
         new menubtndata[MenuLib_Button];
         MenuLib_BtnReadAll(hMenu, slot, menubtndata);
         
-        // Call the callback for this button.
-        if (menubtndata[MenuBtn_Function] != INVALID_FUNCTION)
-        {
-            Call_StartFunction(GetMyHandle(), menubtndata[MenuBtn_Function]);
-            Call_PushCell(hMenu);
-            Call_PushCell(action);
-            Call_PushCell(client);
-            Call_PushCell(slot);
-            Call_Finish();
-        }
-        
         switch(menubtndata[MenuBtn_NextMenu])
         {
             case BtnNextMenu_None:
@@ -668,7 +662,7 @@ public MenuLib_Handler(Handle:menu, MenuAction:action, client, slot)
             }
             case BtnNextMenu_LinkCurrent:
             {
-                if (menubtndata[MenuData_Temp])
+                if (menudata[MenuData_Temp])
                     ThrowError("Temporary menus can't link to themselves!");
                 
                 // Resend current menu.
@@ -682,6 +676,17 @@ public MenuLib_Handler(Handle:menu, MenuAction:action, client, slot)
                 else
                     MenuLib_SendMenu(hMenu, client);
             }
+        }
+        
+        // Call the callback for this button.
+        if (menubtndata[MenuBtn_Function] != INVALID_FUNCTION)
+        {
+            Call_StartFunction(GetMyHandle(), menubtndata[MenuBtn_Function]);
+            Call_PushCell(hMenu);
+            Call_PushCell(action);
+            Call_PushCell(client);
+            Call_PushCell(slot);
+            Call_Finish();
         }
     }
     else if (action == MenuAction_Cancel)
@@ -779,7 +784,7 @@ stock Handle:MenuLib_SendClientListMenu(client, const String:title[], bool:trans
         }
         
         // Add option to menu.
-        MenuLib_AddMenuBtnEx(hTempMenu, clientoption, clientuserid, false, ITEMDRAW_DEFAULT, funcCallback, NextMenu, strLinkedMenu);
+        MenuLib_AddMenuBtnEx(hTempMenu, clientoption, clientuserid, false, ITEMDRAW_DEFAULT, strCallbackFunc, NextMenu, strLinkedMenu);
     }
     CloseHandle(adtClients);
     MenuLib_SendMenu(hTempMenu, client);

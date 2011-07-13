@@ -25,8 +25,8 @@ public OnPluginStart()
     MenuLib_AddMenuBtnEx(menu3, "Menu4", "", false, ITEMDRAW_DEFAULT, INVALID_FUNCTION, BtnNextMenu_LinkMenu, "Menu4");
     MenuLib_AddMenuBtnEx(menu4, "Menu5", "", false, ITEMDRAW_DEFAULT, INVALID_FUNCTION, BtnNextMenu_LinkMenu, "Menu5");
     MenuLib_AddMenuBtnEx(menu5, "Menu6", "", false, ITEMDRAW_DEFAULT, INVALID_FUNCTION, BtnNextMenu_LinkMenu, "Menu6");
-    MenuLib_AddMenuBtnEx(menu6, "All Clients", "", false, ITEMDRAW_DEFAULT, GetFunctionByName(GetMyHandle(), "PrepClients"), BtnNextMenu_None, "");
-    MenuLib_AddMenuBtnEx(menu6, "All Clients 2", "", false, ITEMDRAW_DEFAULT, GetFunctionByName(GetMyHandle(), "PrepClients2"), BtnNextMenu_None, "");
+    MenuLib_AddMenuBtnEx(menu6, "All Clients", "", false, ITEMDRAW_DEFAULT, "PrepClients", BtnNextMenu_None, "");
+    MenuLib_AddMenuBtnEx(menu6, "All Clients 2", "", false, ITEMDRAW_DEFAULT, "PrepClients2", BtnNextMenu_None, "");
     
 	// Deletion test.
     //MenuLib_DeleteMenu(menu2, true);
