@@ -204,8 +204,7 @@ stock Util_IsVecInArray(Float:vec[3], Float:vecs[][3], numvecs)
  */
 stock Util_SwapCell(&value1, &value2)
 {
-    new temp;
-    value1 = temp;
+    new temp = value1;
     value1 = value2;
     value2 = temp;
 }
@@ -218,8 +217,7 @@ stock Util_SwapCell(&value1, &value2)
  */
 stock Util_SwapFloat(&Float:value1, &Float:value2)
 {
-    new Float:temp;
-    value1 = temp;
+    new Float:temp = value1;
     value1 = value2;
     value2 = temp;
 }
