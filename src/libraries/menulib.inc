@@ -97,15 +97,24 @@ static stock g_DummyMenuBtnData[MenuLib_Button];
 /**
  * Creates a menu ready to be filled with menu buttons.
  * 
- * @param id        The a unique string identifier for the menu. (can only be set on creation)
+ * @param id        A unique string identifier for the menu. The identifier is
+ *                  immutable.
  * @param title     The menu title.
- * @param translate True if the title text is a translations phrase, false if just text.
- * @param temp      If true, menu is deleted as soon as an option is selected, if false the menu will remain in memory.  (Most auto-generated menus use this)
+ * @param translate Whether to treat title as a translations phrase or not.
+ * @param temp      Delete menu as soon as an option is selected. (Most
+ *                  auto-generated menus use this.)
  * 
- * @return          Handle to menu.  INVALID_HANDLE if the given id is already taken.
+ * @return          Handle to menu.  INVALID_HANDLE if the given id is empty or
+ *                  already taken.
  */
 stock Handle:MenuLib_CreateMenu(const String:id[], const String:title[], bool:translate, bool:temp)
 {
+    // Check if id is empty.
+    if (strlen(id) == 0)
+    {
+        return INVALID_HANDLE;
+    }
+    
     // Initialize if not already.
     if (g_hMenuLibCache == INVALID_HANDLE)
         g_hMenuLibCache = CreateTrie();
@@ -221,7 +230,7 @@ static stock MenuLib_EradicateMenu(Handle:hMenu)
  * Adds a menu button to a menu. (See below for easier method)
  * 
  * @param hMenu         Menu to add button to.
- * @param menubtndata    Array containing button data.  See enum MenuLib_Button.
+ * @param menubtndata   Array containing button data.  See enum MenuLib_Button.
  * 
  * @return              Index of new button.
  */
@@ -247,7 +256,7 @@ stock MenuLib_AddMenuBtn(Handle:hMenu, menubtndata[MenuLib_Button])
  */
 stock MenuLib_AddMenuBtnEx(Handle:hMenu, String:label[], const String:info[], bool:translate, style, const String:strFuncCallback[], MenuLib_BtnNextMenu:NextMenu, String:strLinkedMenu[])
 {
-    // Verify callback function exists.
+    // Verify that callback function exists.
     new Function:funcCallback = GetFunctionByName(GetMyHandle(), strFuncCallback);
     if (strFuncCallback[0] && funcCallback == INVALID_FUNCTION)
         ThrowError("Invalid callback function specified: \"%s\"", strFuncCallback);
@@ -556,13 +565,33 @@ stock MenuLib_DisplayMenu(Handle:hMenu, client)
 }
 
 /**
- * Send a menu to a client, without resetting the previous menu stack. (the "Back" button on this menu will point back to the menu currently open on their screen.)
+ * Send a menu to a client, without resetting the previous menu stack.
+ *
+ * The "Back" button on this menu will point back to the menu currently open on
+ * their screen if available.
  * 
  * @param hMenu             The handle of the menu to send.
  * @param client            The client to send the menu to.
  * @param hFrom             The menu that linked client to this menu.  (For the back stack)
  */
 stock MenuLib_SendMenu(Handle:hMenu, client, Handle:hFrom = INVALID_HANDLE)
+{
+    MenuLib_SendMenuAtItem(hMenu, client, 0, hFrom);
+}
+
+/**
+ * Send a menu to a client at the specified item position, without resetting the
+ * previous menu stack.
+ *
+ * The "Back" button on this menu will point back to the menu currently open on
+ * their screen if available.
+ *
+ * @param hMenu             The handle of the menu to send.
+ * @param client            The client to send the menu to.
+ * @param firstItem         First item to begin drawing from.
+ * @param hFrom             The menu that linked client to this menu.  (For the back stack)
+ */
+stock MenuLib_SendMenuAtItem(Handle:hMenu, client, firstItem, Handle:hFrom = INVALID_HANDLE)
 {
     // Ensure that there is a prev menu stack available.
     if (g_hPrevMenus[client] == INVALID_HANDLE)
@@ -616,7 +645,7 @@ stock MenuLib_SendMenu(Handle:hMenu, client, Handle:hFrom = INVALID_HANDLE)
     menudata[MenuData_Handle] = hSMMenu;
     MenuLib_MenuWriteAll(hMenu, menudata);
     
-    DisplayMenu(hSMMenu, client, MENU_TIME_FOREVER);
+    DisplayMenuAtItem(hSMMenu, client, firstItem, MENU_TIME_FOREVER);
 }
 
 /**
