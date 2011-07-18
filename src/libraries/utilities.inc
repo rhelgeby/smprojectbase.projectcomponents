@@ -197,6 +197,34 @@ stock Util_IsVecInArray(Float:vec[3], Float:vecs[][3], numvecs)
 }
 
 /**
+ * Swaps the value in two cell variables.
+ *
+ * @param value1    Input/Output. First value.
+ * @param value2    Input/Output. Second value.
+ */
+stock Util_SwapCell(&value1, &value2)
+{
+    new temp;
+    value1 = temp;
+    value1 = value2;
+    value2 = temp;
+}
+
+/**
+ * Swaps the value in two float variables.
+ *
+ * @param value1    Input/Output. First value.
+ * @param value2    Input/Output. Second value.
+ */
+stock Util_SwapFloat(&Float:value1, &Float:value2)
+{
+    new Float:temp;
+    value1 = temp;
+    value1 = value2;
+    value2 = temp;
+}
+
+/**
  * Prints strings longer than 1022 bytes to the console. Max 4 KB.
  *
  * @param client        Client index, or 0 for server.
