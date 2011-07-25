@@ -31,7 +31,7 @@
 #define _menulib_included
 
 // Include libraries.
-#include "<project>/libraries/utilities"
+#include "zr/libraries/utilities"
 
 /**
  * The max string/array lengths of menu data variables.
@@ -228,7 +228,7 @@ static stock MenuLib_EradicateMenu(Handle:hMenu)
 stock MenuLib_AddMenuBtn(Handle:hMenu, menubtndata[MenuLib_Button])
 {
     PushArrayArray(hMenu, menubtndata[0]);
-    return GetArraySize(hMenu) - 1;
+    return GetArraySize(hMenu) - 2;
 }
 
 /**
@@ -243,7 +243,7 @@ stock MenuLib_AddMenuBtn(Handle:hMenu, menubtndata[MenuLib_Button])
  * @param NextMenu          Where this menu button wants to link to.
  * @param strLinkedMenu     The id of the menu to link this button to if NextMenu = BtnNextMenu_LinkMenu, otherwise set to "".
  * 
- * @return              Index of new button.
+ * @return                  Index of new button.
  */
 stock MenuLib_AddMenuBtnEx(Handle:hMenu, String:label[], const String:info[], bool:translate, style, const String:strFuncCallback[], MenuLib_BtnNextMenu:NextMenu, String:strLinkedMenu[])
 {
@@ -263,7 +263,7 @@ stock MenuLib_AddMenuBtnEx(Handle:hMenu, String:label[], const String:info[], bo
     strcopy(menubtndata[MenuBtn_LinkedMenu], sizeof(menubtndata[MenuBtn_LinkedMenu]), strLinkedMenu);
     
     PushArrayArray(hMenu, menubtndata[0]);
-    return GetArraySize(hMenu) - 1;
+    return GetArraySize(hMenu) - 2;
 }
 
 /**
@@ -586,7 +586,6 @@ stock MenuLib_SendMenu(Handle:hMenu, client, Handle:hFrom = INVALID_HANDLE)
     
     // Add exit back button if applicable.
     SetMenuExitBackButton(hSMMenu, !IsStackEmpty(g_hPrevMenus[client]));
-    PrintToChatAll("%d", IsStackEmpty(g_hPrevMenus[client]));
     
     decl String:strHandle[16];
     IntToString(_:hMenu, strHandle, sizeof(strHandle));
