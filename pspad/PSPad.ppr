@@ -1,0 +1,99 @@
+[Config]
+Compilator.SaveAll=0
+Compilator.Capture=0
+Compilator.HideOutput=0
+Compilator.LogType=0
+DefaultCPIndex=0
+LogtoEnd=1
+DontOpen=0
+AbsolutePath=0
+FileFormat=0
+ProjectFilesOnly=0
+[Project tree]
+Project Components
+	+Components
+		..\src\libraries\cookielib.inc
+		..\src\libraries\offsetlib.inc
+		..\src\libraries\overlaylib.inc
+		..\src\libraries\weaponlib.inc
+	-Tests
+		..\src\overlaylibtest.sp
+	-SM Includes
+		..\src\include\admin.inc
+		..\src\include\adminmenu.inc
+		..\src\include\adt.inc
+		..\src\include\adt_array.inc
+		..\src\include\adt_stack.inc
+		..\src\include\adt_trie.inc
+		..\src\include\banning.inc
+		..\src\include\bitbuffer.inc
+		..\src\include\clientprefs.inc
+		..\src\include\clients.inc
+		..\src\include\commandfilters.inc
+		..\src\include\console.inc
+		..\src\include\core.inc
+		..\src\include\cstrike.inc
+		..\src\include\datapack.inc
+		..\src\include\dbi.inc
+		..\src\include\entity.inc
+		..\src\include\entity_prop_stocks.inc
+		..\src\include\events.inc
+		..\src\include\files.inc
+		..\src\include\float.inc
+		..\src\include\functions.inc
+		..\src\include\geoip.inc
+		..\src\include\halflife.inc
+		..\src\include\handles.inc
+		..\src\include\helpers.inc
+		..\src\include\keyvalues.inc
+		..\src\include\lang.inc
+		..\src\include\logging.inc
+		..\src\include\mapchooser.inc
+		..\src\include\menus.inc
+		..\src\include\nextmap.inc
+		..\src\include\profiler.inc
+		..\src\include\regex.inc
+		..\src\include\sdktools.inc
+		..\src\include\sdktools_engine.inc
+		..\src\include\sdktools_entinput.inc
+		..\src\include\sdktools_entoutput.inc
+		..\src\include\sdktools_functions.inc
+		..\src\include\sdktools_hooks.inc
+		..\src\include\sdktools_sound.inc
+		..\src\include\sdktools_stocks.inc
+		..\src\include\sdktools_stringtables.inc
+		..\src\include\sdktools_tempents.inc
+		..\src\include\sdktools_tempents_stocks.inc
+		..\src\include\sdktools_trace.inc
+		..\src\include\sdktools_voice.inc
+		..\src\include\sorting.inc
+		..\src\include\sourcemod.inc
+		..\src\include\string.inc
+		..\src\include\textparse.inc
+		..\src\include\tf2.inc
+		..\src\include\tf2_stocks.inc
+		..\src\include\timers.inc
+		..\src\include\topmenus.inc
+		..\src\include\usermessages.inc
+		..\src\include\vector.inc
+		..\src\include\version.inc
+[Open project files]
+0=..\src\libraries\weaponlib.inc
+1=..\src\libraries\cookielib.inc
+2=..\src\libraries\offsetlib.inc
+3=..\src\libraries\overlaylib.inc
+[Selected Project Files]
+Main=
+Selected=..\src\libraries\weaponlib.inc
+[..\src\libraries\weaponlib.inc]
+TopLine=1
+Caret=19,4
+[..\src\libraries\cookielib.inc]
+TopLine=1
+Caret=19,4
+[..\src\libraries\offsetlib.inc]
+TopLine=1
+Caret=19,4
+[..\src\libraries\overlaylib.inc]
+TopLine=1
+Caret=19,4
