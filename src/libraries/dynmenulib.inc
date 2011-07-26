@@ -123,6 +123,11 @@ enum DynMenuData
  */
 static stock Handle:DynMenu_NameIndex;
 
+/**
+ * Trie handle for the menulib handle to dynmenulib handle lookup.
+ */
+static stock Handle:DynMenu_MenulibIndex;
+
 
 /******************
  *   Public API   *
@@ -138,9 +143,12 @@ static stock Handle:DynMenu_NameIndex;
  * Note: The menu is immutable. Once it's created it cannot be modified, for
  *       simplicity reasons.
  *       
- *       It can also only be used by one client a time. If multiple clients use
+ * Note: It can also only be used by one client a time. If multiple clients use
  *       the same menu at the same time their current value/selections will be
- *       corrupted.
+ *       corrupted. Create individual menus per client.
+ *
+ * Note: Translations must be loaded (dynmenulib.phrases.txt) and language set
+ *       before building/updating (using SetGlobalTransTarget()).
  *
  * @param menuData      Menu data structure.
  *
@@ -209,6 +217,12 @@ stock Handle:DynMenuLib_CreateMenu(menuData[DynMenuData])
                 menuData[DynMenu_UpperLimit] = upper;
             }
             
+            // Check if range is zero.
+            if (upper - lower == 0)
+            {
+                ThrowError("Range cannot be zero.");
+            }
+            
             // Check if initial value is within bounds.
             if (initialValue < lower || initialValue > upper)
             {
@@ -228,6 +242,12 @@ stock Handle:DynMenuLib_CreateMenu(menuData[DynMenuData])
                 Util_SwapFloat(lower, upper);
                 menuData[DynMenu_LowerLimit] = lower;
                 menuData[DynMenu_UpperLimit] = upper;
+            }
+            
+            // Check if range is zero.
+            if (upper - lower == 0)
+            {
+                ThrowError("Range cannot be zero.");
             }
             
             // Check if initial value is within bounds.
@@ -400,8 +420,13 @@ stock Handle:DynMenuLib_CreateMenu(menuData[DynMenuData])
     DynMenuLib_SetMenuData(dynMenu, menuData);
     
     // Add menu handle to name index.
-    DynMenuLib_InitIndex();
+    DynMenuLib_InitIndexes();
     SetTrieValue(DynMenu_NameIndex, menuData[DynMenu_Id], dynMenu);
+    
+    // Add menu menulib handle to conversion index.
+    decl String:strMenulibHandle[16];
+    Format(strMenulibHandle, sizeof(strMenulibHandle), "%x", menuLibMenu);
+    SetTrieValue(DynMenu_MenulibIndex, strMenulibHandle, dynMenu);
     
     // Return dyn menu handle.
     return dynMenu;
@@ -414,9 +439,12 @@ stock Handle:DynMenuLib_CreateMenu(menuData[DynMenuData])
  * Note: The menu is immutable. Once it's created it cannot be modified, for
  *       simplicity reasons.
  *       
- *       It can also only be used by one client a time. If multiple clients use
+ * Note: It can also only be used by one client a time. If multiple clients use
  *       the same menu at the same time their current value/selections will be
- *       corrupted.
+ *       corrupted. Create individual menus per client.
+ *
+ * Note: Translations must be loaded (dynmenulib.phrases.txt) and language set
+ *       before building/updating (using SetGlobalTransTarget()).
  *
  * @param id            Unique menu identifier.
  * @param prompt        Prompt text (displayed in menu title).
@@ -526,13 +554,21 @@ stock DynMenuLib_DeleteMenu(String:id[], bool:recursive = false)
     
     // Remove menu from name index.
     RemoveFromTrie(DynMenu_NameIndex, id);
+    
+    // Remove menu from menulib conversion index.
+    decl String:strMenulibHandle[16];
+    Format(strMenulibHandle, sizeof(strMenulibHandle), "%x", menuLibMenu);
+    RemoveFromTrie(DynMenu_MenulibIndex, strMenulibHandle);
+    
+    // Destroy dynmenu data pack.
+    CloseHandle(menu);
 }
 
 /**
- * Gets the handle to a dynamic menu.
+ * Gets the handle to a dynamic menu from a identifier.
  *
  * @param id    Menu identifier.
- * @return      Handle to menu, or INVALID_HANDLE if not found.
+ * @return      Handle to dynamic menu, or INVALID_HANDLE if not found.
  */
 stock Handle:DynMenuLib_FindMenuById(const String:id[])
 {
@@ -546,19 +582,44 @@ stock Handle:DynMenuLib_FindMenuById(const String:id[])
     return menu;
 }
 
+/**
+ * Gets the handle to a dynamic menu from a menulib menu handle.
+ *
+ * @param menu  Menulib menu handle.
+ * @return      Handle to dynamic menu, or INVALID_HANDLE if not found.
+ */
+stock Handle:DynMenuLib_FindMenuByMenulib(Handle:menu)
+{
+    decl String:strMenulibHandle[16];
+    Format(strMenulibHandle, sizeof(strMenulibHandle), "%x", menu);
+    
+    new Handle:dynMenu;
+    
+    if (!GetTrieValue(DynMenu_MenulibIndex, strMenulibHandle, dynMenu))
+    {
+        return INVALID_HANDLE;
+    }
+    
+    return dynMenu;
+}
+
 
 /***************
  *   Private   *
  ***************/
 
 /**
- * Initializes the menu name index.
+ * Initializes the trie indexes.
  */
-static stock DynMenuLib_InitIndex()
+static stock DynMenuLib_InitIndexes()
 {
     if (DynMenu_NameIndex == INVALID_HANDLE)
     {
         DynMenu_NameIndex = CreateTrie();
+    }
+    if (DynMenu_MenulibIndex == INVALID_HANDLE)
+    {
+        DynMenu_MenulibIndex = CreateTrie();
     }
 }
 
@@ -678,7 +739,7 @@ static stock DynMenuLib_BuildList(menuData[DynMenuData], bool:update = false)
         else
         {
             // Prepare button info with entry index.
-            Format(buttonLabel, sizeof(buttonLabel), "%d", entry);
+            Format(buttonInfo, sizeof(buttonInfo), "%d", entry);
             
             // Add button.
             MenuLib_AddMenuBtnEx(menuLibMenu, buttonLabel, buttonInfo, false, ITEMDRAW_DEFAULT, "DynMenuLib_ListHandler", BtnNextMenu_None, "");
@@ -689,25 +750,179 @@ static stock DynMenuLib_BuildList(menuData[DynMenuData], bool:update = false)
 /**
  * Builds or updates an existing loop menu.
  *
+ * Note: Translations must be loaded (dynmenulib.phrases.txt) and language set
+ *       before building/updating (using SetGlobalTransTarget()).
+ *
  * @param menuData      Dynamic menu data.
  * @param update        Optional. Update instead of building the menu. Default
  *                      is false.
  */
 static stock DynMenuLib_BuildLoop(menuData[DynMenuData], bool:update = false)
 {
+    new Handle:menuLibMenu = menuData[DynMenu_MenuLibData];
+    
+    // Numeric: Current value | String: Current entry index | Multiselect: Handle to boolean array for selected entries.
+    new any:currentValue = menuData[DynMenu_CurrentValue];
+    
+    new any:largeStep = menuData[DynMenu_LargeStep];
+    new any:smallStep = menuData[DynMenu_SmallStep];
+    
+    // Title and current value.
+    decl String:titleBuffer[ML_DATA_TITLE];
+    decl String:strValue[ML_DATA_LABEL];
+    titleBuffer[0] = 0;
+    strValue[0] = 0;
+    
+    decl String:buttonLabel[ML_DATA_LABEL];
+    decl String:buttonInfo[ML_DATA_INFO];
+    buttonLabel[0] = 0;
+    buttonInfo[0] = 0;
+    
+    // Control labels.
+    decl String:increaseLarge[ML_DATA_LABEL];
+    decl String:increaseSmall[ML_DATA_LABEL];
+    decl String:decreaseLarge[ML_DATA_LABEL];
+    decl String:decreaseSmall[ML_DATA_LABEL];
+    increaseLarge[0] = 0;
+    increaseSmall[0] = 0;
+    decreaseLarge[0] = 0;
+    decreaseSmall[0] = 0;
+    
+    // Prepare strings.
+    switch (menuData[DynMenu_Type])
+    {
+        case DynMenu_Integer:
+        {
+            // Current value.
+            IntToString(currentValue, strValue, sizeof(strValue));
+            
+            // Navigation control labels (only when building, not updating).
+            if (!update)
+            {
+                Format(increaseLarge, sizeof(increaseLarge), "%t", "dynmenulib increase int", largeStep);
+                Format(increaseSmall, sizeof(increaseSmall), "%t", "dynmenulib increase int", smallStep);
+            }
+        }
+        case DynMenu_Float:
+        {
+            // Current value.
+            FloatToString(Float:currentValue, strValue, sizeof(strValue));
+            
+            // Navigation control labels (only when building, not updating).
+            if (!update)
+            {
+                Format(increaseLarge, sizeof(increaseLarge), "%t", "dynmenulib increase float", largeStep);
+                Format(increaseSmall, sizeof(increaseSmall), "%t", "dynmenulib increase float", smallStep);
+            }
+        }
+        case DynMenu_String, DynMenu_Multiselect:
+        {
+            // Current value (entry string).
+            GetArrayString(menuData[DynMenu_Entries], currentValue, strValue, sizeof(strValue));
+            
+            // Add check box if multiselect.
+            if (menuData[DynMenu_Type] == DynMenu_Multiselect)
+            {
+                // Get whether the current entry is selected, and store the
+                // corresponding character. When using multiselect the current value
+                // is a array handle to a boolean list.
+                new selectedChar = bool:GetArrayCell(menuData[DynMenu_Entries], currentValue) ? DYNMENULIB_SELECTED_CHAR : ' ';
+                
+                // Prefix with check box.
+                Format(strValue, sizeof(strValue), "[%c] %s", selectedChar, strValue);
+            }
+            
+            // Navigation control labels (only when building, not updating).
+            if (!update)
+            {
+                Format(increaseLarge, sizeof(increaseLarge), "%t", "dynmenulib jump", largeStep);
+                Format(increaseSmall, sizeof(increaseSmall), "%t", "dynmenulib jump", smallStep);
+            }
+        }
+    }
+    
+    // Update title with prompt and current value.
+    switch (menuData[DynMenu_Type])
+    {
+        case DynMenu_Integer, DynMenu_Float:
+        {
+            // Display prompt and current value.
+            Format(titleBuffer, sizeof(titleBuffer), "%s\n%t %s", menuData[DynMenu_Prompt], "dynmenulib current value", strValue);
+        }
+        case DynMenu_String, DynMenu_Multiselect:
+        {
+            // Display prompt, number of selected entries and current entry.
+            new selectedCount = DynMenuLib_GetSelectedCount(currentValue);
+            Format(titleBuffer, sizeof(titleBuffer), "%s\n%t %s\n%t %s", menuData[DynMenu_Prompt], "dynmenulib selected", selectedCount, "dynmenulib current value", strValue);
+        }
+    }
+    MenuLib_MenuWriteString(menuLibMenu, MenuData_Title, ML_DATA_TITLE, titleBuffer);
+    
+    // Add buttons. No update needed, control labels doesn't change.
+    if (!update)
+    {
+        // Add button.
+        MenuLib_AddMenuBtnEx(menuLibMenu, increaseLarge, "increase large", false, ITEMDRAW_DEFAULT, "DynMenuLib_LoopHandler", BtnNextMenu_None, "");
+        MenuLib_AddMenuBtnEx(menuLibMenu, increaseSmall, "increase small", false, ITEMDRAW_DEFAULT, "DynMenuLib_LoopHandler", BtnNextMenu_None, "");
+        MenuLib_AddMenuBtnEx(menuLibMenu, decreaseSmall, "decrease small", false, ITEMDRAW_DEFAULT, "DynMenuLib_LoopHandler", BtnNextMenu_None, "");
+        MenuLib_AddMenuBtnEx(menuLibMenu, decreaseLarge, "decrease large", false, ITEMDRAW_DEFAULT, "DynMenuLib_LoopHandler", BtnNextMenu_None, "");
+    }
+}
+
+/**
+ * Returns number of selected entries.
+ *
+ * @param selectedEntries   Handle to boolean array for selected entries.
+ *
+ * @return                  Number of selected entries.
+ */
+static stock DynMenuLib_GetSelectedCount(Handle:selectedEntries)
+{
+    new size = GetArraySize(selectedEntries);
+    new bool:selected;
+    new count = 0;
+    
+    for (new entry = 0; entry < size; entry++)
+    {
+        selected = bool:GetArrayCell(selectedEntries, entry);
+        if (selected)
+        {
+            count++;
+        }
+    }
+    
+    return count;
 }
 
 
-// Callback handlers
-// -----------------
+// Callback handlers (for menulib)
+// -------------------------------
 
 // Use DisplayMenuAtItem and GetMenuSelectionPosition to display menu at the
 // last position.
 
-public DynMenuLib_ListHandler()
+/**
+ * Menulib callback handler for list menus.
+ *
+ * @param menu      Handle to menulib menu.
+ * @param action    Menu action performed.
+ * @param client    Client that performed the action.
+ * @param slot      Slot selected.
+ */
+public DynMenuLib_ListHandler(Handle:menu, MenuAction:action, client, slot)
 {
+    
 }
 
-public DynMenuLib_LoopHandler()
+/**
+ * Menulib callback handler for loop menus.
+ *
+ * @param menu      Handle to menulib menu.
+ * @param action    Menu action performed.
+ * @param client    Client that performed the action.
+ * @param slot      Slot selected.
+ */
+public DynMenuLib_LoopHandler(Handle:menu, MenuAction:action, client, slot)
 {
+    
 }
