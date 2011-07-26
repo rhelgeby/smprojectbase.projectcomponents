@@ -1,0 +1,54 @@
+﻿"Phrases"
+{
+	// **********************************
+	//        Dynamic Menu Library
+	// **********************************
+
+	// {1}: small or large step
+	"dynmenulib increase int"
+	{
+		"#format"	"{1:d}"
+		"en"		"Increase by {1}"
+		"no"		"Øk med {1}"
+	}
+	
+	// {1}: small or large step
+	"dynmenulib increase float"
+	{
+		"#format"	"{1:f}"
+		"en"		"Increase by {1}"
+		"no"		"Øk med {1}"
+	}
+	
+	// {1}: small or large step
+	"dynmenulib jump"
+	{
+		"#format"	"{1:d}"
+		"en"		"Skip {1}"
+		"no"		"Hopp over {1}"
+	}
+	
+	"dynmenulib next"
+	{
+		"en"		"Next"
+		"no"		"Neste"
+	}
+	
+	"dynmenulib previous"
+	{
+		"en"		"Previous"
+		"no"		"Forrige"
+	}
+	
+	"dynmenulib current value"
+	{
+		"en"		"Current value:"
+		"no"		"Gjeldende verdi:"
+	}
+	
+	"dynmenulib selected"
+	{
+		"en"		"Number of selected:"
+		"no"		"Antall valgt:"
+	}
+}
