@@ -33,8 +33,10 @@
 #endif
 #define _dynmenulib_included
 
-#include "<project>/libraries/menulib"
-#include "<project>/libraries/utilities"
+//#include "<project>/libraries/menulib"
+//#include "<project>/libraries/utilities"
+#include "libraries/menulib"
+#include "libraries/utilities"
 
 /**
  * Character that's displayed between brackets on selected entries in
@@ -45,6 +47,9 @@
 /**
  * User selected/changed a value or aborted selection (see action parameter).
  *
+ * @param menu      Handle to dynamic menu.
+ * @param client    Client that performed the action. Will be 0 if the menu was
+ *                  aborted, but by something else than the client.
  * @param action    Menu action performed.
  * @param value     Value(s) selected by user. See below for details:
  *
@@ -58,7 +63,7 @@
  *                  Action aborted
  *                  Undefined value. Do not read.
  */
-functag public DynMenuLib_Handler(DynMenuAction:action, any:value);
+functag public DynMenuLib_Handler(Handle:menu, client, DynMenuAction:action, any:value);
 
 // TODO: menulib doesn't call the handler when the menu is aborted.
 
@@ -400,6 +405,12 @@ stock Handle:DynMenuLib_CreateMenu(menuData[DynMenuData])
     new Handle:menuLibMenu = MenuLib_CreateMenu(menuData[DynMenu_Id], menuData[DynMenu_Prompt], false, false);
     menuData[DynMenu_MenuLibData] = menuLibMenu;
     
+    // Check if failed.
+    if (menuLibMenu == INVALID_HANDLE)
+    {
+        ThrowError("Menu ID is already in use.");
+    }
+    
     // Add menu items.
     switch (menuData[DynMenu_Mode])
     {
@@ -455,8 +466,10 @@ stock Handle:DynMenuLib_CreateMenu(menuData[DynMenuData])
  *                      ignored (INVALID_HANDLE).
  * @param handler       Function to call when the user performs an action.
  *
- * @param lowerLimit    Lowest value or min no. of entries selected.
- * @param upperLimit    Highest value or max no. of entries selected.
+ * @param lowerLimit    Lowest value or min no. of entries selected. No effect
+ *                      with string type.
+ * @param upperLimit    Highest value or max no. of entries selected. No effect
+ *                      with string type.
  *
  * @param smallStep     Only used in loop mode (otherwise ignored). Smallest
  *                      value or entry index change. Bigger than zero.
@@ -495,7 +508,7 @@ stock Handle:DynMenuLib_CreateMenuEx(const String:id[],
     menuData[DynMenu_Type] = type;
     menuData[DynMenu_Mode] = mode;
     menuData[DynMenu_Entries] = entries;
-    menuData[DynMenu_Callback] = callback;
+    menuData[DynMenu_Handler] = handler;
     
     menuData[DynMenu_LowerLimit] = lowerLimit;
     menuData[DynMenu_UpperLimit] = upperLimit;
@@ -565,6 +578,44 @@ stock DynMenuLib_DeleteMenu(String:id[], bool:recursive = false)
 }
 
 /**
+ * Displays a dynamic menu to a client and resets the navigation stack.
+ *
+ * @param menu          Handle to dynamic menu.
+ * @param client        Client to display menu to.
+ */
+stock DynMenuLib_DisplayMenu(Handle:menu, client)
+{
+    // Get menu data.
+    new menuData[DynMenuData];
+    DynMenuLib_GetMenuData(menu, menuData);
+    
+    // Get the menulib menu handle.
+    new Handle:menuLibMenu = menuData[DynMenu_MenuLibData];
+    
+    MenuLib_DisplayMenu(menuLibMenu, client);
+}
+
+/**
+ * Displays a dynamic menu to a client without resetting the navigation stack.
+ *
+ * @param menu          Handle to dynamic menu.
+ * @param client        Client to display menu to.
+ * @param fromMenu      Optonal. Handle to menulib menu where this menu came
+ *                      from. If not specified, the back button won't be visible.
+ */
+stock DynMenuLib_SendMenu(Handle:menu, client, Handle:fromMenu = INVALID_HANDLE)
+{
+    // Get menu data.
+    new menuData[DynMenuData];
+    DynMenuLib_GetMenuData(menu, menuData);
+    
+    // Get the menulib menu handle.
+    new Handle:menuLibMenu = menuData[DynMenu_MenuLibData];
+    
+    MenuLib_SendMenu(menuLibMenu, client, fromMenu);
+}
+
+/**
  * Gets the handle to a dynamic menu from a identifier.
  *
  * @param id    Menu identifier.
@@ -572,6 +623,8 @@ stock DynMenuLib_DeleteMenu(String:id[], bool:recursive = false)
  */
 stock Handle:DynMenuLib_FindMenuById(const String:id[])
 {
+    DynMenuLib_InitIndexes();
+    
     new Handle:menu;
     
     if (!GetTrieValue(DynMenu_NameIndex, id, menu))
@@ -590,6 +643,8 @@ stock Handle:DynMenuLib_FindMenuById(const String:id[])
  */
 stock Handle:DynMenuLib_FindMenuByMenulib(Handle:menu)
 {
+    DynMenuLib_InitIndexes();
+    
     decl String:strMenulibHandle[16];
     Format(strMenulibHandle, sizeof(strMenulibHandle), "%x", menu);
     
@@ -801,6 +856,8 @@ static stock DynMenuLib_BuildLoop(menuData[DynMenuData], bool:update = false)
             {
                 Format(increaseLarge, sizeof(increaseLarge), "%t", "dynmenulib increase int", largeStep);
                 Format(increaseSmall, sizeof(increaseSmall), "%t", "dynmenulib increase int", smallStep);
+                Format(decreaseLarge, sizeof(decreaseLarge), "%t", "dynmenulib decrease int", largeStep);
+                Format(decreaseSmall, sizeof(decreaseSmall), "%t", "dynmenulib decrease int", smallStep);
             }
         }
         case DynMenu_Float:
@@ -813,6 +870,8 @@ static stock DynMenuLib_BuildLoop(menuData[DynMenuData], bool:update = false)
             {
                 Format(increaseLarge, sizeof(increaseLarge), "%t", "dynmenulib increase float", largeStep);
                 Format(increaseSmall, sizeof(increaseSmall), "%t", "dynmenulib increase float", smallStep);
+                Format(decreaseLarge, sizeof(decreaseLarge), "%t", "dynmenulib decrease float", largeStep);
+                Format(decreaseSmall, sizeof(decreaseSmall), "%t", "dynmenulib decrease float", smallStep);
             }
         }
         case DynMenu_String, DynMenu_Multiselect:
