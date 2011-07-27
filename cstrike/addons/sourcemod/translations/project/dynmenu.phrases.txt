@@ -13,11 +13,27 @@
 	}
 	
 	// {1}: small or large step
+	"dynmenulib decrease int"
+	{
+		"#format"	"{1:d}"
+		"en"		"Decrease by {1}"
+		"no"		"Reduser med {1}"
+	}
+	
+	// {1}: small or large step
 	"dynmenulib increase float"
 	{
 		"#format"	"{1:f}"
 		"en"		"Increase by {1}"
 		"no"		"Øk med {1}"
+	}
+	
+	// {1}: small or large step
+	"dynmenulib decrease float"
+	{
+		"#format"	"{1:f}"
+		"en"		"Decrease by {1}"
+		"no"		"Reduser med {1}"
 	}
 	
 	// {1}: small or large step
