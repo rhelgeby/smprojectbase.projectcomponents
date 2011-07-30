@@ -9,7 +9,7 @@ new Handle:menu3;
 new Handle:menu4;
 new Handle:menu5;
 new Handle:menu6;
-
+ 
 public OnPluginStart()
 {
     menu1 = MenuLib_CreateMenu("Menu1", "Menu1", false, false);
@@ -55,18 +55,24 @@ public PlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
 
 public Action:ClientListFilter(client, String:buttontxt[], String:buttoninfo[])
 {
-    Format(buttontxt, 256, "<%s>", buttontxt);
-    return Plugin_Changed;
+        Format(buttontxt, 256, "<%s>", buttontxt);
+        return Plugin_Changed;
 }
 
 public ClientListHandler(Handle:hMenu, MenuAction:action, client, button)
 {
-    PrintToChat(client, "Selected client %N", MenuLib_GetClientIndex(hMenu, button));
-    new Handle:hClientMenu = MenuLib_CreateClientListMenu(client, "Clients", false, "ClientListHandler", BtnNextMenu_None, "", UTILS_FILTER_ALIVE, "ClientListFilter");
-    MenuLib_SendMenu(hClientMenu, client);
+    if (action == MenuAction_Select)
+    {
+        PrintToChat(client, "Selected client %N", MenuLib_GetClientIndex(hMenu, button));
+        new Handle:hClientMenu = MenuLib_CreateClientListMenu(client, "Clients", false, "ClientListHandler", BtnNextMenu_None, "", UTILS_FILTER_ALIVE, "ClientListFilter");
+        MenuLib_SendMenu(hClientMenu, client);
+    }
 }
 
 public ClientListHandler2(Handle:hMenu, MenuAction:action, client, button)
 {
-    PrintToChat(client, "Selected client %N", MenuLib_GetClientIndex(hMenu, button));
+    if (action == MenuAction_Select)
+    {
+        PrintToChat(client, "Selected client %N", MenuLib_GetClientIndex(hMenu, button));
+    }
 }
