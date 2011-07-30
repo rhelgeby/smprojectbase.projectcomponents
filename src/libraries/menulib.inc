@@ -84,6 +84,7 @@ enum MenuLib_Menu
     MenuLibCallback:MenuData_Callback,      // A function called for certain menu events.  See enum MenuAction in menus.inc.  This is called for all actions except voting and MenuAction_Select.
     String:MenuData_Title[ML_DATA_TITLE],   // Title of the menu.
     bool:MenuData_Translate,                // True to read the title as a translations phrase, false to show text as menu title.
+    bool:MenuData_ForceBack,                // Force the back button to appear in the menu.  This will override menulib's automatic handling of the back button to allow your own code.  See MenuLib_MenuGoBack().
     bool:MenuData_Temp,                     // Temporary menus are deleted as soon as an option is selected.
     Handle:MenuData_Handle                  // (READ-ONLY) A valid handle returned from most recent call to SM native DisplayMenu for this menu, INVALID_HANDLE otherwise.
 }
@@ -137,13 +138,14 @@ static stock g_DummyMenuBtnData[MenuLib_Button];
  * @param callback  Called for all MenuAction events except voting.  INVALID_FUNCTION for no callback.
  * @param title     The menu title.
  * @param translate Whether to treat title as a translations phrase or not.
+ * @param forceback Force the back button to appear in the menu.
  * @param temp      Delete menu as soon as an option is selected. (Most
  *                  auto-generated menus use this.)
  * 
  * @return          Handle to menu.  INVALID_HANDLE if the given id is empty or
  *                  already taken.
  */
-stock Handle:MenuLib_CreateMenu(const String:id[], MenuLibCallback:callback, const String:title[], bool:translate, bool:temp)
+stock Handle:MenuLib_CreateMenu(const String:id[], MenuLibCallback:callback, const String:title[], bool:translate, bool:forceback, bool:temp)
 {
     // Check if id is empty.
     if (!id[0])
@@ -170,6 +172,7 @@ stock Handle:MenuLib_CreateMenu(const String:id[], MenuLibCallback:callback, con
     menudata[MenuData_Callback] = callback;
     strcopy(menudata[MenuData_Title], sizeof(menudata[MenuData_Title]), title);
     menudata[MenuData_Translate] = translate;
+    menudata[MenuData_ForceBack] = forceback;
     menudata[MenuData_Temp] = temp;
     
     PushArrayArray(hMenu, menudata[0]);
@@ -656,7 +659,7 @@ stock MenuLib_SendMenuAtItem(Handle:hMenu, client, firstItem, Handle:hFrom = INV
     SetMenuTitle(hSMMenu, title);
     
     // Add exit back button if applicable.
-    SetMenuExitBackButton(hSMMenu, !IsStackEmpty(g_hPrevMenus[client]));
+    SetMenuExitBackButton(hSMMenu, !IsStackEmpty(g_hPrevMenus[client]) || menudata[MenuData_ForceBack]);
     
     decl String:strHandle[16];
     IntToString(_:hMenu, strHandle, sizeof(strHandle));
@@ -774,7 +777,8 @@ public MenuLib_Handler(Handle:menu, MenuAction:action, client, slot)
     {
         if (slot == MenuCancel_ExitBack)
         {
-            MenuLib_MenuGoBack(client);
+            if (!menudata[MenuData_ForceBack])
+                MenuLib_MenuGoBack(client);
         }
         
         // Call the callback for this menu.
@@ -843,18 +847,19 @@ stock Handle:StackTopCell(Handle:stack)
  * @param client            Who to send menu to.
  * @param title             The title of the temporary menu.
  * @param translate         True to translate title, false if literal string.
+ * @param forceback         Force the back button to appear in the menu.
  * @param callback          Menu callback.  See MenuLib_CreateMenu.
  * @param NextMenu          Where all buttons in this menu will link to.
+ * @param strLinkedMenu     The id of the menu to link this button to if NextMenu = BtnNextMenu_LinkMenu, otherwise set to "". 
  * @param strFilterFunc     The handle of the menu to link this button to if NextMenu = BtnNextMenu_LinkMenu, otherwise INVALID_HANDLE.
  * @param filters           A bit field made up of UTILS_FILTER_* defines.  See utilities.inc.
- *                          Note: This is only checked at time of menu creation.  It is
- *                          recommended to re-check these filters in the callback.
+ *                          Note: This is only checked at time of menu creation.  It is recommended to re-check these filters in the callback.
  * @param filter            Name of a function with the structure shown in the above comments that allows changing and pruning menu buttons.  Leave blank for no filter.
  * 
  * @return                  A handle to the temporary menu.  This will become invalid as soon as the client receives and closes the menu.
  * @error                   Invalid function given for either the callback or filter function.
  */
-stock Handle:MenuLib_CreateClientListMenu(client, const String:title[], bool:translate, MenuLibCallback:callback, MenuLib_BtnNextMenu:NextMenu, String:strLinkedMenu[], filters, MenuLibClientFilter:filter = INVALID_FUNCTION)
+stock Handle:MenuLib_CreateClientListMenu(client, const String:title[], bool:translate, bool:forceback, MenuLibCallback:callback, MenuLib_BtnNextMenu:NextMenu, String:strLinkedMenu[], filters, MenuLibClientFilter:filter = INVALID_FUNCTION)
 {
     // Create a temporary menu with a unique ID.
     decl String:id[64];
@@ -864,7 +869,7 @@ stock Handle:MenuLib_CreateClientListMenu(client, const String:title[], bool:tra
         Format(id, sizeof(id), "clientlistmenu_%N_%d", client, counter++);
     } while (MenuLib_FindMenuById(id) != INVALID_HANDLE);
     
-    new Handle:hTempMenu = MenuLib_CreateMenu(id, callback, title, translate, true);
+    new Handle:hTempMenu = MenuLib_CreateMenu(id, callback, title, translate, forceback, true);
     
     decl String:clientoption[256];
     decl String:clientuserid[256];
