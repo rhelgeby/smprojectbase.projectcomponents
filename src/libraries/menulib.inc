@@ -367,6 +367,18 @@ stock MenuLib_MenuReadString(Handle:hMenu, MenuLib_Menu:data, String:output[], m
 }
 
 /**
+ * Menu data reader wrapper for reading a menulib menu's SM menu handle.
+ * 
+ * @param hMenu     The menu whose string data to read.
+ */
+stock Handle:MenuLib_MenuGetSMMenuHandle(Handle:hMenu)
+{
+    new menudata[MenuLib_Menu];
+    MenuLib_MenuReadAll(hMenu, menudata);
+    return menudata[MenuData_Handle];
+}
+
+/**
  * Menu data writer that overwrites all data for a menu with the given data.
  * 
  * @param hMenu         Menulib handle to write data to.
@@ -677,12 +689,12 @@ public MenuLib_Handler(Handle:menu, MenuAction:action, client, slot)
     new menudata[MenuLib_Menu];
     MenuLib_MenuReadAll(hMenu, menudata);
     
+    // Get menu button data.
+    new menubtndata[MenuLib_Button];
+    MenuLib_BtnReadAll(hMenu, slot, menubtndata);
+    
     if (action == MenuAction_Select)
     {
-        // Get menu button data.
-        new menubtndata[MenuLib_Button];
-        MenuLib_BtnReadAll(hMenu, slot, menubtndata);
-        
         switch(menubtndata[MenuBtn_NextMenu])
         {
             case BtnNextMenu_None:
@@ -729,9 +741,31 @@ public MenuLib_Handler(Handle:menu, MenuAction:action, client, slot)
         {
             MenuLib_MenuGoBack(client);
         }
+        
+        // Call the callback for this button.
+        if (menubtndata[MenuBtn_Function] != INVALID_FUNCTION)
+        {
+            Call_StartFunction(GetMyHandle(), menubtndata[MenuBtn_Function]);
+            Call_PushCell(hMenu);
+            Call_PushCell(action);
+            Call_PushCell(client);
+            Call_PushCell(slot);
+            Call_Finish();
+        }
     }
     else if (action == MenuAction_End)
     {
+        // Call the callback for this button.
+        if (menubtndata[MenuBtn_Function] != INVALID_FUNCTION)
+        {
+            Call_StartFunction(GetMyHandle(), menubtndata[MenuBtn_Function]);
+            Call_PushCell(hMenu);
+            Call_PushCell(action);
+            Call_PushCell(client);
+            Call_PushCell(slot);
+            Call_Finish();
+        }
+        
         if (menudata[MenuData_Temp])
             MenuLib_EradicateMenu(hMenu);
         else
@@ -740,6 +774,19 @@ public MenuLib_Handler(Handle:menu, MenuAction:action, client, slot)
             MenuLib_MenuWriteAll(hMenu, menudata);
         }
         CloseHandle(menu);
+    }
+    else
+    {
+        // Call the callback for this button.
+        if (menubtndata[MenuBtn_Function] != INVALID_FUNCTION)
+        {
+            Call_StartFunction(GetMyHandle(), menubtndata[MenuBtn_Function]);
+            Call_PushCell(hMenu);
+            Call_PushCell(action);
+            Call_PushCell(client);
+            Call_PushCell(slot);
+            Call_Finish();
+        }
     }
 }
 
