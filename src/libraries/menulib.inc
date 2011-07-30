@@ -257,10 +257,14 @@ stock MenuLib_AddMenuBtn(Handle:hMenu, menubtndata[MenuLib_Button])
  */
 stock MenuLib_AddMenuBtnEx(Handle:hMenu, String:label[], const String:info[], bool:translate, style, const String:strFuncCallback[], MenuLib_BtnNextMenu:NextMenu, String:strLinkedMenu[])
 {
-    // Verify that callback function exists.
-    new Function:funcCallback = GetFunctionByName(GetMyHandle(), strFuncCallback);
-    if (strFuncCallback[0] && funcCallback == INVALID_FUNCTION)
-        ThrowError("Invalid callback function specified: \"%s\"", strFuncCallback);
+    // Verify callback function exists.
+    new Function:funcCallback = INVALID_FUNCTION;
+    if (strFuncCallback[0])
+    {
+        funcCallback = GetFunctionByName(GetMyHandle(), strFuncCallback);
+        if (funcCallback == INVALID_FUNCTION)
+            ThrowError("Invalid callback function specified: \"%s\"", strFuncCallback);
+    }
     
     // Create array.
     new menubtndata[MenuLib_Button];
