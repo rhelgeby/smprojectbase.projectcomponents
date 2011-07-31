@@ -74,7 +74,7 @@ public PlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
     MenuLib_DisplayMenu(menu1, client);
 }
 
-public Action:ClientListFilter(client, String:buttontxt[], String:buttoninfo[])
+public Action:ClientListFilter(Handle:menu, client, String:buttontxt[], String:buttoninfo[])
 {
     Format(buttontxt, 256, "<%s>", buttontxt);
     return Plugin_Changed;
