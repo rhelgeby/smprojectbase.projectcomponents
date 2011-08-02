@@ -2,20 +2,11 @@
 #include <sourcemod>
 #include "libraries/dynmenulib"
 
-/*
- * Testing note: Before displaying a new menu (repeating the command), the old
- *               menu must be deleted. Between each test command, do a delete
- *               command. Otherwise errors will be thrown.
- *
- */
-
 new Handle:DummyStringEntries;
 
 public OnPluginStart()
 {
     LoadTranslations("project/dynmenu.phrases");
-    
-    RegConsoleCmd("sm_dynmenu_delete", Command_Delete);
     
     RegConsoleCmd("sm_dynmenu_int_test", Command_IntTest);
     RegConsoleCmd("sm_dynmenu_float_test", Command_FloatTest);
@@ -36,23 +27,6 @@ public OnPluginStart()
     PushArrayString(DummyStringEntries, "Item 3");
 }
 
-public Action:Command_Delete(client, argc)
-{
-    // Check if a menu already exist.
-    new Handle:menu = DynMenuLib_FindMenuById("myMenu");
-    if (menu != INVALID_HANDLE)
-    {
-        DynMenuLib_DeleteMenu("myMenu", false); // No recursive delete, keep entries.
-        ReplyToCommand(client, "Menu deleted. Ready for new test.");
-    }
-    else
-    {
-        ReplyToCommand(client, "Nothing to delete. Ready for testing.");
-    }
-    
-    return Plugin_Handled;
-}
-
 // -----------------------------------------------------------------------------
 
 public Action:Command_IntTest(client, argc)
@@ -62,14 +36,6 @@ public Action:Command_IntTest(client, argc)
     // Must be set before building menu, so phrases are translated to correct
     // language.
     SetGlobalTransTarget(client);
-    
-    // Check if a menu already exist.
-    menu = DynMenuLib_FindMenuById("myMenu");
-    if (menu != INVALID_HANDLE)
-    {
-        ReplyToCommand(client, "Delete existing menu first: sm_dynmenu_delete");
-        return Plugin_Handled;
-    }
     
     menu = DynMenuLib_CreateMenuEx("myMenu",                // ID
                                    "Select a value",        // Prompt
@@ -89,6 +55,27 @@ public Action:Command_IntTest(client, argc)
     return Plugin_Handled;
 }
 
+/**
+ * User selected/changed a value, or aborted selection (see action parameter).
+ *
+ * @param menu      Handle to dynamic menu.
+ * @param client    Client that performed the action. Will be 0 if the menu was
+ *                  aborted, but by something else than the client.
+ * @param action    Menu action performed.
+ * @param value     Value(s) selected by user. See below for details:
+ *
+ *                  Action selected
+ *                  Numeric:     Selected value (cell or float).
+ *                  String:      Entry index of selected string (in entry array).
+ *                  Multiselect: Handle to array with entry indexes of selected
+ *                               entries. This handle must be closed when it's
+ *                               no longer in use.
+ *
+ *                  Action aborted
+ *                  Always zero.
+ *
+ * @noreturn
+ */
 public IntTestHandler(Handle:menu, client, DynMenuAction:action, any:value)
 {
     switch (action)
@@ -99,10 +86,10 @@ public IntTestHandler(Handle:menu, client, DynMenuAction:action, any:value)
         }
         case DynMenuAction_Abort:
         {
-            // Cleanup.
+            PrintToServer("Integer test menu closed.");
             
-            // resolve id, delete.
-            //DynMenuLib_DeleteMenu("myMenu");
+            // Cleanup.
+            DynMenuLib_DeleteMenu(menu);
         }
     }
 }
@@ -117,20 +104,12 @@ public Action:Command_FloatTest(client, argc)
     // language.
     SetGlobalTransTarget(client);
     
-    // Check if a menu already exist.
-    menu = DynMenuLib_FindMenuById("myMenu");
-    if (menu != INVALID_HANDLE)
-    {
-        ReplyToCommand(client, "Delete existing menu first: sm_dynmenu_delete");
-        return Plugin_Handled;
-    }
-    
     menu = DynMenuLib_CreateMenuEx("myMenu",                // ID
                                    "Select a value",        // Prompt
                                    DynMenu_Float,           // Data type
                                    DynMenu_Loop,            // Numerics do loop mode only
                                    INVALID_HANDLE,          // No array with entries for numerics
-                                   IntTestHandler,          // Callback
+                                   FloatTestHandler,        // Callback
                                    -5.0,                    // Lower limit
                                    16.0,                    // Upper limit
                                    1.0,                     // Small step
@@ -143,6 +122,27 @@ public Action:Command_FloatTest(client, argc)
     return Plugin_Handled;
 }
 
+/**
+ * User selected/changed a value, or aborted selection (see action parameter).
+ *
+ * @param menu      Handle to dynamic menu.
+ * @param client    Client that performed the action. Will be 0 if the menu was
+ *                  aborted, but by something else than the client.
+ * @param action    Menu action performed.
+ * @param value     Value(s) selected by user. See below for details:
+ *
+ *                  Action selected
+ *                  Numeric:     Selected value (cell or float).
+ *                  String:      Entry index of selected string (in entry array).
+ *                  Multiselect: Handle to array with entry indexes of selected
+ *                               entries. This handle must be closed when it's
+ *                               no longer in use.
+ *
+ *                  Action aborted
+ *                  Always zero.
+ *
+ * @noreturn
+ */
 public FloatTestHandler(Handle:menu, client, DynMenuAction:action, any:value)
 {
     switch (action)
@@ -153,10 +153,10 @@ public FloatTestHandler(Handle:menu, client, DynMenuAction:action, any:value)
         }
         case DynMenuAction_Abort:
         {
-            // Cleanup.
+            PrintToServer("Float test menu closed.");
             
-            // resolve id, delete.
-            //DynMenuLib_DeleteMenu("myMenu");
+            // Cleanup.
+            DynMenuLib_DeleteMenu(menu);
         }
     }
 }
@@ -171,14 +171,6 @@ public Action:Command_StringListTest(client, argc)
     // language.
     SetGlobalTransTarget(client);
     
-    // Check if a menu already exist.
-    menu = DynMenuLib_FindMenuById("myMenu");
-    if (menu != INVALID_HANDLE)
-    {
-        ReplyToCommand(client, "Delete existing menu first: sm_dynmenu_delete");
-        return Plugin_Handled;
-    }
-    
     menu = DynMenuLib_CreateMenuEx("myMenu",                // ID
                                    "Select an option",      // Prompt
                                    DynMenu_String,          // Data type
@@ -190,6 +182,7 @@ public Action:Command_StringListTest(client, argc)
                                    1,                       // Small step
                                    5,                       // Large step
                                    2);                      // Initial value (selected index)
+    ReplyToCommand(client, "Menu created: %x", menu);
     
     DynMenuLib_DisplayMenu(menu, client);
     
@@ -197,21 +190,45 @@ public Action:Command_StringListTest(client, argc)
     return Plugin_Handled;
 }
 
+/**
+ * User selected/changed a value, or aborted selection (see action parameter).
+ *
+ * @param menu      Handle to dynamic menu.
+ * @param client    Client that performed the action. Will be 0 if the menu was
+ *                  aborted, but by something else than the client.
+ * @param action    Menu action performed.
+ * @param value     Value(s) selected by user. See below for details:
+ *
+ *                  Action selected
+ *                  Numeric:     Selected value (cell or float).
+ *                  String:      Entry index of selected string (in entry array).
+ *                  Multiselect: Handle to array with entry indexes of selected
+ *                               entries. This handle must be closed when it's
+ *                               no longer in use.
+ *
+ *                  Action aborted
+ *                  Always zero.
+ *
+ * @noreturn
+ */
 public StringListHandler(Handle:menu, client, DynMenuAction:action, any:value)
 {
     switch (action)
     {
         case DynMenuAction_Select:
         {
-            PrintToChat(client, "Value changed: %f", value);
+            // Get entry string.
+            new String:strValue[64];
+            GetArrayString(DummyStringEntries, value, strValue, sizeof(strValue));
+            
+            PrintToChat(client, "Value selected: %s", strValue);
         }
         case DynMenuAction_Abort:
         {
-            // Cleanup.
+            PrintToServer("String list menu closed.");
             
-            // resolve id, delete.
-            //DynMenuLib_DeleteMenu("myMenu");
+            // Cleanup.
+            DynMenuLib_DeleteMenu(menu);
         }
     }
 }
-
