@@ -100,8 +100,8 @@ enum DynMenuMode
  */
 enum DynMenuAction
 {
-    DynMenuAction_Select,   /** User selected/changed a value. */
-    DynMenuAction_Abort     /** Selection aborted (or menu was closed). */
+    DynMenuAction_Select,       /** User selected/changed a value. */
+    DynMenuAction_Close         /** Menu was closed (simplified action for MenuCancel and MenuEnd reasons). */
 }
 
 /**
@@ -120,16 +120,17 @@ enum DynMenuData
     DynMenuType:DynMenu_Type,       /** Entry data type. */
     DynMenuMode:DynMenu_Mode,       /** Menu display mode. */
     Handle:DynMenu_Entries,         /** String/Multiselect: ADT array of entry strings | Others: Not used (INVALID_HANDLE) */
-    DynMenuLib_Handler:DynMenu_Handler,    /** Function to call when the user performs an action. */
+    DynMenuLib_Handler:DynMenu_Handler,     /** Function to call when the user performs an action. */
+    MenuAction:DynMenu_HandlerAction,       /** Buffer for current action being handled. Only valid in handler. */
     
     any:DynMenu_LowerLimit,         /** Numeric: Lowest value   | Multiselect: Min no. of entries selected | Others: No effect */
     any:DynMenu_UpperLimit,         /** Numeric: Highest value  | Multiselect: Max no. of entries selected | Others: No effect */
     
-    any:DynMenu_SmallStep,          /** Numeric: Smallest change | String/Multiselect: Smallest index change */
-    any:DynMenu_LargeStep,          /** Numeric: Largest change  | String/Multiselect: Largest index cange */
+    any:DynMenu_SmallStep,          /** Loop mode only -- Numeric: Smallest change | String/Multiselect: Smallest index change */
+    any:DynMenu_LargeStep,          /** Loop mode only -- Numeric: Largest change  | String/Multiselect: Largest index cange */
     
     any:DynMenu_CurrentValue,       /** Numeric: Current value | String: Current entry index | Multiselect: Handle to boolean array for selected entries. */
-    DynMenu_CurrentPosition,        /** Current item position. Used for redisplaying menu at the last page. */
+    DynMenu_CurrentPosition,        /** Current position in the menu. Used for redisplaying menu at the last page when redisplaying menu. */
 }
 
 /**
@@ -144,15 +145,16 @@ enum DynMenuData
 #define DYNMENULIB_MODE                 5
 #define DYNMENULIB_ENTRIES              6
 #define DYNMENULIB_HANDLER              7
+#define DYNMENULIB_HANDLER_ACTION       8
 
-#define DYNMENULIB_LOWER_LIMIT          8
-#define DYNMENULIB_UPPER_LIMIT          9
+#define DYNMENULIB_LOWER_LIMIT          9
+#define DYNMENULIB_UPPER_LIMIT          10
 
-#define DYNMENULIB_SMALL_STEP           10
-#define DYNMENULIB_LARGE_STEP           11
+#define DYNMENULIB_SMALL_STEP           11
+#define DYNMENULIB_LARGE_STEP           12
 
-#define DYNMENULIB_CURRENT_VALUE        12
-#define DYNMENULIB_CURRENT_POSITION     13
+#define DYNMENULIB_CURRENT_VALUE        13
+#define DYNMENULIB_CURRENT_POSITION     14
 /**
  * @endsection
  */
@@ -420,10 +422,10 @@ stock Handle:DynMenuLib_CreateMenu(menuData[DynMenuData])
             else
             {
                 // Not specified. Prepare boolean list with no entries selected.
-                initialValue = CreateArray(1, numEntries);
+                initialValue = CreateArray(_, numEntries);
                 for (new i = 0; i < numEntries; i++)
                 {
-                    PushArrayCell(initialValue, false);
+                    SetArrayCell(initialValue, i, false);
                 }
                 menuData[DynMenu_CurrentValue] = initialValue;
             }
@@ -436,6 +438,7 @@ stock Handle:DynMenuLib_CreateMenu(menuData[DynMenuData])
     
     // Create menu in menulib.
     new Handle:menuLibMenu = MenuLib_CreateMenu(menuData[DynMenu_Id],       // id
+                                                INVALID_FUNCTION,           // pre-callback
                                                 DynMenuLib_GeneralHandler,  // callback
                                                 menuData[DynMenu_Prompt],   // title
                                                 false,                      // translate (handled in this library)
@@ -553,13 +556,14 @@ stock Handle:DynMenuLib_CreateMenuEx(const String:id[],
     
     strcopy(menuData[DynMenu_Id], sizeof(menuData[DynMenu_Id]), id);
     strcopy(menuData[DynMenu_Prompt], sizeof(menuData[DynMenu_Prompt]), prompt);
-    menuData[DynMenu_MenuLib] = INVALID_HANDLE;     // No menu in menulib created yet.
+    menuData[DynMenu_MenuLib] = INVALID_HANDLE;         // No menu in menulib created yet.
     menuData[DynMenu_FromMenu] = fromMenu;
     
     menuData[DynMenu_Type] = type;
     menuData[DynMenu_Mode] = mode;
     menuData[DynMenu_Entries] = entries;
     menuData[DynMenu_Handler] = handler;
+    menuData[DynMenu_HandlerAction] = MenuAction:-1;    // Not initialized yet.
     
     menuData[DynMenu_LowerLimit] = lowerLimit;
     menuData[DynMenu_UpperLimit] = upperLimit;
@@ -574,17 +578,32 @@ stock Handle:DynMenuLib_CreateMenuEx(const String:id[],
 }
 
 /**
- * Deletes a dynamic menu.
+ * Deletes a dynamic menu and its belonging menulib menu.
+ *
+ * Note: Set inHandler to true if deleting from inside the menu's handler
+ *       function.
+ *
+ * Note: The menu can only be deleted when not handling a DynMenuAction_Select
+ *       action.
  *
  * @param menu          Dynamic menu handle.
+ * @param inHandler     Optional. Whether the menu is deleted from inside its
+ *                      handler function. Only valid in DynMenuAction_Close
+ *                      action.
  * @param recursive     Optional. Recursive deletion. Destroys entry list if
  *                      available. Default is false (don't destroy).
  */
-stock DynMenuLib_DeleteMenu(Handle:menu, bool:recursive = false)
+stock DynMenuLib_DeleteMenu(Handle:menu, bool:inHandler = false, bool:recursive = false)
 {
     // Get menu data.
     new menuData[DynMenuData];
     DynMenuLib_GetMenuData(menu, menuData);
+    
+    // Check if menu is being deleted when handling a selection.
+    if (menuData[DynMenu_HandlerAction] == MenuAction_Select)
+    {
+        ThrowError("Dynamic menu cannot be deleted while handling a select action.");
+    }
     
     // Check if deletion is recursive.
     if (recursive)
@@ -604,7 +623,16 @@ stock DynMenuLib_DeleteMenu(Handle:menu, bool:recursive = false)
     
     // Get menulib menu and delete it.
     new Handle:menuLibMenu = menuData[DynMenu_MenuLib];
-    MenuLib_DeleteMenu(menuLibMenu);
+    if (inHandler)
+    {
+        // Menulib use menu data after the handler is done. Make it a temp menu
+        // so menulib will delete it itself when safe.
+        MenuLib_MenuWriteCell(menuLibMenu, MenuData_Temp, true);
+    }
+    else
+    {
+        MenuLib_DeleteMenu(menuLibMenu);
+    }
     
     // Remove menu from name index.
     RemoveFromTrie(DynMenu_NameIndex, menuData[DynMenu_Id]);
@@ -789,6 +817,7 @@ static stock DynMenuLib_GetMenuData(Handle:menu, menuData[DynMenuData])
     menuData[DynMenu_Mode] = DynMenuMode:GetArrayCell(menu, DYNMENULIB_MODE);
     menuData[DynMenu_Entries] = Handle:GetArrayCell(menu, DYNMENULIB_ENTRIES);
     menuData[DynMenu_Handler] = DynMenuLib_Handler:GetArrayCell(menu, DYNMENULIB_HANDLER);
+    menuData[DynMenu_HandlerAction] = MenuAction:GetArrayCell(menu, DYNMENULIB_HANDLER_ACTION);
     
     menuData[DynMenu_LowerLimit] = GetArrayCell(menu, DYNMENULIB_LOWER_LIMIT);
     menuData[DynMenu_UpperLimit] = GetArrayCell(menu, DYNMENULIB_UPPER_LIMIT);
@@ -822,6 +851,7 @@ static stock DynMenuLib_SetMenuData(Handle:menu, menuData[DynMenuData])
     PushArrayCell(menu, _:menuData[DynMenu_Mode]);
     PushArrayCell(menu, _:menuData[DynMenu_Entries]);
     PushArrayCell(menu, _:menuData[DynMenu_Handler]);
+    PushArrayCell(menu, _:menuData[DynMenu_HandlerAction]);
     
     PushArrayCell(menu, _:menuData[DynMenu_LowerLimit]);
     PushArrayCell(menu, _:menuData[DynMenu_UpperLimit]);
@@ -854,6 +884,17 @@ static stock DynMenuLib_Handler:DynMenuLib_GetHandler(Handle:menu)
 static stock DynMenuLib_SetFromMenu(Handle:menu, Handle:fromMenu)
 {
     SetArrayCell(menu, DYNMENULIB_FROM_MENU, _:fromMenu);
+}
+
+/**
+ * Sets (or unsets) the current menu action being handled.
+ *
+ * @param menu      Dynamic menu.
+ * @param action    Action to set, or -1 to unset.
+ */
+static stock DynMenuLib_SetHandlerAction(Handle:menu, MenuAction:action)
+{
+    SetArrayCell(menu, DYNMENULIB_HANDLER_ACTION, _:action);
 }
 
 
@@ -907,7 +948,7 @@ static stock DynMenuLib_BuildListMenu(menuData[DynMenuData], bool:update = false
         if (update)
         {
             // Update button.
-            MenuLib_BtnWriteString(menuLibMenu, entry, MenuBtn_Label, sizeof(buttonLabel), entryBuffer);
+            MenuLib_BtnWriteString(menuLibMenu, entry, MenuBtn_Label, sizeof(buttonLabel), buttonLabel);
         }
         else
         {
@@ -1084,7 +1125,7 @@ static stock DynMenuLib_GetSelectedCount(Handle:selectedEntries)
 
 /**
  * Menulib callback.
- * Called when for all MenuAction actions except voting.  See menus.inc.
+ * Called for all MenuAction actions except voting.  See menus.inc.
  * 
  * @param menu      The menulib menu handle.
  * @param action    Action client is doing in menu.  May be any action except voting ones.  MenuAction_Select can be handled in other callbacks.
@@ -1093,29 +1134,66 @@ static stock DynMenuLib_GetSelectedCount(Handle:selectedEntries)
  */
 public DynMenuLib_GeneralHandler(Handle:menu, MenuAction:action, client, slot)
 {
+    // Note: Calling the handler when action is MenuAction_Cancel isn't
+    //       necessarry because MenuAction_End is guaranteed to be called.
+    //       Otherwise it would result in a double call when pressing "back"
+    //       or "exit" buttons.
+    
+    // Don't get handle here, only in actions it's used.
+    new Handle:dynMenu;
+    
     switch (action)
     {
-        case MenuAction_Cancel, MenuAction_End:
+        case MenuAction_Cancel:
+        {
+            // Get dynmenu handle.
+            dynMenu = DynMenuLib_FindMenuByMenulib(menu);
+            
+            // Unset current action. This terminates a multiselect session.
+            DynMenuLib_SetHandlerAction(dynMenu, MenuAction:-1);
+        }
+        case MenuAction_End:
         {
             // Forward abort action to dynmenu handler.
             
             // Get dynmenu handle.
-            new Handle:dynMenu = DynMenuLib_FindMenuByMenulib(menu);
+            dynMenu = DynMenuLib_FindMenuByMenulib(menu);
             
             // Get menu data.
             new menuData[DynMenuData];
             DynMenuLib_GetMenuData(dynMenu, menuData);
             
+            // Check if a multiselect session is active.
+            if (menuData[DynMenu_Type] == DynMenu_Multiselect
+                && menuData[DynMenu_HandlerAction] == MenuAction_Select)
+            {
+                // Still active, menu is being redisplayed. Don't send abort action.
+                return;
+            }
+            
             // Get menu handler.
             new DynMenuLib_Handler:handler = menuData[DynMenu_Handler];
+            
+            // Set current action.
+            DynMenuLib_SetHandlerAction(dynMenu, action);
             
             // Call handler.
             Call_StartFunction(GetMyHandle(), handler);
             Call_PushCell(dynMenu);                 // menu
             Call_PushCell(client);                  // client
-            Call_PushCell(_:DynMenuAction_Abort);   // action
+            Call_PushCell(_:DynMenuAction_Close);   // action
             Call_PushCell(0);                       // value (undefined in this action)
             Call_Finish();
+            
+            // Update dynmenu handle in case menu was deleted in callback above.
+            dynMenu = DynMenuLib_FindMenuByMenulib(menu);
+            
+            // Check if the menu still exists.
+            if (dynMenu != INVALID_HANDLE)
+            {
+                // Unset current action.
+                DynMenuLib_SetHandlerAction(dynMenu, MenuAction:-1);
+            }
         }
     }
 }
@@ -1177,6 +1255,9 @@ public DynMenuLib_ListHandler(Handle:menu, client, slot)
         }
     }
     
+    // Set current action.
+    DynMenuLib_SetHandlerAction(dynMenu, MenuAction_Select);
+    
     // Call handler.
     Call_StartFunction(GetMyHandle(), handler);
     Call_PushCell(dynMenu);                 // menu
@@ -1198,6 +1279,8 @@ public DynMenuLib_ListHandler(Handle:menu, client, slot)
         new Handle:fromMenu = menuData[DynMenu_FromMenu];
         DynMenuLib_SendMenuAtItem(dynMenu, client, start, fromMenu);
     }
+    
+    // (Note: Don't unset current handler action here. It's done in end action.)
 }
 
 /**
