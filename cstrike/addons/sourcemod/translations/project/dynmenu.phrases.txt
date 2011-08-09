@@ -36,14 +36,6 @@
 		"no"		"Reduser med {1}"
 	}
 	
-	// {1}: small or large step
-	"dynmenulib jump"
-	{
-		"#format"	"{1:d}"
-		"en"		"Skip {1}"
-		"no"		"Hopp over {1}"
-	}
-	
 	"dynmenulib next"
 	{
 		"en"		"Next"
@@ -56,15 +48,49 @@
 		"no"		"Forrige"
 	}
 	
+	// {1}: small or large step
+	"dynmenulib next n"
+	{
+		"#format"	"{1:d}"
+		"en"		"Next {1}"
+		"no"		"Neste {1}"
+	}
+	
+	// {1}: small or large step
+	"dynmenulib previous n"
+	{
+		"#format"	"{1:d}"
+		"en"		"Previous {1}"
+		"no"		"Forrige {1}"
+	}
+	
 	"dynmenulib current value"
 	{
 		"en"		"Current value:"
 		"no"		"Gjeldende verdi:"
 	}
 	
-	"dynmenulib selected"
+	"dynmenulib lower bound numeric"
 	{
-		"en"		"Number of selected:"
-		"no"		"Antall valgt:"
+		"en"		"Lower value isn't allowed. Using lowest value."
+		"no"		"Lavere verdi er ikke tillatt. Bruker laveste verdi."
+	}
+	
+	"dynmenulib upper bound numeric"
+	{
+		"en"		"Higher value isn't allowed. Using highest value."
+		"no"		"Høyere verdi er ikke tillatt. Bruker høyeste verdi."
+	}
+	
+	"dynmenulib lower bound select"
+	{
+		"en"		"Can't deselect. Minimum number of selected entries reached."
+		"no"		"Kan ikke fjerne markering. Minimum antall merkede elementer nådd."
+	}
+	
+	"dynmenulib upper bound select"
+	{
+		"en"		"Can't select. Maximum number of selected entries reached."
+		"no"		"Kan ikke markere. Maksimum antall merkede elementer nådd."
 	}
 }

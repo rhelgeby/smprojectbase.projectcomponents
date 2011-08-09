@@ -105,6 +105,20 @@ enum DynMenuAction
 }
 
 /**
+ * Actions performed in loop menus.
+ *
+ * Note: The order must match the order displayed in the menu because the menu
+ *       item slot index is directly casted to a loop action.
+ */
+enum DynMenuLoopAction
+{
+    DynMenuLoop_IncLarge,       /** Increased large step. */
+    DynMenuLoop_IncSmall,       /** Increased small step. */
+    DynMenuLoop_DecSmall,       /** Decreased small step. */
+    DynMenuLoop_DecLarge        /** Decreased large step. */
+}
+
+/**
  * Dynamic menu data structure.
  *
  * Note: Some attributes have different purposes depending on DynMenu_Type. See
@@ -123,14 +137,14 @@ enum DynMenuData
     DynMenuLib_Handler:DynMenu_Handler,     /** Function to call when the user performs an action. */
     MenuAction:DynMenu_HandlerAction,       /** Buffer for current action being handled. Only valid in handler. */
     
-    any:DynMenu_LowerLimit,         /** Numeric: Lowest value   | Multiselect: Min no. of entries selected | Others: No effect */
-    any:DynMenu_UpperLimit,         /** Numeric: Highest value  | Multiselect: Max no. of entries selected | Others: No effect */
+    any:DynMenu_LowerLimit,         /** Numeric: Lowest value   | Multiselect: Min no. of entries selected | String: No effect */
+    any:DynMenu_UpperLimit,         /** Numeric: Highest value  | Multiselect: Max no. of entries selected | String: No effect */
     
-    any:DynMenu_SmallStep,          /** Loop mode only -- Numeric: Smallest change | String/Multiselect: Smallest index change */
-    any:DynMenu_LargeStep,          /** Loop mode only -- Numeric: Largest change  | String/Multiselect: Largest index cange */
+    any:DynMenu_SmallStep,          /** Loop mode only -- Numeric: Smallest change | String: Smallest index change */
+    any:DynMenu_LargeStep,          /** Loop mode only -- Numeric: Largest change  | String: Largest index cange */
     
     any:DynMenu_CurrentValue,       /** Numeric: Current value | String: Current entry index | Multiselect: Handle to boolean array for selected entries. */
-    DynMenu_CurrentPosition,        /** Current position in the menu. Used for redisplaying menu at the last page when redisplaying menu. */
+    DynMenu_CurrentPosition,        /** List mode: Current position in the menu. */
 }
 
 /**
@@ -193,8 +207,9 @@ static stock Handle:DynMenu_MenulibIndex;
  *
  * @param menuData      Menu data structure.
  *
- * @return              Handle to dynamic menu. Close this handle when the menu
- *                      is no longer used.
+ * @return              Handle to dynamic menu. Do not close the handle
+ *                      directly. Use DynMenuLib_DeleteMenu when the menu is no
+ *                      longer used. This will close its handle.
  *
  * @error               Menu identifier already in use, or invalid data.
  */
@@ -204,19 +219,27 @@ stock Handle:DynMenuLib_CreateMenu(menuData[DynMenuData])
      *   Validation and fixes   *
      ****************************/
     
-    // TODO: A bit ugly and repeated validation code because of multipurpose
-    //       parameters. There are room for improvements, but first step is to
-    //       make it work.
-    
-    // Validate mode and type.
-    if ((menuData[DynMenu_Type] == DynMenu_Integer || menuData[DynMenu_Type] == DynMenu_Float)
-        && menuData[DynMenu_Mode] == DynMenu_List)
+    // Validate that mode and types support eachother.
+    switch (menuData[DynMenu_Mode])
     {
-        // Numeric type supports loop mode only.
-        ThrowError("Cannot use list display mode for numeric types. Numeric types only support loop mode.");
+        case DynMenu_List:
+        {
+            if ((menuData[DynMenu_Type] == DynMenu_Integer || menuData[DynMenu_Type] == DynMenu_Float))
+            {
+                // Numeric type supports loop mode only.
+                ThrowError("List mode doesn't suppoert numeric types. Use loop mode.");
+            }
+        }
+        case DynMenu_Loop:
+        {
+            if (menuData[DynMenu_Type] == DynMenu_Multiselect)
+            {
+                ThrowError("Loop mode doesn't support multiselect type. Use list mode.");
+            }
+        }
     }
     
-    // Validate entries if string or multiselect.
+    // Validate entries if type is string or multiselect.
     new numEntries;
     if (menuData[DynMenu_Type] == DynMenu_String
         || menuData[DynMenu_Type] == DynMenu_Multiselect)
@@ -280,7 +303,7 @@ stock Handle:DynMenuLib_CreateMenu(menuData[DynMenuData])
             // Swap if necessarry.
             if (lower > upper)
             {
-                Util_SwapFloat(lower, upper);
+                Util_SwapCell(lower, upper);
                 menuData[DynMenu_LowerLimit] = lower;
                 menuData[DynMenu_UpperLimit] = upper;
             }
@@ -349,12 +372,12 @@ stock Handle:DynMenuLib_CreateMenu(menuData[DynMenuData])
                 
                 // Validate step size.
                 if (small == 0
-                    || small < menuData[DynMenu_LowerLimit])
+                    || small < Float:menuData[DynMenu_LowerLimit])
                 {
                     ThrowError("Small step size out of bounds: %f", small);
                 }
                 if (large == 0
-                    || large > menuData[DynMenu_UpperLimit])
+                    || large > Float:menuData[DynMenu_UpperLimit])
                 {
                     ThrowError("Large step size out of bounds: %f", large);
                 }
@@ -362,7 +385,7 @@ stock Handle:DynMenuLib_CreateMenu(menuData[DynMenuData])
                 // Swap if necessarry.
                 if (small > large)
                 {
-                    Util_SwapFloat(small, large);
+                    Util_SwapCell(small, large);
                     menuData[DynMenu_SmallStep] = small;
                     menuData[DynMenu_LargeStep] = large;
                 }
@@ -395,7 +418,7 @@ stock Handle:DynMenuLib_CreateMenu(menuData[DynMenuData])
         }
     }
     
-    // Validate that initial value matches entry size.
+    // Validate that initial value matches entry count in string and multiselect.
     switch (menuData[DynMenu_Type])
     {
         case DynMenu_String:
@@ -421,7 +444,7 @@ stock Handle:DynMenuLib_CreateMenu(menuData[DynMenuData])
             }
             else
             {
-                // Not specified. Prepare boolean list with no entries selected.
+                // Not specified. Create boolean list with no entries selected.
                 initialValue = CreateArray(_, numEntries);
                 for (new i = 0; i < numEntries; i++)
                 {
@@ -525,17 +548,18 @@ stock Handle:DynMenuLib_CreateMenu(menuData[DynMenuData])
  * @param largeStep     Only used in loop mode (otherwise ignored). Largest
  *                      value or entry index change. Bigger than zero.
  *
- * @param initialValue  Numeric: Initial value
- *                      String: Entry index selected
+ * @param initialValue  Numeric: Initial value.
  *                      Multiselect: Handle to boolean array (matching size)
- *                      with selected entries set to true. Or use INVALID_HANDLE
- *                      to select none.
+ *                      with selected entries set to true. The array may be
+ *                      changed by dynmenulib. Or use INVALID_HANDLE to select
+ *                      none.
  * @param fromMenu      Optional. Handle to previous menulib menu (for the
  *                      navigation stack). This menu is displayed if the user
  *                      press "back".
  *
- * @return              Handle to dynamic menu. Close this handle when the
- *                      menu is no longer used.
+ * @return              Handle to dynamic menu. Do not close the handle
+ *                      directly. Use DynMenuLib_DeleteMenu when the menu is no
+ *                      longer used. This will close its handle.
  *
  * @error               Menu identifier already in use, or invalid data.
  */
@@ -572,7 +596,7 @@ stock Handle:DynMenuLib_CreateMenuEx(const String:id[],
     menuData[DynMenu_LargeStep] = largeStep;
     
     menuData[DynMenu_CurrentValue] = initialValue;      // Current value is initial value.
-    menuData[DynMenu_CurrentPosition] = 0;              // Start at first page.
+    menuData[DynMenu_CurrentPosition] = 0;              // Start at first page/entry.
     
     return DynMenuLib_CreateMenu(menuData);
 }
@@ -887,6 +911,17 @@ static stock DynMenuLib_SetFromMenu(Handle:menu, Handle:fromMenu)
 }
 
 /**
+ * Sets current value.
+ *
+ * @param menu      Dynamic menu.
+ * @param value     New value to set.
+ */
+static stock DynMenuLib_SetCurrentValue(Handle:menu, any:value)
+{
+    SetArrayCell(menu, DYNMENULIB_CURRENT_VALUE, value);
+}
+
+/**
  * Sets (or unsets) the current menu action being handled.
  *
  * @param menu      Dynamic menu.
@@ -982,7 +1017,7 @@ static stock DynMenuLib_BuildLoopMenu(menuData[DynMenuData], bool:update = false
 {
     new Handle:menuLibMenu = menuData[DynMenu_MenuLib];
     
-    // Numeric: Current value | String: Current entry index | Multiselect: Handle to boolean array for selected entries.
+    // Numeric: Current value | String: Current entry index
     new any:currentValue = menuData[DynMenu_CurrentValue];
     
     new any:largeStep = menuData[DynMenu_LargeStep];
@@ -1040,47 +1075,27 @@ static stock DynMenuLib_BuildLoopMenu(menuData[DynMenuData], bool:update = false
                 Format(decreaseSmall, sizeof(decreaseSmall), "%t", "dynmenulib decrease float", smallStep);
             }
         }
-        case DynMenu_String, DynMenu_Multiselect:
+        case DynMenu_String:
         {
-            // Current value (entry string).
-            GetArrayString(menuData[DynMenu_Entries], currentValue, strValue, sizeof(strValue));
+            // Get current entry viewing.
+            new entry = menuData[DynMenu_CurrentPosition];
             
-            // Add check box if multiselect.
-            if (menuData[DynMenu_Type] == DynMenu_Multiselect)
-            {
-                // Get whether the current entry is selected, and store the
-                // corresponding character. When using multiselect the current value
-                // is a array handle to a boolean list.
-                new selectedChar = bool:GetArrayCell(menuData[DynMenu_Entries], currentValue) ? DYNMENULIB_SELECTED_CHAR : ' ';
-                
-                // Prefix with check box.
-                Format(strValue, sizeof(strValue), "[%c] %s", selectedChar, strValue);
-            }
+            // Get entry string value.
+            GetArrayString(menuData[DynMenu_Entries], entry, strValue, sizeof(strValue));
             
-            // Navigation control labels (only when building, not updating).
+            // Navigation control labels (only set when building, not updating).
             if (!update)
             {
-                Format(increaseLarge, sizeof(increaseLarge), "%t", "dynmenulib jump", largeStep);
-                Format(increaseSmall, sizeof(increaseSmall), "%t", "dynmenulib jump", smallStep);
+                Format(increaseLarge, sizeof(increaseLarge), "%t", "dynmenulib next n", largeStep);
+                Format(increaseSmall, sizeof(increaseSmall), "%t", "dynmenulib next");
+                Format(decreaseSmall, sizeof(decreaseSmall), "%t", "dynmenulib previous");
+                Format(decreaseLarge, sizeof(decreaseLarge), "%t", "dynmenulib previous n", largeStep);
             }
         }
     }
     
     // Update title with prompt and current value.
-    switch (menuData[DynMenu_Type])
-    {
-        case DynMenu_Integer, DynMenu_Float:
-        {
-            // Display prompt and current value.
-            Format(titleBuffer, sizeof(titleBuffer), "%s\n%t %s", menuData[DynMenu_Prompt], "dynmenulib current value", strValue);
-        }
-        case DynMenu_String, DynMenu_Multiselect:
-        {
-            // Display prompt, number of selected entries and current entry.
-            new selectedCount = DynMenuLib_GetSelectedCount(currentValue);
-            Format(titleBuffer, sizeof(titleBuffer), "%s\n%t %s\n%t %s", menuData[DynMenu_Prompt], "dynmenulib selected", selectedCount, "dynmenulib current value", strValue);
-        }
-    }
+    Format(titleBuffer, sizeof(titleBuffer), "%s\n%t %s", menuData[DynMenu_Prompt], "dynmenulib current value", strValue);
     MenuLib_MenuWriteString(menuLibMenu, MenuData_Title, ML_DATA_TITLE, titleBuffer);
     
     // Add buttons. No update needed, control labels doesn't change.
@@ -1120,6 +1135,193 @@ static stock DynMenuLib_GetSelectedCount(Handle:selectedEntries)
 }
 
 
+/**
+ * Tests whether a selection/deselection in a multiselect menu will go out of
+ * bounds.
+ *
+ * Note: This function assumes that the specified entry will be selected or
+ *       deselected, depending on it's current state. Only call this function
+ *       before toggling the selected state.
+ *
+ * @param menuData      Dynamic menu data.
+ * @param selected      Current entry's selected state.
+ *
+ * @return              0 if inside bounds,
+ *                      -1 if outside lower bound, or 
+ *                      1 if outside upper bound.
+ */
+static stock DynMenuLib_MultiselBoundsCheck(menuData[DynMenuData], bool:selected)
+{
+    new selectedCount = DynMenuLib_GetSelectedCount(menuData[DynMenu_CurrentValue]);
+    
+    if (selected)
+    {
+        // Entry is being deselected. Check min bounds.
+        if (selectedCount - 1 < menuData[DynMenu_LowerLimit])
+        {
+            // Lower bound reached.
+            return -1;
+        }
+    }
+    else
+    {
+        // Entry is being selected. Check max bounds.
+        if (selectedCount + 1 > menuData[DynMenu_UpperLimit])
+        {
+            // Upper bound reached.
+            return 1;
+        }
+    }
+    
+    // Inside bounds.
+    return 0;
+}
+
+/**
+ * Handles the multiselect bounds testing and displays error messages if outside
+ * bounds.
+ *
+ * The selected entry's state is toggled if bounds test was passed.
+ *
+ * @param client    Client to display message to.
+ * @param menuData  Dynamic menu data.
+ * @param entry     Current entry.
+ *
+ * @return          True if passed bounds test, false otherwise.
+ */
+static stock bool:DynMenuLib_MultiselectHandler(client, menuData[DynMenuData], entry)
+{
+    // Get array with selected entries.
+    new Handle:selectedEntries = menuData[DynMenu_CurrentValue];
+    
+    // Get whether current entry is selected.
+    new bool:selected = GetArrayCell(selectedEntries, entry);
+    
+    SetGlobalTransTarget(client);
+    decl String:errMsg[128];
+    errMsg[0] = 0;
+    
+    // Check bounds. Print error message if reached.
+    new bounds = DynMenuLib_MultiselBoundsCheck(menuData, selected);
+    if (bounds > 0)
+    {
+        // Upper bound reached.
+        Format(errMsg, sizeof(errMsg), "%t", "dynmenulib upper bound select");
+        PrintToChat(client, errMsg);
+    }
+    else if (bounds < 0)
+    {
+        // Lower bound reached.
+        Format(errMsg, sizeof(errMsg), "%t", "dynmenulib lower bound select");
+        PrintToChat(client, errMsg);
+    }
+    else
+    {
+        // Toggle selected entry.
+        SetArrayCell(selectedEntries, entry, !selected);
+    }
+    
+    return (bounds == 0);
+}
+
+/**
+ * Tests wheter changing a value a certain amount will go outside bounds.
+ *
+ * @param menuData      Dynamic menu data.
+ * @param value         New value to check.
+ * @param floatType     Optional. Treat values and limits as float values.
+ *                      Default is false.
+ *
+ * @return              0 if inside bounds,
+ *                      -1 if outside lower bound, or 
+ *                      1 if outside upper bound.
+ */
+static stock DynMenuLib_NumericBoundsCheck(menuData[DynMenuData], any:value, bool:floatType = false)
+{
+    if (floatType)
+    {
+        if (Float:value < Float:menuData[DynMenu_LowerLimit])
+        {
+            // Lower bound reached.
+            return -1;
+        }
+        if (Float:value > Float:menuData[DynMenu_UpperLimit])
+        {
+            // Upper bound reached.
+            return 1;
+        }
+    }
+    else
+    {
+        if (value < 0 &&
+            value < menuData[DynMenu_LowerLimit])
+        {
+            // Lower bound reached.
+            return -1;
+        }
+        if (value > 0 &&
+                 value > menuData[DynMenu_UpperLimit])
+        {
+            // Upper bound reached.
+            return 1;
+        }
+    }
+    
+    // Inside bounds.
+    return 0;
+}
+
+/**
+ * Calculates a step value to add to the current value, according to the
+ * specified loop action.
+ *
+ * @param menuData      Dynamic menu data.
+ * @param loopAction    Loop action performed.
+ * @param floatType     Treat value as a float value.
+ *
+ * @return              Step value.
+ */
+static stock any:DynMenuLib_GetStep(menuData[DynMenuData], DynMenuLoopAction:loopAction, bool:floatType)
+{
+    switch (loopAction)
+    {
+        case DynMenuLoop_DecLarge:
+        {
+            if (floatType)
+            {
+                return 0.0 - Float:menuData[DynMenu_LargeStep];
+            }
+            else
+            {
+                return -menuData[DynMenu_LargeStep];
+            }
+        }
+        case DynMenuLoop_DecSmall:
+        {
+            if (floatType)
+            {
+                return 0.0 - Float:menuData[DynMenu_SmallStep];
+            }
+            else
+            {
+                return -menuData[DynMenu_SmallStep];
+            }
+        }
+        case DynMenuLoop_IncSmall:
+        {
+            return menuData[DynMenu_SmallStep];
+        }
+        case DynMenuLoop_IncLarge:
+        {
+            return menuData[DynMenu_LargeStep];
+        }
+    }
+    
+    // Should never reach this line.
+    return 0;
+}
+
+
 // Callback handlers (for menulib)
 // -------------------------------
 
@@ -1128,18 +1330,19 @@ static stock DynMenuLib_GetSelectedCount(Handle:selectedEntries)
  * Called for all MenuAction actions except voting.  See menus.inc.
  * 
  * @param menu      The menulib menu handle.
- * @param action    Action client is doing in menu.  May be any action except voting ones.  MenuAction_Select can be handled in other callbacks.
+ * @param action    Action client is doing in menu.  May be any action except
+ *                  voting ones.  MenuAction_Select can be handled in other
+ *                  callbacks.
  * @param client    The client index.
  * @param slot      The menu slot selected. (starting from 0)
  */
 public DynMenuLib_GeneralHandler(Handle:menu, MenuAction:action, client, slot)
 {
-    // Note: Calling the handler when action is MenuAction_Cancel isn't
+    // Note: Calling the dynmenu handler when action is MenuAction_Cancel isn't
     //       necessarry because MenuAction_End is guaranteed to be called.
     //       Otherwise it would result in a double call when pressing "back"
     //       or "exit" buttons.
     
-    // Don't get handle here, only in actions it's used.
     new Handle:dynMenu;
     
     switch (action)
@@ -1149,7 +1352,8 @@ public DynMenuLib_GeneralHandler(Handle:menu, MenuAction:action, client, slot)
             // Get dynmenu handle.
             dynMenu = DynMenuLib_FindMenuByMenulib(menu);
             
-            // Unset current action. This terminates a multiselect session.
+            // Unset current action. This terminates a loop menu or multiselect
+            // session so the menu won't be redisplayed in end action.
             DynMenuLib_SetHandlerAction(dynMenu, MenuAction:-1);
         }
         case MenuAction_End:
@@ -1163,11 +1367,13 @@ public DynMenuLib_GeneralHandler(Handle:menu, MenuAction:action, client, slot)
             new menuData[DynMenuData];
             DynMenuLib_GetMenuData(dynMenu, menuData);
             
-            // Check if a multiselect session is active.
-            if (menuData[DynMenu_Type] == DynMenu_Multiselect
+            // Check if a loop menu or a multiselect session is active.
+            if ((menuData[DynMenu_Type] == DynMenu_Multiselect
+                || menuData[DynMenu_Mode] == DynMenu_Loop)
                 && menuData[DynMenu_HandlerAction] == MenuAction_Select)
             {
-                // Still active, menu is being redisplayed. Don't send abort action.
+                // Still active, menu is being redisplayed. Don't send abort
+                // action.
                 return;
             }
             
@@ -1201,7 +1407,8 @@ public DynMenuLib_GeneralHandler(Handle:menu, MenuAction:action, client, slot)
 /**
  * Menulib callback handler for list menus.
  *
- * Called when a certain button in a menu is pressed.  The menu action is always MenuAction_Select.
+ * Called when a certain button in a menu is pressed.  The menu action is always
+ * MenuAction_Select.
  * 
  * @param menu      The menulib menu handle.
  * @param client    The client index.
@@ -1218,6 +1425,7 @@ public DynMenuLib_ListHandler(Handle:menu, client, slot)
     
     // Get menu handler.
     new DynMenuLib_Handler:handler = menuData[DynMenu_Handler];
+    new bool:callHandler = true;
     
     // Resolve selected entry index.
     decl String:buttonInfo[ML_DATA_INFO];
@@ -1226,7 +1434,7 @@ public DynMenuLib_ListHandler(Handle:menu, client, slot)
     new entry = StringToInt(buttonInfo);
     
     // Get value (entry index for string, array handle for multiselect).
-    new value = 0;
+    new any:value = 0;
     switch (menuData[DynMenu_Type])
     {
         case DynMenu_String:
@@ -1236,15 +1444,9 @@ public DynMenuLib_ListHandler(Handle:menu, client, slot)
         }
         case DynMenu_Multiselect:
         {
-            // Get array with selected entries.
-            new Handle:selectedEntries = menuData[DynMenu_CurrentValue];
-            
-            // Toggle whether current entry is selected.
-            new bool:selected = GetArrayCell(selectedEntries, entry);
-            SetArrayCell(selectedEntries, entry, !selected);
-            
-            // Set value in handler.
-            value = _:selectedEntries;
+            // Handles bound testing, error messages and update of entry state.
+            callHandler = DynMenuLib_MultiselectHandler(client, menuData, entry);
+            value = menuData[DynMenu_CurrentValue];
         }
         default:
         {
@@ -1255,16 +1457,21 @@ public DynMenuLib_ListHandler(Handle:menu, client, slot)
         }
     }
     
-    // Set current action.
+    // Set current action. Used by DynMenuLib_GeneralHandler to find out when
+    // abort action should be fired.
     DynMenuLib_SetHandlerAction(dynMenu, MenuAction_Select);
     
-    // Call handler.
-    Call_StartFunction(GetMyHandle(), handler);
-    Call_PushCell(dynMenu);                 // menu
-    Call_PushCell(client);                  // client
-    Call_PushCell(_:DynMenuAction_Select);  // action
-    Call_PushCell(value);                   // value (entry index or array handle)
-    Call_Finish();
+    // Call handler if selection was allowed.
+    if (callHandler)
+    {
+        // Call handler.
+        Call_StartFunction(GetMyHandle(), handler);
+        Call_PushCell(dynMenu);                 // menu
+        Call_PushCell(client);                  // client
+        Call_PushCell(_:DynMenuAction_Select);  // action
+        Call_PushCell(value);                   // value (entry index or array handle)
+        Call_Finish();
+    }
     
     // Update and re-display menu if using multiselect.
     if (menuData[DynMenu_Type] == DynMenu_Multiselect)
@@ -1276,8 +1483,7 @@ public DynMenuLib_ListHandler(Handle:menu, client, slot)
         new start = GetMenuSelectionPosition();
         
         // Send menu again.
-        new Handle:fromMenu = menuData[DynMenu_FromMenu];
-        DynMenuLib_SendMenuAtItem(dynMenu, client, start, fromMenu);
+        DynMenuLib_SendMenuAtItem(dynMenu, client, start, menuData[DynMenu_FromMenu]);
     }
     
     // (Note: Don't unset current handler action here. It's done in end action.)
@@ -1286,7 +1492,8 @@ public DynMenuLib_ListHandler(Handle:menu, client, slot)
 /**
  * Menulib callback handler for loop menus.
  *
- * Called when a certain button in a menu is pressed.  The menu action is always MenuAction_Select.
+ * Called when a certain button in a menu is pressed.  The menu action is always
+ * MenuAction_Select.
  * 
  * @param menu      The menulib menu handle.
  * @param client    The client index.
@@ -1294,5 +1501,109 @@ public DynMenuLib_ListHandler(Handle:menu, client, slot)
  */
 public DynMenuLib_LoopHandler(Handle:menu, client, slot)
 {
+    // Get dynamic menu.
+    new Handle:dynMenu = DynMenuLib_FindMenuByMenulib(menu);
     
+    // Get menu data.
+    new menuData[DynMenuData];
+    DynMenuLib_GetMenuData(dynMenu, menuData);
+    
+    // Get menu handler.
+    new DynMenuLib_Handler:handler = menuData[DynMenu_Handler];
+    new bool:callHandler = true;
+    
+    // Get current value.
+    new any:value = menuData[DynMenu_CurrentValue];
+    
+    // Get whether data type is float.
+    new bool:floatType = (menuData[DynMenu_Type] == DynMenu_Float);
+    
+    // Get loop action. The slot will never be a exit/back button in this
+    // handler, so it's safe to cast direclty.
+    new DynMenuLoopAction:loopAction = DynMenuLoopAction:slot;
+    
+    // Get step amount.
+    new any:step = DynMenuLib_GetStep(menuData, loopAction, floatType);
+    
+    // Calculate new value.
+    switch (menuData[DynMenu_Type])
+    {
+        case DynMenu_Integer, DynMenu_String:
+        {
+            value += step;
+        }
+        case DynMenu_Float:
+        {
+            value = Float:value + Float:step;
+        }
+    }
+    
+    SetGlobalTransTarget(client);
+    decl String:errMsg[128];
+    errMsg[0] = 0;
+    
+    // Check bounds and update value.
+    switch (menuData[DynMenu_Type])
+    {
+        case DynMenu_Integer, DynMenu_Float:
+        {
+            new bounds = DynMenuLib_NumericBoundsCheck(menuData, value, floatType);
+            if (bounds == 1)
+            {
+                // Upper bound reached.
+                Format(errMsg, sizeof(errMsg), "%t", "dynmenulib upper bound numeric");
+                PrintToChat(client, errMsg);
+
+                // TODO: Update value if changed to upper limit.
+                callHandler = false;
+            }
+            else if (bounds == -1)
+            {
+                // Lower bound reached.
+                Format(errMsg, sizeof(errMsg), "%t", "dynmenulib lower bound numeric");
+                PrintToChat(client, errMsg);
+                
+                // TODO: Update value if changed to lower limit.
+                callHandler = false;
+            }
+            else
+            {
+                // Inside bounds. Update value.
+                menuData[DynMenu_CurrentValue] = value;
+                DynMenuLib_SetCurrentValue(dynMenu, value);
+            }
+        }
+        case DynMenu_String:
+        {
+            // String type doesn't have bounds check. Update value.
+            menuData[DynMenu_CurrentValue] = value;
+            DynMenuLib_SetCurrentValue(dynMenu, value);
+        }
+    }
+    
+    // Set current action. Used by DynMenuLib_GeneralHandler to find out when
+    // abort action should be fired.
+    DynMenuLib_SetHandlerAction(dynMenu, MenuAction_Select);
+    
+    // Only call handler if a value was changed.
+    if (callHandler)
+    {
+        // Call handler.
+        Call_StartFunction(GetMyHandle(), handler);
+        Call_PushCell(dynMenu);                 // menu
+        Call_PushCell(client);                  // client
+        Call_PushCell(_:DynMenuAction_Select);  // action
+        Call_PushCell(value);                   // value
+        Call_Finish();
+        
+        // Update view position if using string type.
+        if (menuData[DynMenu_Type] == DynMenu_String)
+        {
+            menuData[DynMenu_CurrentPosition] += step;
+        }
+    }
+    
+    // Update and re-display loop menu.
+    DynMenuLib_BuildLoopMenu(menuData, true);
+    DynMenuLib_SendMenu(dynMenu, client, menuData[DynMenu_FromMenu]);
 }

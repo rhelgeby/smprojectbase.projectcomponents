@@ -202,22 +202,9 @@ stock Util_IsVecInArray(Float:vec[3], Float:vecs[][3], numvecs)
  * @param value1    Input/Output. First value.
  * @param value2    Input/Output. Second value.
  */
-stock Util_SwapCell(&value1, &value2)
+stock Util_SwapCell(&any:value1, &any:value2)
 {
-    new temp = value1;
-    value1 = value2;
-    value2 = temp;
-}
-
-/**
- * Swaps the value in two float variables.
- *
- * @param value1    Input/Output. First value.
- * @param value2    Input/Output. Second value.
- */
-stock Util_SwapFloat(&Float:value1, &Float:value2)
-{
-    new Float:temp = value1;
+    new any:temp = value1;
     value1 = value2;
     value2 = temp;
 }
