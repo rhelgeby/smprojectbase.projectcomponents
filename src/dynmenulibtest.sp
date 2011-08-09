@@ -3,15 +3,18 @@
 #include "libraries/dynmenulib"
 
 new Handle:DummyStringEntries;
+new Handle:DummySelectedEntries;
 
 public OnPluginStart()
 {
     LoadTranslations("project/dynmenu.phrases");
     
-    RegConsoleCmd("sm_dynmenu_int_test", Command_IntTest);
-    RegConsoleCmd("sm_dynmenu_float_test", Command_FloatTest);
-    RegConsoleCmd("sm_dynmenu_string_list_test", Command_StringListTest);
-    RegConsoleCmd("sm_dynmenu_multiselect_list_test", Command_MultiselectListTest);
+    RegConsoleCmd("sm_dynmenu", PrintCommands);
+    RegConsoleCmd("sm_dynmenu_int", Command_IntTest);
+    RegConsoleCmd("sm_dynmenu_float", Command_FloatTest);
+    RegConsoleCmd("sm_dynmenu_string_list", Command_StringListTest);
+    RegConsoleCmd("sm_dynmenu_string_loop", Command_StringLoopTest);
+    RegConsoleCmd("sm_dynmenu_multiselect", Command_MultiselectTest);
     
     DummyStringEntries = CreateArray(64);
     PushArrayString(DummyStringEntries, "Entry 1");
@@ -26,6 +29,32 @@ public OnPluginStart()
     PushArrayString(DummyStringEntries, "Item 1");
     PushArrayString(DummyStringEntries, "Item 2");
     PushArrayString(DummyStringEntries, "Item 3");
+    
+    DummySelectedEntries = CreateArray();
+    PushArrayCell(DummySelectedEntries, false);
+    PushArrayCell(DummySelectedEntries, true);
+    PushArrayCell(DummySelectedEntries, false);
+    PushArrayCell(DummySelectedEntries, true);
+    PushArrayCell(DummySelectedEntries, false);
+    PushArrayCell(DummySelectedEntries, false);
+    PushArrayCell(DummySelectedEntries, false);
+    PushArrayCell(DummySelectedEntries, false);
+    PushArrayCell(DummySelectedEntries, false);
+    PushArrayCell(DummySelectedEntries, false);
+    PushArrayCell(DummySelectedEntries, false);
+    PushArrayCell(DummySelectedEntries, false);
+    
+}
+
+public Action:PrintCommands(client, argc)
+{
+    ReplyToCommand(client, "Dynamic menu test commands:");
+    ReplyToCommand(client, "sm_dynmenu_int");
+    ReplyToCommand(client, "sm_dynmenu_float");
+    ReplyToCommand(client, "sm_dynmenu_string_list");
+    ReplyToCommand(client, "sm_dynmenu_string_loop");
+    ReplyToCommand(client, "sm_dynmenu_multiselect");
+    return Plugin_Handled;
 }
 
 PrintSelectedEntries(client, Handle:selectedEntries)
@@ -109,7 +138,7 @@ public IntTestHandler(Handle:menu, client, DynMenuAction:action, any:value)
         }
         case DynMenuAction_Close:
         {
-            PrintToServer("Integer test menu closed.");
+            PrintToServer("Integer menu closed.");
             
             // Cleanup.
             DynMenuLib_DeleteMenu(menu, true);
@@ -176,7 +205,7 @@ public FloatTestHandler(Handle:menu, client, DynMenuAction:action, any:value)
         }
         case DynMenuAction_Close:
         {
-            PrintToServer("Float test menu closed.");
+            PrintToServer("Float menu closed.");
             
             // Cleanup.
             DynMenuLib_DeleteMenu(menu, true);
@@ -205,7 +234,6 @@ public Action:Command_StringListTest(client, argc)
                                    0,                       // Small step (not used in list mode)
                                    0,                       // Large step (not used in list mode)
                                    2);                      // Initial value (selected index)
-    ReplyToCommand(client, "Menu created: %x", menu);
     
     DynMenuLib_DisplayMenu(menu, client);
     
@@ -258,7 +286,7 @@ public StringListHandler(Handle:menu, client, DynMenuAction:action, any:value)
 
 // -----------------------------------------------------------------------------
 
-public Action:Command_MultiselectListTest(client, argc)
+public Action:Command_StringLoopTest(client, argc)
 {
     new Handle:menu;
     
@@ -267,17 +295,16 @@ public Action:Command_MultiselectListTest(client, argc)
     SetGlobalTransTarget(client);
     
     menu = DynMenuLib_CreateMenuEx("myMenu",                // ID
-                                   "Toggle options",        // Prompt
-                                   DynMenu_Multiselect,     // Data type
-                                   DynMenu_List,            // Mode
+                                   "Select an option",      // Prompt
+                                   DynMenu_String,          // Data type
+                                   DynMenu_Loop,            // Mode
                                    DummyStringEntries,      // Dummy entries
-                                   MultiselectListHandler,  // Callback
+                                   StringLoopHandler,       // Callback
                                    0,                       // Lower limit (not used with string type)
                                    0,                       // Upper limit (not used with string type)
-                                   0,                       // Small step (not used in list mode)
-                                   0,                       // Large step (not used in list mode)
-                                   INVALID_HANDLE);         // Initial value (no list of selected indexes; none selected)
-    ReplyToCommand(client, "Menu created: %x", menu);
+                                   1,                       // Small step
+                                   5,                       // Large step
+                                   2);                      // Initial value (selected index)
     
     DynMenuLib_DisplayMenu(menu, client);
     
@@ -306,7 +333,78 @@ public Action:Command_MultiselectListTest(client, argc)
  *
  * @noreturn
  */
-public MultiselectListHandler(Handle:menu, client, DynMenuAction:action, any:value)
+public StringLoopHandler(Handle:menu, client, DynMenuAction:action, any:value)
+{
+    switch (action)
+    {
+        case DynMenuAction_Select:
+        {
+            // Get entry string.
+            new String:strValue[64];
+            GetArrayString(DummyStringEntries, value, strValue, sizeof(strValue));
+            
+            PrintToChat(client, "Value selected: %s", strValue);
+        }
+        case DynMenuAction_Close:
+        {
+            PrintToServer("String loop menu closed.");
+            
+            // Cleanup.
+            DynMenuLib_DeleteMenu(menu, true);
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
+
+public Action:Command_MultiselectTest(client, argc)
+{
+    new Handle:menu;
+    
+    // Must be set before building menu, so phrases are translated to correct
+    // language.
+    SetGlobalTransTarget(client);
+    
+    menu = DynMenuLib_CreateMenuEx("myMenu",                // ID
+                                   "Toggle options",        // Prompt
+                                   DynMenu_Multiselect,     // Data type
+                                   DynMenu_List,            // Mode
+                                   DummyStringEntries,      // Dummy entries
+                                   MultiselectHandler,      // Callback
+                                   2,                       // Lower limit
+                                   8,                       // Upper limit
+                                   0,                       // Small step (not used in list mode)
+                                   0,                       // Large step (not used in list mode)
+                                   DummySelectedEntries);   // Initial value (no list of selected indexes; none selected)
+    
+    DynMenuLib_DisplayMenu(menu, client);
+    
+    ReplyToCommand(client, "Menu displayed.");
+    return Plugin_Handled;
+}
+
+/**
+ * User selected/changed a value, or aborted selection (see action parameter).
+ *
+ * @param menu      Handle to dynamic menu.
+ * @param client    Client that performed the action. Will be 0 if the menu was
+ *                  aborted, but by something else than the client.
+ * @param action    Menu action performed.
+ * @param value     Value(s) selected by user. See below for details:
+ *
+ *                  Action selected
+ *                  Numeric:     Selected value (cell or float).
+ *                  String:      Entry index of selected string (in entry array).
+ *                  Multiselect: Handle to array with entry indexes of selected
+ *                               entries. This handle must be closed when it's
+ *                               no longer in use.
+ *
+ *                  Action aborted
+ *                  Always zero.
+ *
+ * @noreturn
+ */
+public MultiselectHandler(Handle:menu, client, DynMenuAction:action, any:value)
 {
     switch (action)
     {
@@ -316,7 +414,7 @@ public MultiselectListHandler(Handle:menu, client, DynMenuAction:action, any:val
         }
         case DynMenuAction_Close:
         {
-            PrintToServer("Multiselect list menu closed.");
+            PrintToServer("Multiselect menu closed.");
             
             // Cleanup.
             DynMenuLib_DeleteMenu(menu, true);
