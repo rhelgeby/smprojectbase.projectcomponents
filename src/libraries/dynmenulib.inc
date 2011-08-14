@@ -56,7 +56,7 @@
  *
  * @param menu      Handle to dynamic menu.
  * @param client    Client that performed the action. Will be 0 if the menu was
- *                  aborted, but by something else than the client.
+ *                  closed, but by something else than the client.
  * @param action    Menu action performed.
  * @param value     Value(s) selected by user. See below for details:
  *
@@ -67,7 +67,7 @@
  *                               entries. This handle must be closed when it's
  *                               no longer in use.
  *
- *                  Action aborted
+ *                  Action closed
  *                  Always zero.
  *
  * @noreturn
@@ -595,7 +595,17 @@ stock Handle:DynMenuLib_CreateMenuEx(const String:id[],
     menuData[DynMenu_SmallStep] = smallStep;
     menuData[DynMenu_LargeStep] = largeStep;
     
-    menuData[DynMenu_CurrentValue] = initialValue;      // Current value is initial value.
+    if (type == DynMenu_Multiselect && initialValue != INVALID_HANDLE)
+    {
+        // Clone a handle to the selected entries list. This handle will be
+        // closed by DynMenuLib when deleting a menu, without deleting the
+        // actual custom list passed.
+        menuData[DynMenu_CurrentValue] = CloneHandle(initialValue);
+    }
+    else
+    {
+        menuData[DynMenu_CurrentValue] = initialValue;  // Current value is initial value.
+    }
     menuData[DynMenu_CurrentPosition] = 0;              // Start at first page/entry.
     
     return DynMenuLib_CreateMenu(menuData);
@@ -605,7 +615,7 @@ stock Handle:DynMenuLib_CreateMenuEx(const String:id[],
  * Deletes a dynamic menu and its belonging menulib menu.
  *
  * Note: Set inHandler to true if deleting from inside the menu's handler
- *       function.
+ *       function. Not doing this will cause errors.
  *
  * Note: The menu can only be deleted when not handling a DynMenuAction_Select
  *       action.
@@ -619,6 +629,10 @@ stock Handle:DynMenuLib_CreateMenuEx(const String:id[],
  */
 stock DynMenuLib_DeleteMenu(Handle:menu, bool:inHandler = false, bool:recursive = false)
 {
+    // TODO: Add detection for whether this menu was called from whithin a
+    //       handler. This will remove the need for inHandler parameter and
+    //       and prevent mistakes that are hard to debug.
+    
     // Get menu data.
     new menuData[DynMenuData];
     DynMenuLib_GetMenuData(menu, menuData);
@@ -628,6 +642,21 @@ stock DynMenuLib_DeleteMenu(Handle:menu, bool:inHandler = false, bool:recursive 
     {
         ThrowError("Dynamic menu cannot be deleted while handling a select action.");
     }
+    
+    new Handle:menuLibMenu = menuData[DynMenu_MenuLib];
+    
+    // TODO: Close menu if open. Prevent infinite recursion by not closing it if
+    // called from within a menu handler. Currently disabled because of buggy
+    // behavior (logic mistakes or need of small enhancements).
+    /*if (!inHandler)
+    {
+        new Handle:smMenu = Handle:MenuLib_MenuReadCell(menuLibMenu, MenuData_Handle);
+        if (smMenu != INVALID_HANDLE)
+        {
+            // Close menu if open.
+            CancelMenu(smMenu);
+        }
+    }*/
     
     // Check if deletion is recursive.
     if (recursive)
@@ -645,8 +674,7 @@ stock DynMenuLib_DeleteMenu(Handle:menu, bool:inHandler = false, bool:recursive 
         CloseHandle(menuData[DynMenu_CurrentValue]);
     }
     
-    // Get menulib menu and delete it.
-    new Handle:menuLibMenu = menuData[DynMenu_MenuLib];
+    // Delete menulib menu.
     if (inHandler)
     {
         // Menulib use menu data after the handler is done. Make it a temp menu
@@ -1078,7 +1106,7 @@ static stock DynMenuLib_BuildLoopMenu(menuData[DynMenuData], bool:update = false
         case DynMenu_String:
         {
             // Get current entry viewing.
-            new entry = menuData[DynMenu_CurrentPosition];
+            new entry = menuData[DynMenu_CurrentValue];
             
             // Get entry string value.
             GetArrayString(menuData[DynMenu_Entries], entry, strValue, sizeof(strValue));
@@ -1225,7 +1253,7 @@ static stock bool:DynMenuLib_MultiselectHandler(client, menuData[DynMenuData], e
 }
 
 /**
- * Tests wheter changing a value a certain amount will go outside bounds.
+ * Tests wheter changing a numeric value a certain amount will go outside bounds.
  *
  * @param menuData      Dynamic menu data.
  * @param value         New value to check.
@@ -1272,6 +1300,113 @@ static stock DynMenuLib_NumericBoundsCheck(menuData[DynMenuData], any:value, boo
 }
 
 /**
+ * Tests wheter jumping a certain amount of string entries will go outside
+ * bounds.
+ *
+ * @param menuData      Dynamic menu data.
+ * @param entry         New entry index to check.
+ *
+ * @return              0 if inside bounds,
+ *                      -1 if outside lower bound, or 
+ *                      1 if outside upper bound.
+ */
+static stock DynMenuLib_EntryBoundsCheck(menuData[DynMenuData], entry)
+{
+    if (entry < 0)
+    {
+        // Lower bound reached.
+        return -1;
+    }
+    
+    new Handle:entries = menuData[DynMenu_Entries];
+    new entryCount = GetArraySize(entries);
+    
+    if (entry >= entryCount)
+    {
+        // Upper bound reached.
+        return 1;
+    }
+    
+    // Inside bounds.
+    return 0;
+}
+
+/**
+ * Clamps the value according to the bounds check result.
+ *
+ * @param menuData      Dynamic menu data.
+ * @param boundsResult  Result value from the bounds check. Only -1 or 1 is
+ *                      valid values.
+ *
+ * @error               Invalid bounds result.
+ *
+ * @return              Clamped value.
+ */
+static stock any:DynMenuLib_ClampValue(menuData[DynMenuData], boundsResult)
+{
+    switch (boundsResult)
+    {
+        case -1:
+        {
+            // Lower bounds reached.
+            return menuData[DynMenu_LowerLimit];
+        }
+        case 0:
+        {
+            // Invalid state.
+            ThrowError("Invalid bounds result. Can only clamp value when nonzero.");
+        }
+        case 1:
+        {
+            // Upper bounds reached.
+            return menuData[DynMenu_UpperLimit];
+        }
+    }
+    
+    // It should never reach this line.
+    ThrowError("Invalid bounds result. Can only clamp value when nonzero.");
+    return 0;   // To satisfy compiler.
+}
+
+/**
+ * Clamps the entry index according to the bounds check result.
+ *
+ * @param menuData      Dynamic menu data.
+ * @param boundsResult  Result value from the bounds check. Only -1 or 1 is
+ *                      valid values.
+ *
+ * @error               Invalid bounds result.
+ *
+ * @return              Clamped entry index.
+ */
+static stock DynMenuLib_ClampEntry(menuData[DynMenuData], boundsResult)
+{
+    switch (boundsResult)
+    {
+        case -1:
+        {
+            // Lower bounds reached.
+            return 0;
+        }
+        case 0:
+        {
+            // Invalid state.
+            ThrowError("Invalid bounds result. Can only clamp entry index when nonzero.");
+        }
+        case 1:
+        {
+            // Upper bounds reached.
+            new Handle:entries = menuData[DynMenu_Entries];
+            return GetArraySize(entries) - 1;
+        }
+    }
+    
+    // It should never reach this line.
+    ThrowError("Invalid bounds result. Can only clamp entry index when nonzero.");
+    return 0;   // To satisfy compiler.
+}
+
+/**
  * Calculates a step value to add to the current value, according to the
  * specified loop action.
  *
@@ -1285,16 +1420,13 @@ static stock any:DynMenuLib_GetStep(menuData[DynMenuData], DynMenuLoopAction:loo
 {
     switch (loopAction)
     {
-        case DynMenuLoop_DecLarge:
+        case DynMenuLoop_IncLarge:
         {
-            if (floatType)
-            {
-                return 0.0 - Float:menuData[DynMenu_LargeStep];
-            }
-            else
-            {
-                return -menuData[DynMenu_LargeStep];
-            }
+            return menuData[DynMenu_LargeStep];
+        }
+        case DynMenuLoop_IncSmall:
+        {
+            return menuData[DynMenu_SmallStep];
         }
         case DynMenuLoop_DecSmall:
         {
@@ -1307,13 +1439,16 @@ static stock any:DynMenuLib_GetStep(menuData[DynMenuData], DynMenuLoopAction:loo
                 return -menuData[DynMenu_SmallStep];
             }
         }
-        case DynMenuLoop_IncSmall:
+        case DynMenuLoop_DecLarge:
         {
-            return menuData[DynMenu_SmallStep];
-        }
-        case DynMenuLoop_IncLarge:
-        {
-            return menuData[DynMenu_LargeStep];
+            if (floatType)
+            {
+                return 0.0 - Float:menuData[DynMenu_LargeStep];
+            }
+            else
+            {
+                return -menuData[DynMenu_LargeStep];
+            }
         }
     }
     
@@ -1358,7 +1493,7 @@ public DynMenuLib_GeneralHandler(Handle:menu, MenuAction:action, client, slot)
         }
         case MenuAction_End:
         {
-            // Forward abort action to dynmenu handler.
+            // Forward close action to dynmenu handler.
             
             // Get dynmenu handle.
             dynMenu = DynMenuLib_FindMenuByMenulib(menu);
@@ -1372,7 +1507,7 @@ public DynMenuLib_GeneralHandler(Handle:menu, MenuAction:action, client, slot)
                 || menuData[DynMenu_Mode] == DynMenu_Loop)
                 && menuData[DynMenu_HandlerAction] == MenuAction_Select)
             {
-                // Still active, menu is being redisplayed. Don't send abort
+                // Still active, menu is being redisplayed. Don't send close
                 // action.
                 return;
             }
@@ -1458,7 +1593,7 @@ public DynMenuLib_ListHandler(Handle:menu, client, slot)
     }
     
     // Set current action. Used by DynMenuLib_GeneralHandler to find out when
-    // abort action should be fired.
+    // close action should be fired.
     DynMenuLib_SetHandlerAction(dynMenu, MenuAction_Select);
     
     // Call handler if selection was allowed.
@@ -1512,7 +1647,7 @@ public DynMenuLib_LoopHandler(Handle:menu, client, slot)
     new DynMenuLib_Handler:handler = menuData[DynMenu_Handler];
     new bool:callHandler = true;
     
-    // Get current value.
+    // Buffer for new value.
     new any:value = menuData[DynMenu_CurrentValue];
     
     // Get whether data type is float.
@@ -1542,47 +1677,84 @@ public DynMenuLib_LoopHandler(Handle:menu, client, slot)
     decl String:errMsg[128];
     errMsg[0] = 0;
     
-    // Check bounds and update value.
+    // Check bounds and update value. Clamp if necessarry.
     switch (menuData[DynMenu_Type])
     {
         case DynMenu_Integer, DynMenu_Float:
         {
             new bounds = DynMenuLib_NumericBoundsCheck(menuData, value, floatType);
-            if (bounds == 1)
-            {
-                // Upper bound reached.
-                Format(errMsg, sizeof(errMsg), "%t", "dynmenulib upper bound numeric");
-                PrintToChat(client, errMsg);
-
-                // TODO: Update value if changed to upper limit.
-                callHandler = false;
-            }
-            else if (bounds == -1)
-            {
-                // Lower bound reached.
-                Format(errMsg, sizeof(errMsg), "%t", "dynmenulib lower bound numeric");
-                PrintToChat(client, errMsg);
-                
-                // TODO: Update value if changed to lower limit.
-                callHandler = false;
-            }
-            else
+            
+            // Check if inside bounds.
+            if (bounds == 0)
             {
                 // Inside bounds. Update value.
                 menuData[DynMenu_CurrentValue] = value;
                 DynMenuLib_SetCurrentValue(dynMenu, value);
             }
+            else
+            {
+                // Outside bounds. Clamp value.
+                new clamped = DynMenuLib_ClampValue(menuData, bounds);
+                
+                // Only update if value changed.
+                if (clamped != menuData[DynMenu_CurrentValue])
+                {
+                    // Update value.
+                    menuData[DynMenu_CurrentValue] = clamped;
+                    DynMenuLib_SetCurrentValue(dynMenu, clamped);
+                    
+                    // Print out of bounds message.
+                    if (bounds > 0)
+                    {
+                        Format(errMsg, sizeof(errMsg), "%t", "dynmenulib upper bound numeric");
+                        PrintToChat(client, errMsg);
+                    }
+                    else
+                    {
+                        Format(errMsg, sizeof(errMsg), "%t", "dynmenulib lower bound numeric");
+                        PrintToChat(client, errMsg);
+                    }
+                }
+                else
+                {
+                    // No change or already clamped. Don't call handler.
+                    callHandler = false;
+                }
+            }
         }
         case DynMenu_String:
         {
-            // String type doesn't have bounds check. Update value.
-            menuData[DynMenu_CurrentValue] = value;
-            DynMenuLib_SetCurrentValue(dynMenu, value);
+            new bounds = DynMenuLib_EntryBoundsCheck(menuData, value);
+            
+            // Check if inside bounds.
+            if (bounds == 0)
+            {
+                // Inside bounds. Update value.
+                menuData[DynMenu_CurrentValue] = value;
+                DynMenuLib_SetCurrentValue(dynMenu, value);
+            }
+            else
+            {
+                // Upper or lower bound reached. Silently handle this (clamp).
+                new clamped = DynMenuLib_ClampEntry(menuData, bounds);
+                
+                // Only update if changed.
+                if (clamped != menuData[DynMenu_CurrentValue])
+                {
+                    menuData[DynMenu_CurrentValue] = clamped;
+                    DynMenuLib_SetCurrentValue(dynMenu, clamped);
+                }
+                else
+                {
+                    // No change or already clamped. Don't call handler.
+                    callHandler = false;
+                }
+            }
         }
     }
     
     // Set current action. Used by DynMenuLib_GeneralHandler to find out when
-    // abort action should be fired.
+    // close action should be fired.
     DynMenuLib_SetHandlerAction(dynMenu, MenuAction_Select);
     
     // Only call handler if a value was changed.
@@ -1590,16 +1762,16 @@ public DynMenuLib_LoopHandler(Handle:menu, client, slot)
     {
         // Call handler.
         Call_StartFunction(GetMyHandle(), handler);
-        Call_PushCell(dynMenu);                 // menu
-        Call_PushCell(client);                  // client
-        Call_PushCell(_:DynMenuAction_Select);  // action
-        Call_PushCell(value);                   // value
+        Call_PushCell(dynMenu);                         // menu
+        Call_PushCell(client);                          // client
+        Call_PushCell(_:DynMenuAction_Select);          // action
+        Call_PushCell(menuData[DynMenu_CurrentValue]);  // value
         Call_Finish();
         
         // Update view position if using string type.
         if (menuData[DynMenu_Type] == DynMenu_String)
         {
-            menuData[DynMenu_CurrentPosition] += step;
+            menuData[DynMenu_CurrentPosition] = value;  // Position is the entry index.
         }
     }
     
