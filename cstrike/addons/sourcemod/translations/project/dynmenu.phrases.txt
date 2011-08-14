@@ -72,14 +72,14 @@
 	
 	"dynmenulib lower bound numeric"
 	{
-		"en"		"Lower value isn't allowed. Using lowest value."
-		"no"		"Lavere verdi er ikke tillatt. Bruker laveste verdi."
+		"en"		"Lower bound reached, clamping."
+		"no"		"Laveste verdi nådd."
 	}
 	
 	"dynmenulib upper bound numeric"
 	{
-		"en"		"Higher value isn't allowed. Using highest value."
-		"no"		"Høyere verdi er ikke tillatt. Bruker høyeste verdi."
+		"en"		"Upper bound reached, clamping."
+		"no"		"Høyeste verdi nådd."
 	}
 	
 	"dynmenulib lower bound select"
