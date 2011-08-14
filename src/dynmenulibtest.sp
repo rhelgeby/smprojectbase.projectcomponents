@@ -371,7 +371,7 @@ public Action:Command_MultiselectTest(client, argc)
                                       8,                        // Upper limit
                                       0,                        // Small step (not used in list mode)
                                       0,                        // Large step (not used in list mode)
-                                      DummySelectedEntries);    // Initial value (no list of selected indexes; none selected)
+                                      DummySelectedEntries);    // Initial value (boolean list for selected indexes)
     
     DynMenuLib_DisplayMenu(dynMenu, client);
     
