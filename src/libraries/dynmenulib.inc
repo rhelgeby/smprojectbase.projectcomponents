@@ -498,6 +498,9 @@ stock Handle:DynMenuLib_CreateMenu(menuData[DynMenuData])
     // Store dynamic menu data.
     DynMenuLib_SetMenuData(dynMenu, menuData);
     
+    // Make sure indexes are ready.
+    DynMenuLib_InitIndexes();
+    
     // Add menu menulib handle to conversion index.
     decl String:strMenulibHandle[16];
     Format(strMenulibHandle, sizeof(strMenulibHandle), "%x", menuLibMenu);
@@ -705,7 +708,6 @@ stock DynMenuLib_SendMenu(Handle:menu, client, Handle:fromMenu = INVALID_HANDLE)
     // Set where this menu came from, if any.
     DynMenuLib_SetFromMenu(menu, fromMenu);
     
-    DynMenuLib_SetHandlerAction(menu, MenuAction_Display);
     MenuLib_SendMenu(menuLibMenu, client, fromMenu);
 }
 
@@ -778,7 +780,6 @@ static stock DynMenuLib_SendMenuAtItem(Handle:menu, client, firstItem, Handle:fr
     // Update where this menu came from.
     DynMenuLib_SetFromMenu(menu, fromMenu);
     
-    DynMenuLib_SetHandlerAction(menu, MenuAction_Display);
     MenuLib_SendMenuAtItem(menuLibMenu, client, firstItem, fromMenu);
 }
 
@@ -1434,10 +1435,8 @@ public DynMenuLib_GeneralHandler(Handle:menu, MenuAction:action, client, slot)
             new menuData[DynMenuData];
             DynMenuLib_GetMenuData(dynMenu, menuData);
             
-            // Check if a loop menu or a multiselect session is active.
-            if ((menuData[DynMenu_Type] == DynMenu_Multiselect
-                || menuData[DynMenu_Mode] == DynMenu_Loop)
-                && menuData[DynMenu_HandlerAction] == MenuAction_Select)
+            // Check if a menu session is still active.
+            if (menuData[DynMenu_HandlerAction] == MenuAction_Display)
             {
                 // Still active, menu is being redisplayed. Don't send close
                 // action.
@@ -1458,7 +1457,7 @@ public DynMenuLib_GeneralHandler(Handle:menu, MenuAction:action, client, slot)
             Call_PushCell(0);                       // value (undefined in this action)
             Call_Finish();
             
-            // Update dynmenu handle in case menu was deleted in callback above.
+            // Update dynmenu handle in case menu was deleted in handler above.
             dynMenu = DynMenuLib_FindMenuByMenulib(menu);
             
             // Check if the menu still exists.
@@ -1551,11 +1550,14 @@ public DynMenuLib_ListHandler(Handle:menu, client, slot)
         // Get start position.
         new start = GetMenuSelectionPosition();
         
+        // Mark menu session as active so DynMenuLib_GeneralHandler won't fire
+        // the close action.
+        // Note: Handler action is reset in DynMenuLib_GeneralHandler.
+        DynMenuLib_SetHandlerAction(dynMenu, MenuAction_Display);
+        
         // Send menu again.
         DynMenuLib_SendMenuAtItem(dynMenu, client, start, menuData[DynMenu_FromMenu]);
     }
-    
-    // (Note: Don't unset current handler action here. It's done in end action.)
 }
 
 /**
@@ -1715,6 +1717,11 @@ public DynMenuLib_LoopHandler(Handle:menu, client, slot)
         }
     }
     
+    // Mark menu session as active so DynMenuLib_GeneralHandler won't fire the
+    // close action.
+    // Note: Handler action is reset in DynMenuLib_GeneralHandler.
+    DynMenuLib_SetHandlerAction(dynMenu, MenuAction_Display);
+        
     // Update and re-display loop menu.
     DynMenuLib_BuildLoopMenu(menuData, true);
     DynMenuLib_SendMenu(dynMenu, client, menuData[DynMenu_FromMenu]);
