@@ -52,16 +52,19 @@
 #define DYNMENULIB_SELECTED_CHAR    'X'
 
 /**
- * User selected/changed a value, or aborted selection (see action parameter).
+ * User selected/changed a value, or menu was closed (see action parameter).
+ *
+ * The close action is guaranteed to happen once a menu is displayed. Perform
+ * cleanup (deleting menu) in the close action if necessarry.
  *
  * @param menu      Handle to dynamic menu.
  * @param client    Client that performed the action. Will be 0 if the menu was
- *                  closed, but by something else than the client.
+ *                  closed, but by something else than the client itself.
  * @param action    Menu action performed.
  * @param value     Value(s) selected by user. See below for details:
  *
  *                  Action selected
- *                  Numeric:     Selected value (cell or float).
+ *                  Numeric:     Selected value (integer or float).
  *                  String:      Entry index of selected string (in entry array).
  *                  Multiselect: Handle to array with entry indexes of selected
  *                               entries. This handle must be closed when it's
@@ -126,7 +129,6 @@ enum DynMenuLoopAction
  */
 enum DynMenuData
 {
-    String:DynMenu_Id[ML_DATA_ID],          /** Unique menu identifier. Also used in menulib. */
     String:DynMenu_Prompt[ML_DATA_TITLE],   /** Prompt text (displayed in menu title). */
     Handle:DynMenu_MenuLib,         /** Handle to menulib menu. Initialized by DynMenuLib_CreateMenu. */
     Handle:DynMenu_FromMenu,        /** Handle to previous menulib menu, if any (optional). */
@@ -150,36 +152,30 @@ enum DynMenuData
 /**
  * @section Data array indexes. Must match DynMenuData.
  */
-#define DYNMENULIB_ID                   0
-#define DYNMENULIB_PROMPT               1
-#define DYNMENULIB_MENULIB              2
-#define DYNMENULIB_FROM_MENU            3
+#define DYNMENULIB_PROMPT               0
+#define DYNMENULIB_MENULIB              1
+#define DYNMENULIB_FROM_MENU            2
 
-#define DYNMENULIB_TYPE                 4
-#define DYNMENULIB_MODE                 5
-#define DYNMENULIB_ENTRIES              6
-#define DYNMENULIB_HANDLER              7
-#define DYNMENULIB_HANDLER_ACTION       8
+#define DYNMENULIB_TYPE                 3
+#define DYNMENULIB_MODE                 4
+#define DYNMENULIB_ENTRIES              5
+#define DYNMENULIB_HANDLER              6
+#define DYNMENULIB_HANDLER_ACTION       7
 
-#define DYNMENULIB_LOWER_LIMIT          9
-#define DYNMENULIB_UPPER_LIMIT          10
+#define DYNMENULIB_LOWER_LIMIT          8
+#define DYNMENULIB_UPPER_LIMIT          9
 
-#define DYNMENULIB_SMALL_STEP           11
-#define DYNMENULIB_LARGE_STEP           12
+#define DYNMENULIB_SMALL_STEP           10
+#define DYNMENULIB_LARGE_STEP           11
 
-#define DYNMENULIB_CURRENT_VALUE        13
-#define DYNMENULIB_CURRENT_POSITION     14
+#define DYNMENULIB_CURRENT_VALUE        12
+#define DYNMENULIB_CURRENT_POSITION     13
 /**
  * @endsection
  */
 
 /**
- * Trie handle for the menu name index.
- */
-static stock Handle:DynMenu_NameIndex;
-
-/**
- * Trie handle for the menulib handle to dynmenulib handle lookup.
+ * Trie handle for the menulib handle to dynmenulib handle lookup index.
  */
 static stock Handle:DynMenu_MenulibIndex;
 
@@ -459,8 +455,16 @@ stock Handle:DynMenuLib_CreateMenu(menuData[DynMenuData])
      *   Build menu   *
      ******************/
     
+    // Create array for dynamic menu data. The title is the only string, so 
+    // is ML_DATA_TITLE used as block size.
+    new Handle:dynMenu = CreateArray(ML_DATA_TITLE);
+    
+    // Create a unique ID for the menulib menu.
+    decl String:id[ML_DATA_ID];
+    Format(id, sizeof(id), "%x", dynMenu);
+    
     // Create menu in menulib.
-    new Handle:menuLibMenu = MenuLib_CreateMenu(menuData[DynMenu_Id],       // id
+    new Handle:menuLibMenu = MenuLib_CreateMenu(id,                         // id
                                                 INVALID_FUNCTION,           // pre-callback
                                                 DynMenuLib_GeneralHandler,  // callback
                                                 menuData[DynMenu_Prompt],   // title
@@ -472,6 +476,7 @@ stock Handle:DynMenuLib_CreateMenu(menuData[DynMenuData])
     // Check if failed.
     if (menuLibMenu == INVALID_HANDLE)
     {
+        // This should never happen, but catch it anyways.
         ThrowError("Menu ID is already in use.");
     }
     
@@ -490,21 +495,8 @@ stock Handle:DynMenuLib_CreateMenu(menuData[DynMenuData])
         }
     }
     
-    // Get largest string size.
-    new stringSize;
-    #if (ML_DATA_ID > ML_DATA_TITLE)
-        stringSize = ML_DATA_ID;
-    #else
-        stringSize = ML_DATA_TITLE;
-    #endif
-    
-    // Create array and store dynamic menu data.
-    new Handle:dynMenu = CreateArray(stringSize);
+    // Store dynamic menu data.
     DynMenuLib_SetMenuData(dynMenu, menuData);
-    
-    // Add menu handle to name index.
-    DynMenuLib_InitIndexes();
-    SetTrieValue(DynMenu_NameIndex, menuData[DynMenu_Id], dynMenu);
     
     // Add menu menulib handle to conversion index.
     decl String:strMenulibHandle[16];
@@ -529,7 +521,6 @@ stock Handle:DynMenuLib_CreateMenu(menuData[DynMenuData])
  * Note: Translations must be loaded (dynmenulib.phrases.txt) and language set
  *       before building/updating (using SetGlobalTransTarget()).
  *
- * @param id            Unique menu identifier.
  * @param prompt        Prompt text (displayed in menu title).
  * @param type          Menu data type. See DynMenuType.
  * @param mode          Menu display mode. See DynMenuMode.
@@ -563,8 +554,7 @@ stock Handle:DynMenuLib_CreateMenu(menuData[DynMenuData])
  *
  * @error               Menu identifier already in use, or invalid data.
  */
-stock Handle:DynMenuLib_CreateMenuEx(const String:id[],
-                                     const String:prompt[],
+stock Handle:DynMenuLib_CreateMenuEx(const String:prompt[],
                                      DynMenuType:type,
                                      DynMenuMode:mode,
                                      Handle:entries,
@@ -578,7 +568,6 @@ stock Handle:DynMenuLib_CreateMenuEx(const String:id[],
 {
     new menuData[DynMenuData];
     
-    strcopy(menuData[DynMenu_Id], sizeof(menuData[DynMenu_Id]), id);
     strcopy(menuData[DynMenu_Prompt], sizeof(menuData[DynMenu_Prompt]), prompt);
     menuData[DynMenu_MenuLib] = INVALID_HANDLE;         // No menu in menulib created yet.
     menuData[DynMenu_FromMenu] = fromMenu;
@@ -621,42 +610,32 @@ stock Handle:DynMenuLib_CreateMenuEx(const String:id[],
  *       action.
  *
  * @param menu          Dynamic menu handle.
- * @param inHandler     Optional. Whether the menu is deleted from inside its
- *                      handler function. Only valid in DynMenuAction_Close
- *                      action.
  * @param recursive     Optional. Recursive deletion. Destroys entry list if
  *                      available. Default is false (don't destroy).
+ *
+ * @error               Attempting to delete a open menu, or while it's handling
+ *                      a select action.
  */
-stock DynMenuLib_DeleteMenu(Handle:menu, bool:inHandler = false, bool:recursive = false)
+stock DynMenuLib_DeleteMenu(Handle:menu, bool:recursive = false)
 {
-    // TODO: Add detection for whether this menu was called from whithin a
-    //       handler. This will remove the need for inHandler parameter and
-    //       and prevent mistakes that are hard to debug.
-    
     // Get menu data.
     new menuData[DynMenuData];
     DynMenuLib_GetMenuData(menu, menuData);
+    new Handle:menuLibMenu = menuData[DynMenu_MenuLib];
     
-    // Check if menu is being deleted when handling a selection.
-    if (menuData[DynMenu_HandlerAction] == MenuAction_Select)
+    // Check if menu is being deleted when open or handling a selection.
+    new MenuAction:action = menuData[DynMenu_HandlerAction];
+    if (action == MenuAction_Select)
     {
         ThrowError("Dynamic menu cannot be deleted while handling a select action.");
     }
-    
-    new Handle:menuLibMenu = menuData[DynMenu_MenuLib];
-    
-    // TODO: Close menu if open. Prevent infinite recursion by not closing it if
-    // called from within a menu handler. Currently disabled because of buggy
-    // behavior (logic mistakes or need of small enhancements).
-    /*if (!inHandler)
+    if (action == MenuAction_Display)
     {
-        new Handle:smMenu = Handle:MenuLib_MenuReadCell(menuLibMenu, MenuData_Handle);
-        if (smMenu != INVALID_HANDLE)
-        {
-            // Close menu if open.
-            CancelMenu(smMenu);
-        }
-    }*/
+        ThrowError("Dynamic menu cannot be deleted while open.");
+    }
+    
+    // Detect whether called within a handler.
+    new bool:inHandler = (action != MenuAction:-1);
     
     // Check if deletion is recursive.
     if (recursive)
@@ -668,7 +647,7 @@ stock DynMenuLib_DeleteMenu(Handle:menu, bool:inHandler = false, bool:recursive 
         }
     }
     
-    // Delete temp array for selected entries when using multiselect.
+    // Close temp array handle for multiselect.
     if (menuData[DynMenu_Type] == DynMenu_Multiselect)
     {
         CloseHandle(menuData[DynMenu_CurrentValue]);
@@ -677,17 +656,14 @@ stock DynMenuLib_DeleteMenu(Handle:menu, bool:inHandler = false, bool:recursive 
     // Delete menulib menu.
     if (inHandler)
     {
-        // Menulib use menu data after the handler is done. Make it a temp menu
-        // so menulib will delete it itself when safe.
+        // In a handler. Menulib use menu data after the handler is done.
+        // Change it to a temp menu so menulib will delete it itself when safe.
         MenuLib_MenuWriteCell(menuLibMenu, MenuData_Temp, true);
     }
     else
     {
         MenuLib_DeleteMenu(menuLibMenu);
     }
-    
-    // Remove menu from name index.
-    RemoveFromTrie(DynMenu_NameIndex, menuData[DynMenu_Id]);
     
     // Remove menu from menulib conversion index.
     decl String:strMenulibHandle[16];
@@ -696,28 +672,6 @@ stock DynMenuLib_DeleteMenu(Handle:menu, bool:inHandler = false, bool:recursive 
     
     // Destroy dynmenu data pack.
     CloseHandle(menu);
-}
-
-/**
- * Deletes a dynamic menu by identifier.
- *
- * @param id        Menu identifier.
- * @param recursive Optional. Recursive deletion. Destroys entry list if
- *                  available. Default is false (don't destroy).
- *
- * @error           Invalid identifier.
- */
-stock DeleteMenuById(String:id[], bool:recursive = false)
-{
-    new Handle:menu = DynMenuLib_FindMenuById(id);
-    
-    // Validate identifier.
-    if (menu == INVALID_HANDLE)
-    {
-        ThrowError("Invalid menu identifier: %s", id);
-    }
-    
-    DynMenuLib_DeleteMenu(menu, recursive);
 }
 
 /**
@@ -730,6 +684,8 @@ stock DynMenuLib_DisplayMenu(Handle:menu, client)
 {
     // Get the menulib menu handle.
     new Handle:menuLibMenu = DynMenuLib_GetMenuLib(menu);
+    
+    DynMenuLib_SetHandlerAction(menu, MenuAction_Display);
     MenuLib_DisplayMenu(menuLibMenu, client);
 }
 
@@ -749,27 +705,8 @@ stock DynMenuLib_SendMenu(Handle:menu, client, Handle:fromMenu = INVALID_HANDLE)
     // Set where this menu came from, if any.
     DynMenuLib_SetFromMenu(menu, fromMenu);
     
+    DynMenuLib_SetHandlerAction(menu, MenuAction_Display);
     MenuLib_SendMenu(menuLibMenu, client, fromMenu);
-}
-
-/**
- * Gets the handle to a dynamic menu from a identifier.
- *
- * @param id    Menu identifier.
- * @return      Handle to dynamic menu, or INVALID_HANDLE if not found.
- */
-stock Handle:DynMenuLib_FindMenuById(const String:id[])
-{
-    DynMenuLib_InitIndexes();
-    
-    new Handle:menu;
-    
-    if (!GetTrieValue(DynMenu_NameIndex, id, menu))
-    {
-        return INVALID_HANDLE;
-    }
-    
-    return menu;
 }
 
 /**
@@ -817,10 +754,6 @@ stock Handle:DynMenuLib_GetMenuLib(Handle:menu)
  */
 static stock DynMenuLib_InitIndexes()
 {
-    if (DynMenu_NameIndex == INVALID_HANDLE)
-    {
-        DynMenu_NameIndex = CreateTrie();
-    }
     if (DynMenu_MenulibIndex == INVALID_HANDLE)
     {
         DynMenu_MenulibIndex = CreateTrie();
@@ -845,6 +778,7 @@ static stock DynMenuLib_SendMenuAtItem(Handle:menu, client, firstItem, Handle:fr
     // Update where this menu came from.
     DynMenuLib_SetFromMenu(menu, fromMenu);
     
+    DynMenuLib_SetHandlerAction(menu, MenuAction_Display);
     MenuLib_SendMenuAtItem(menuLibMenu, client, firstItem, fromMenu);
 }
 
@@ -860,7 +794,6 @@ static stock DynMenuLib_SendMenuAtItem(Handle:menu, client, firstItem, Handle:fr
  */
 static stock DynMenuLib_GetMenuData(Handle:menu, menuData[DynMenuData])
 {
-    GetArrayString(menu, DYNMENULIB_ID, menuData[DynMenu_Id], ML_DATA_ID);
     GetArrayString(menu, DYNMENULIB_PROMPT, menuData[DynMenu_Prompt], ML_DATA_TITLE);
     menuData[DynMenu_MenuLib] = Handle:GetArrayCell(menu, DYNMENULIB_MENULIB);
     menuData[DynMenu_FromMenu] = Handle:GetArrayCell(menu, DYNMENULIB_FROM_MENU);
@@ -894,7 +827,6 @@ static stock DynMenuLib_SetMenuData(Handle:menu, menuData[DynMenuData])
     
     // Note: Must be in the same order as in enum DynMenuData.
     
-    PushArrayString(menu, menuData[DynMenu_Id]);
     PushArrayString(menu, menuData[DynMenu_Prompt]);
     PushArrayCell(menu, _:menuData[DynMenu_MenuLib]);
     PushArrayCell(menu, _:menuData[DynMenu_FromMenu]);
@@ -1548,6 +1480,8 @@ public DynMenuLib_GeneralHandler(Handle:menu, MenuAction:action, client, slot)
  * @param menu      The menulib menu handle.
  * @param client    The client index.
  * @param slot      The menu slot selected. (starting from 0)
+ *
+ * @error           Incompatible data type for list mode.
  */
 public DynMenuLib_ListHandler(Handle:menu, client, slot)
 {
@@ -1670,6 +1604,12 @@ public DynMenuLib_LoopHandler(Handle:menu, client, slot)
         case DynMenu_Float:
         {
             value = Float:value + Float:step;
+        }
+        default:
+        {
+            // This should never happen. Loop mode doesn't support multiselect.
+            // Catch it anyways to stop callback and avoid invalid values.
+            ThrowError("Unexpected data type for internal loop handler. This is a bug!");
         }
     }
     
