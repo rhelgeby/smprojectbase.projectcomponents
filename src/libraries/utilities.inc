@@ -181,6 +181,7 @@ stock Util_CloseHandle(&Handle:handle)
  * 
  * @return          Index in array that the vector is in, -1 if not found.
  */
+#pragma deprecated Use Array_IsVecInArray() instead.
 stock Util_IsVecInArray(Float:vec[3], Float:vecs[][3], numvecs)
 {
     for (new vindex; vindex < numvecs; vindex++)
@@ -207,6 +208,30 @@ stock Util_SwapCell(&any:value1, &any:value2)
     new any:temp = value1;
     value1 = value2;
     value2 = temp;
+}
+
+/**
+ * (from SMLIB 0.10.2)
+ * 
+ * Returns a random, uniform Integer number in the specified (inclusive) range.
+ * This is safe to use multiple times in a function.
+ * The seed is set automatically for each plugin.
+ * Rewritten by MatthiasVance, thanks.
+ * 
+ * @param min			Min value used as lower border
+ * @param max			Max value used as upper border
+ * @return				Random Integer number between min and max
+ */
+#define SIZE_OF_INT		2147483647		// without 0
+stock Util_GetRandomInt(min, max)
+{
+	new random = GetURandomInt();
+	
+	if (random == 0) {
+		random++;
+	}
+
+	return RoundToCeil(float(random) / (float(SIZE_OF_INT) / float(max - min + 1))) + min - 1;
 }
 
 /**
