@@ -33,6 +33,7 @@
 #define _querylib_included
 
 #include "libraries/utilities"
+#include "libraries/arrays"
 
 /*
 DESCRIPTION
@@ -154,6 +155,9 @@ single element passes this filter.
 /**
  * Gets a list of all available elements (indexes).
  *
+ * Note: This function may be frequently called. Don't build the element list
+ *       every time in this callback, store the list handle.
+ *
  * @return          Handle to element list.
  */
 functag public Handle:QueryLib_GetElementList();
@@ -173,6 +177,11 @@ functag public QueryLib_GetElementIndex(const String:name[]);
 /**
  * Gets the filter bit value for a certain filter name.
  *
+ * Note: This function may be frequently called. Don't do expensive operations
+ *       here. If there's a lot of filter names (or lots of filters start with
+ *       the same names, use a name index (ADT Trie with names mapped to filter
+ *       values).
+ *
  * @param name      Filter name.
  *
  * @return          Filter bit value, or 0 if not valid.
@@ -183,11 +192,12 @@ functag public QueryLib_GetFilterValue(const String:name[]);
  * Returns whether a element passed a filter test.
  *
  * Note: This function may be frequently called. Don't do expensive operations
- *       here. Use caches some operations are expensive.
+ *       here. Use caches for expensive operations.
  *
  * @param client    Client index. Used to restrict the filter further if
  *                  authorization is required in the filter. The server should
- *                  always be authorized.
+ *                  always be authorized (but filter flags must not be ignored
+ *                  for the server).
  * @param element   Element index.
  * @param filter    Filter flags (bit field).
  *
@@ -197,6 +207,9 @@ functag public bool:QueryLib_PassedFilter(client, element, filter);
 
 /**
  * Gets the collection with the specified name.
+ *
+ * Note: This function may be frequently called. Don't do expensive operations
+ *       here. Use a name index (ADT Trie with names mapped to collections).
  *
  * @param name      Collection identifier.
  *
@@ -285,17 +298,17 @@ enum QueryLib_EntryType
 /**
  * Filter prefix. Must match type separator.
  */
-#define QUERULIB_FILTER_PREFIX "f:"
+#define QUERYLIB_FILTER_PREFIX "f:"
 
 /**
  * Collection prefix. Must match type separator.
  */
-#define QUERULIB_COLLECTION_PREFIX "c:"
+#define QUERYLIB_COLLECTION_PREFIX "c:"
 
 /**
  * Selection mode prefix. Must match type separator.
  */
-#define QUERULIB_MODE_PREFIX "s:"
+#define QUERYLIB_MODE_PREFIX "s:"
 
 /**
  * Maximum lenghth of the query string buffer.
@@ -358,7 +371,7 @@ stock QueryLib_ParseQuery(client,
     errCode = 0;
     
     // Validate mode.
-    if (mode == QueryLib_Ivalid)
+    if (mode == QueryLib_Invalid)
     {
         errPos = -1;
         errCode = QUERYLIB_ERR_INVALID_MODE;
@@ -383,14 +396,14 @@ stock QueryLib_ParseQuery(client,
     
     // Store callbacks in an array for direct access through all query parsing
     // functions.
-    new callback[QueryLib_CallbackSet];
-    QueryLib_ReadCallbacks(callbacks, callback);
+    new callbackSet[QueryLib_CallbackSet];
+    QueryLib_ReadCallbacks(callbacks, callbackSet);     // "callbacks" is the set handle.
     
     // Do a quick check for single element queries. If the query is longer than
     // the maximum name length it's definitely not a element name.
     if (strlen(query) <= QUERYLIB_IDENTIFIER_LEN)
     {
-        element = QueryLib_CallGetElementIndex(callback, query);
+        element = QueryLib_CallGetElementIndex(callbackSet, query);
         if (element >= 0)
         {
             if (asList)
@@ -410,8 +423,8 @@ stock QueryLib_ParseQuery(client,
     listCount = GetArraySize(resultList);
     
     // Check if too many entries. (Simple test by counting entry separators.)
-    const String:tempSeparator = QUERYLIB_ENTRY_SEPARATOR;
-    if (Util_CountChars(query, tempSeparator[0]) > QUERYLIB_MAX_ENTRIES - 1)
+    static const String:tempSeparator[] = QUERYLIB_ENTRY_SEPARATOR;
+    if (Array_CountChars(query, tempSeparator[0]) > QUERYLIB_MAX_ENTRIES - 1)
     {
         errPos = -1;
         errCode = QUERYLIB_ERR_TOO_MANY_ENTRIES;
@@ -484,7 +497,7 @@ stock QueryLib_ParseQuery(client,
             case QueryLibEntry_Element:
             {
                 // Get element.
-                element = QueryLib_CallGetElementIndex(callback, entries[entry]);
+                element = QueryLib_CallGetElementIndex(callbackSet, entries[entry]);
                 if (element < 0)
                 {
                     // Invalid element name.
@@ -494,15 +507,21 @@ stock QueryLib_ParseQuery(client,
                     return asList ? resultCount : errCode;
                 }
                 
-                // Add to result list.
-                PushArrayCell(resultList, element);
-                resultCount++;
-                listCount++;
+                // Add to result list if the client has access to the element.
+                if (QueryLib_CallPassedFilter(callbackSet,
+                                              client,
+                                              element,
+                                              0))       // No flag requirements, just do client authorization.
+                {
+                    PushArrayCell(resultList, element);
+                    resultCount++;
+                    listCount++;
+                }
             }
             case QueryLibEntry_Filter:
             {
                 // Parse filter list. (+2 to go past filter prefix.)
-                filters = QueryLib_ParseFilters(callback, entries[entry][2], tempErrPos);
+                filters = QueryLib_ParseFilters(callbackSet, entries[entry][2], tempErrPos);
                 if (filters < 0)
                 {
                     // Invalid filter name.
@@ -517,13 +536,13 @@ stock QueryLib_ParseQuery(client,
                 
                 // Get filtered model list. Ignore errors, no result is a valid
                 // case.
-                new retval = QueryLib_GetEntries(client,
-                                    callbackSet,
-                                    sourceList,
-                                    filters,
-                                    selectMode,
-                                    resultList,
-                                    errCode);
+                retval = QueryLib_GetEntries(client,
+                                callbackSet,
+                                sourceList,
+                                filters,
+                                selectMode,
+                                resultList,
+                                errCode);
                 
                 // Only add if the result was successful.
                 if (errCode == 0)
@@ -541,14 +560,14 @@ stock QueryLib_ParseQuery(client,
             case QueryLibEntry_Collection:
             {
                 // Parse collection list according to select mode, no filters.
-                new retval = QueryLib_ParseCollections(client,
-                                    callbackSet,
-                                    entries[entry], // Collection list string.
-                                    0,              // No filters.
-                                    selectMode,
-                                    resultList,
-                                    errCode,
-                                    tempErrPos);
+                retval = QueryLib_ParseCollections(client,
+                                callbackSet,
+                                entries[entry], // Collection list string.
+                                0,              // No filters.
+                                selectMode,
+                                resultList,
+                                errCode,
+                                tempErrPos);
                 if (errCode < 0)
                 {
                     // Invalid collection name.
@@ -570,14 +589,14 @@ stock QueryLib_ParseQuery(client,
             case QueryLibEntry_FilterCollection:
             {
                 // Extract filter and collection list (split types).
-                decl filterList[QUERYLIB_MAX_ENTRY_LEN];
-                decl collectionList[QUERYLIB_MAX_ENTRY_LEN];
+                decl String:filterList[QUERYLIB_MAX_ENTRY_LEN];
+                decl String:collectionList[QUERYLIB_MAX_ENTRY_LEN];
                 filterList[0] = 0;
                 collectionList[0] = 0;
-                QueryLib_SplitTypes(entry, filterList, collectionList, QUERYLIB_MAX_ENTRY_LEN);
+                QueryLib_SplitTypes(entries[entry], filterList, collectionList, QUERYLIB_MAX_ENTRY_LEN);
                 
                 // Parse filter list.
-                filters = QueryLib_ParseFilters(callback, filterList, tempErrPos);
+                filters = QueryLib_ParseFilters(callbackSet, filterList, tempErrPos);
                 if (filters < 0)
                 {
                     // Invalid filter name.
@@ -588,14 +607,14 @@ stock QueryLib_ParseQuery(client,
                 }
                 
                 // Parse collection list according to select mode, with filters.
-                new retval = QueryLib_ParseCollections(client,
-                                    callbackSet,
-                                    entries[entry], // Collection list string.
-                                    filters,
-                                    selectMode,
-                                    resultList,
-                                    errCode,
-                                    tempErrPos);
+                retval = QueryLib_ParseCollections(client,
+                                callbackSet,
+                                entries[entry], // Collection list string.
+                                filters,
+                                selectMode,
+                                resultList,
+                                errCode,
+                                tempErrPos);
                 if (errCode < 0)
                 {
                     // Invalid collection name.
@@ -619,7 +638,7 @@ stock QueryLib_ParseQuery(client,
     
     // Get the result value (element, list count or error code). This function
     // will also close the list handle if no longer used.
-    return QueryLib_GetResultValue(list, listCount, resultCount asList, selectMode, errCode);
+    return QueryLib_GetResultValue(list, listCount, resultCount, asList, selectMode, errCode);
 }
 
 /**
@@ -675,7 +694,7 @@ static stock QueryLib_ParseFilters(callbackSet[QueryLib_CallbackSet],
  *
  * @param client        Client that will use the element.
  * @param callbackSet   Set of callbacks.
- * @param list          Collection list string.
+ * @param sourceList    Collection list string.
  * @param filters       Filter flags.
  * @param selectMode    Optional. Selection mode. Defaults to list.
  * @param resultList    Optional. List to put element indexes in.
@@ -691,14 +710,13 @@ static stock QueryLib_ParseFilters(callbackSet[QueryLib_CallbackSet],
  */
 static stock QueryLib_ParseCollections(client,
                                        callbackSet[QueryLib_CallbackSet],
-                                       const String:list[],
+                                       const String:sourceList[],
                                        filters = 0,
                                        QueryLib_ResultMode:selectMode = QueryLib_List,
                                        Handle:resultList = INVALID_HANDLE,
                                        &errCode = 0,
                                        &errPos = 0)
 {
-    new element = -1;
     new bool:asList = (selectMode == QueryLib_List);
     new listCount = 0;
     new resultCount = 0;    // Number of entries added to list.
@@ -708,14 +726,13 @@ static stock QueryLib_ParseCollections(client,
     errPos = 0;
     
     // Split collection list.
-    decl String:collections[QUERYLIB_MAX_ENTRIES][QERYLIB_IDENTIFIER_LEN];
-    listCount = ExplodeString(list, QUERYLIB_LIST_SEPARATOR, collections, QUERYLIB_MAX_ENTRIES, QERYLIB_IDENTIFIER_LEN);
+    decl String:collections[QUERYLIB_MAX_ENTRIES][QUERYLIB_IDENTIFIER_LEN];
+    listCount = ExplodeString(sourceList, QUERYLIB_LIST_SEPARATOR, collections, QUERYLIB_MAX_ENTRIES, QUERYLIB_IDENTIFIER_LEN);
     
     // Check if no collections.
     if (listCount == 0)
     {
         errCode = QUERYLIB_ERR_INVALID_COLLECTION;
-        if (!asList) CloseHandle(list);
         return asList ? listCount : errCode;
     }
     
@@ -752,7 +769,7 @@ static stock QueryLib_ParseCollections(client,
     
     // Get the result value (element, list count or error code). This function
     // will also close the list handle if no longer used.
-    return QueryLib_GetResultValue(list, listCount, resultCount asList, selectMode, errCode);
+    return QueryLib_GetResultValue(list, listCount, resultCount, asList, selectMode, errCode);
 }
 
 /**
@@ -797,16 +814,9 @@ static stock QueryLib_GetEntries(client,
         new element = GetArrayCell(sourceList, entry);
         
         // Filter test.
-        if (!QueryLib_CallPassedFilter(callbackSet, client, element, filter))
+        if (!QueryLib_CallPassedFilter(callbackSet, client, element, filters))
         {
             // Didn't pass filter.
-            continue;
-        }
-        
-        // Access test.
-        if (!QueryLib_CallHasAccess(callbackSet, client, element))
-        {
-            // No access.
             continue;
         }
         
@@ -824,7 +834,7 @@ static stock QueryLib_GetEntries(client,
     
     // Get the result value (element, list count or error code). This function
     // will also close the list handle if no longer used.
-    return QueryLib_GetResultValue(list, listCount, resultCount asList, selectMode, errCode);
+    return QueryLib_GetResultValue(list, listCount, resultCount, asList, selectMode, errCode);
 }
 
 /**
@@ -941,7 +951,7 @@ static stock QueryLib_UpdateCounters(bool:asList, &listCount, &resultCount, retv
  *                          of type QueryLibEntry_FilterCollection.
  * @param filterList        Filter list buffer.
  * @param collectionList    Collection list buffer.
- * @param maxlen            Size of buffers.
+ * @param maxlen            Size of buffers (used for both buffers).
  */
 static stock QueryLib_SplitTypes(const String:entry[],
                                  String:filterList[],
@@ -959,8 +969,8 @@ static stock QueryLib_SplitTypes(const String:entry[],
     }
     
     // Write lists.
-    strcopy(filterList[], maxlen, splitBuffer[2]);
-    strcopy(collectionList[], maxlen, splitBuffer[3]);
+    strcopy(filterList, maxlen, splitBuffer[1]);
+    strcopy(collectionList, maxlen, splitBuffer[2]);
 }
 
 /**
@@ -970,16 +980,16 @@ static stock QueryLib_SplitTypes(const String:entry[],
  * @return      Handle to set. Must be closed with CloseHandle() when no longer
  *              in use.
  */
-stock Handle:QueryLib_CreateCallbackSet(QueryLib_GetElementList:elemList,
-                                        QueryLib_GetElementIndex:elemIndex,
+stock Handle:QueryLib_CreateCallbackSet(QueryLib_GetElementList:elementList,
+                                        QueryLib_GetElementIndex:elementIndex,
                                         QueryLib_GetFilterValue:filterValue,
                                         QueryLib_PassedFilter:passedFilter,
                                         QueryLib_GetCollection:getCollection)
 {
-    const String:errMsg[] = "Invalid function name for %s";
+    static const String:errMsg[] = "Invalid function name for %s";
     
     // Validate functions (caller cannot pass INVALID_FUNCTION intentionally).
-    if (elemList == INVALID_FUNCTION)
+    if (elementList == INVALID_FUNCTION)
     {
         ThrowError(errMsg, "QueryLib_GetElementList");
     }
@@ -1034,11 +1044,11 @@ static stock QueryLib_EntryType:QueryLib_GetEntryType(const String:entry[])
         // Note: This must be tested before regular filters.
         return QueryLibEntry_FilterCollection;
     }
-    else if (StrContains(entry, QUERYLIB_COLLECTION_PREFIX)
+    else if (StrContains(entry, QUERYLIB_COLLECTION_PREFIX))
     {
         return QueryLibEntry_Collection;
     }
-    else if (StrContains(entry, QUERYLIB_FILTER_PREFIX)
+    else if (StrContains(entry, QUERYLIB_FILTER_PREFIX))
     {
         return QueryLibEntry_Filter;
     }
@@ -1072,7 +1082,7 @@ static stock QueryLib_ReadCallbacks(Handle:set, setBuffer[QueryLib_CallbackSet])
 static stock Handle:QueryLib_CallGetList(callbackSet[QueryLib_CallbackSet])
 {
     new Handle:list;
-    Handle:plugin = GetMyHandle();
+    new Handle:plugin = GetMyHandle();
     Call_StartFunction(plugin, callbackSet[QueryLibCall_ElementList]);
     Call_Finish(list);
     
@@ -1085,8 +1095,8 @@ static stock Handle:QueryLib_CallGetList(callbackSet[QueryLib_CallbackSet])
 static stock QueryLib_CallGetElementIndex(callbackSet[QueryLib_CallbackSet], const String:name[])
 {
     new element;
-    Handle:plugin = GetMyHandle();
-    Call_StartFunction(plugin, callbackSet[QueryLib_ElementIndex]);
+    new Handle:plugin = GetMyHandle();
+    Call_StartFunction(plugin, callbackSet[QueryLibCall_ElementIndex]);
     Call_PushString(name);
     Call_Finish(element);
     
@@ -1099,8 +1109,8 @@ static stock QueryLib_CallGetElementIndex(callbackSet[QueryLib_CallbackSet], con
 static stock QueryLib_CallGetFilterValue(callbackSet[QueryLib_CallbackSet], const String:name[])
 {
     new filter;
-    Handle:plugin = GetMyHandle();
-    Call_StartFunction(plugin, callbackSet[QueryLib_FilterValue]);
+    new Handle:plugin = GetMyHandle();
+    Call_StartFunction(plugin, callbackSet[QueryLibCall_FilterValue]);
     Call_PushString(name);
     Call_Finish(filter);
     
@@ -1113,8 +1123,8 @@ static stock QueryLib_CallGetFilterValue(callbackSet[QueryLib_CallbackSet], cons
 static stock bool:QueryLib_CallPassedFilter(callbackSet[QueryLib_CallbackSet], client, element, filter)
 {
     new bool:passed;
-    Handle:plugin = GetMyHandle();
-    Call_StartFunction(plugin, callbackSet[QueryLib_PassedFilter]);
+    new Handle:plugin = GetMyHandle();
+    Call_StartFunction(plugin, callbackSet[QueryLibCall_PassedFilter]);
     Call_PushCell(client);
     Call_PushCell(element);
     Call_PushCell(filter);
@@ -1124,28 +1134,13 @@ static stock bool:QueryLib_CallPassedFilter(callbackSet[QueryLib_CallbackSet], c
 }
 
 /**
- * Makes a call to QueryLib_HasAccess and returns the result.
- */
-static stock bool:QueryLib_CallHasAccess(callbackSet[QueryLib_CallbackSet], client, element)
-{
-    new bool:access;
-    Handle:plugin = GetMyHandle();
-    Call_StartFunction(plugin, callbackSet[QueryLib_HasAccess]);
-    Call_PushCell(client);
-    Call_PushCell(element);
-    Call_Finish(access);
-    
-    return access;
-}
-
-/**
  * Makes a call to QueryLib_GetCollection and returns the result.
  */
 static stock Handle:QueryLib_CallGetCollection(const String:name[], callbackSet[QueryLib_CallbackSet])
 {
     new Handle:collection;
-    Handle:plugin = GetMyHandle();
-    Call_StartFunction(plugin, callbackSet[QueryLib_GetCollection]);
+    new Handle:plugin = GetMyHandle();
+    Call_StartFunction(plugin, callbackSet[QueryLibCall_GetCollection]);
     Call_PushString(name);
     Call_Finish(collection);
     
@@ -1203,7 +1198,7 @@ public QueryLib_ErrCodeToString(errCode, String:buffer[], maxlen)
         {
             return strcopy(buffer, maxlen, "Query string is empty");
         }
-        case QUERYLIB_ERR_NOT_FOUND:
+        case QUERYLIB_ERR_NONE_FOUND:
         {
             return strcopy(buffer, maxlen, "No element found");
         }
