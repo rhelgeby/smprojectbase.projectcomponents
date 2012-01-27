@@ -468,6 +468,8 @@ stock QueryLib_ParseQuery(client,
         // Check entry type.
         new QueryLib_EntryType:entryType = QueryLib_GetEntryType(entries[entry]);
         
+        PrintToServer("[DEBUG] Parsing entry (type id: %d) \"%s\" at position %d", entryType, entries[entry], errPos);
+        
         // Parse entry.
         switch (entryType)
         {
@@ -520,12 +522,12 @@ stock QueryLib_ParseQuery(client,
             }
             case QueryLibEntry_Filter:
             {
-                // Parse filter list. (+2 to go past filter prefix.)
+                // Parse filter list. (+2 to go past filter type prefix.)
                 filters = QueryLib_ParseFilters(callbackSet, entries[entry][2], tempErrPos);
                 if (filters < 0)
                 {
                     // Invalid filter name.
-                    errPos += tempErrPos;
+                    errPos += tempErrPos + 2;   // +2 to go past filter type prefix.
                     errCode = QUERYLIB_ERR_INVALID_FILTER;
                     if (!asList) CloseHandle(list);
                     return asList ? resultCount : errCode;
@@ -562,8 +564,8 @@ stock QueryLib_ParseQuery(client,
                 // Parse collection list according to select mode, no filters.
                 retval = QueryLib_ParseCollections(client,
                                 callbackSet,
-                                entries[entry], // Collection list string.
-                                0,              // No filters.
+                                entries[entry + 2], // Collection list string.
+                                0,                  // No filters.
                                 selectMode,
                                 resultList,
                                 errCode,
@@ -572,7 +574,7 @@ stock QueryLib_ParseQuery(client,
                 {
                     // Invalid collection name.
                     // (errCode is already set.)
-                    errPos += tempErrPos;
+                    errPos += tempErrPos + 2;   // +2 to go past collection type prefix.
                     if (!asList) CloseHandle(list);
                     return asList ? resultCount : errCode;
                 }
@@ -600,7 +602,7 @@ stock QueryLib_ParseQuery(client,
                 if (filters < 0)
                 {
                     // Invalid filter name.
-                    errPos += tempErrPos;
+                    errPos += tempErrPos + 2;   // +2 to go past filter type prefix.
                     errCode = QUERYLIB_ERR_INVALID_FILTER;
                     if (!asList) CloseHandle(list);
                     return asList ? resultCount : errCode;
@@ -619,7 +621,8 @@ stock QueryLib_ParseQuery(client,
                 {
                     // Invalid collection name.
                     // (errCode is already set.)
-                    errPos += tempErrPos;
+                    errPos += tempErrPos + 2 + strlen(filterList);  // Go past filter type prefix and list.
+                    
                     if (!asList) CloseHandle(list);
                     return asList ? resultCount : errCode;
                 }
@@ -732,7 +735,7 @@ static stock QueryLib_ParseCollections(client,
     // Check if no collections.
     if (listCount == 0)
     {
-        errCode = QUERYLIB_ERR_INVALID_COLLECTION;
+        errCode = QUERYLIB_ERR_NONE_FOUND;
         return asList ? listCount : errCode;
     }
     
@@ -773,7 +776,7 @@ static stock QueryLib_ParseCollections(client,
 }
 
 /**
- * Gets one or more entries from a source list according to the filter and
+ * Gets one or more elements from a source list according to the filter and
  * select mode.
  *
  * @param client        Client that will use the element.
@@ -799,7 +802,7 @@ static stock QueryLib_GetEntries(client,
                                  errCode = 0)
 {
     new bool:asList = (resultList != INVALID_HANDLE);
-    new resultCount = 0;    // Number of entries added to list.
+    new resultCount = 0;    // Number of elements added to list.
     
     // Prepare result list.
     new Handle:list = asList ? resultList : CreateArray();
@@ -808,29 +811,32 @@ static stock QueryLib_GetEntries(client,
     errCode = 0;
     
     // Loop through all entries in the source list.
-    new listCount = GetArraySize(sourceList);
-    for (new entry = 0; entry < listCount; entry++)
+    new sourceCount = GetArraySize(sourceList);
+    for (new entry = 0; entry < sourceCount; entry++)
     {
         new element = GetArrayCell(sourceList, entry);
         
         // Filter test.
         if (!QueryLib_CallPassedFilter(callbackSet, client, element, filters))
         {
-            // Didn't pass filter.
+            // Didn't pass filter. Skip element.
             continue;
         }
         
         // Add element to result list.
         PushArrayCell(list, element);
         resultCount++;
-        listCount++;
     }
+    
     
     // Set error code if none found.
     if (resultCount == 0)
     {
         errCode = QUERYLIB_ERR_NONE_FOUND;
     }
+    
+    // Get total number of elements in the result list.
+    new listCount = GetArraySize(list);
     
     // Get the result value (element, list count or error code). This function
     // will also close the list handle if no longer used.
@@ -864,7 +870,7 @@ static stock QueryLib_GetResultValue(&Handle:list,
                                     QueryLib_ResultMode:selectMode,
                                     errCode = 0)
 {
-    // Check if no element was found.
+    // Check if no elements was found.
     if (resultCount == 0)
     {
         errCode = QUERYLIB_ERR_NONE_FOUND;
@@ -928,6 +934,7 @@ static stock QueryLib_GetResultValue(&Handle:list,
  * @param listCount     Total element counter.
  * @param resultCount   Elements added to the list.
  * @param retval        Result value from a element parser helper function.
+ *                      Ignored in list mode.
  *                      Note: Only successful result values, no error codes.
  */
 static stock QueryLib_UpdateCounters(bool:asList, &listCount, &resultCount, retval)
@@ -1044,15 +1051,15 @@ static stock QueryLib_EntryType:QueryLib_GetEntryType(const String:entry[])
         // Note: This must be tested before regular filters.
         return QueryLibEntry_FilterCollection;
     }
-    else if (StrContains(entry, QUERYLIB_COLLECTION_PREFIX))
+    else if (StrContains(entry, QUERYLIB_COLLECTION_PREFIX) >= 0)
     {
         return QueryLibEntry_Collection;
     }
-    else if (StrContains(entry, QUERYLIB_FILTER_PREFIX))
+    else if (StrContains(entry, QUERYLIB_FILTER_PREFIX) >= 0)
     {
         return QueryLibEntry_Filter;
     }
-    else if (StrContains(entry, QUERYLIB_MODE_PREFIX))
+    else if (StrContains(entry, QUERYLIB_MODE_PREFIX) >= 0)
     {
         return QueryLibEntry_SelectMode;
     }
@@ -1218,6 +1225,10 @@ public QueryLib_ErrCodeToString(errCode, String:buffer[], maxlen)
         {
             return strcopy(buffer, maxlen, "Invalid entry (syntax error)");
         }
+        case QUERYLIB_ERR_INVALID_MODE:
+        {
+            return strcopy(buffer, maxlen, "Invalid select mode");
+        }
         case QUERYLIB_ERR_EMPTY_ENTRY:
         {
             return strcopy(buffer, maxlen, "Empty entry (double spaces)");
@@ -1225,6 +1236,14 @@ public QueryLib_ErrCodeToString(errCode, String:buffer[], maxlen)
         case QUERYLIB_ERR_TOO_MANY_ENTRIES:
         {
             return Format(buffer, maxlen, "Too many entries (max %d)", QUERYLIB_MAX_ENTRIES);
+        }
+        case QUERYLIB_ERR_NO_CALLBACK:
+        {
+            return Format(buffer, maxlen, "No callbacks specified");
+        }
+        case QUERYLIB_ERR_NO_LIST:
+        {
+            return Format(buffer, maxlen, "No result list specified");
         }
     }
     

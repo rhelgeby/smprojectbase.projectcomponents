@@ -70,7 +70,7 @@ public Action:Command_Run(client, argc)
         QueryLib_ParseQuery(client, query, CallbackSet, QueryLib_List, list, errCode, errPos);
         
         // Check for parse errors.
-        if (errCode > 0)
+        if (errCode < 0)
         {
             decl String:errMsg[STRING_BUFFER_LEN];
             errMsg[0] = 0;
@@ -79,7 +79,7 @@ public Action:Command_Run(client, argc)
             
             // Print error message.
             QueryLib_ErrCodeToString(errCode, errMsg, sizeof(errMsg));
-            ReplyToCommand(client, "Parse error (error code = %d, position = %d): %s\n", errCode, errPos, errMsg);
+            ReplyToCommand(client, "Error %d: Parse error at column %d: %s\n", errCode, errPos, errMsg);
             
             // Print query string with marker of error position.
             ReplyToCommand(client, query);
@@ -139,7 +139,7 @@ public Action:Command_Access(client, argc)
     
     // Set access value.
     Accessible[element] = value;
-    ReplyToCommand(client, "Element access set to %d.", value);
+    ReplyToCommand(client, "Access on element %d set to %d.", element, value);
     
     return Plugin_Handled;
 }
@@ -177,6 +177,8 @@ public Action:Command_Dump(client, argc)
     else
     {
         PrintList(client);
+        
+        ReplyToCommand(client, "\nCollections: foobarbazqux, foobar, barbaz");
     }
     
     return Plugin_Handled;
@@ -187,7 +189,7 @@ public Action:Command_Dump(client, argc)
 PrintList(client, Handle:list = INVALID_HANDLE)
 {
     static const String:fmt[] = "%-8d %-8s %-8d %-8d %-12d";
-    static const String:fmtHeader[] = "%-8d %-8s %-8d %-8d %-12d\n-----------------------------------------------";
+    static const String:fmtHeader[] = "%-8s %-8s %-8s %-8s %-12s\n-----------------------------------------------";
     
     new bool:hasList = (list != INVALID_HANDLE);
     new count = hasList ? GetArraySize(list) : ElementCount;
@@ -213,6 +215,8 @@ PrintList(client, Handle:list = INVALID_HANDLE)
                 TestData[element][Test_FlagB],
                 Accessible[element]);
     }
+    
+    ReplyToCommand(client, "\n%d elements listed.\n", count);
 }
 
 /************************
@@ -276,7 +280,7 @@ public bool:PassedFilter(client, element, filter)
 
 public Handle:GetCollection(const String:name[])
 {
-    if (StrEqual(name, "barbazqux"))
+    if (StrEqual(name, "foobarbazqux"))
     {
         return CollectionA;
     }
@@ -412,6 +416,7 @@ BuildTestData()
     TestData[ElementCount][Test_FlagB] = true;
     PushArrayCell(TestList, ElementCount);
     SetTrieValue(NameIndex, "qux3", ElementCount);
+    ElementCount++;
 }
 
 BuildCollections()
