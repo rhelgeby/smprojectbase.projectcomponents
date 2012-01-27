@@ -88,6 +88,7 @@ enum MenuAction
 #define MENUFLAG_BUTTON_EXIT		(1<<0)	/**< Menu has an "exit" button (default if paginated) */
 #define MENUFLAG_BUTTON_EXITBACK	(1<<1)	/**< Menu has an "exit back" button */
 #define MENUFLAG_NO_SOUND			(1<<2)	/**< Menu will not have any select sounds */
+#define MENUFLAG_BUTTON_NOVOTE		(1<<3)	/**< Menu has a "No Vote" button at slot 1 */
 
 #define VOTEINFO_CLIENT_INDEX		0		/**< Client index */
 #define VOTEINFO_CLIENT_ITEM		1		/**< Item the client selected, or -1 for none */
@@ -490,11 +491,10 @@ native bool:VoteMenu(Handle:menu, clients[], numClients, time, flags=0);
  */
 stock VoteMenuToAll(Handle:menu, time, flags=0)
 {
-	new num = GetMaxClients();
 	new total;
-	decl players[num];
+	decl players[MaxClients];
 	
-	for (new i=1; i<=num; i++)
+	for (new i=1; i<=MaxClients; i++)
 	{
 		if (!IsClientInGame(i))
 		{
