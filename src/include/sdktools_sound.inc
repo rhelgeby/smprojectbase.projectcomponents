@@ -257,6 +257,15 @@ native EmitSentence(const clients[],
 				 bool:updatePos = true,
 				 Float:soundtime = 0.0,
 				 any:...);
+				 
+/**
+ *Calculates gain of sound on given distance with given sound level in decibel
+ *
+ * @param soundlevel	decibel of sound, like SNDLEVEL_NORMAL or integer value
+ * @param distance	distance of sound to calculate, not meter or feet, but Source Engine`s normal Coordinate unit
+ * @return			gain of sound. you can multiply this with original sound`s volume to calculate volume on given distance
+ */
+native Float:GetDistGainFromSoundLevel(soundlevel, Float:distance);
 
 /**
  * Called when an ambient sound is about to be emitted to one or more clients.
@@ -403,11 +412,10 @@ stock EmitSoundToAll(const String:sample[],
 				 bool:updatePos = true,
 				 Float:soundtime = 0.0)
 {
-	new maxClients = GetMaxClients();
-	new clients[maxClients];
+	new clients[MaxClients];
 	new total = 0;
 	
-	for (new i=1; i<=maxClients; i++)
+	for (new i=1; i<=MaxClients; i++)
 	{
 		if (IsClientInGame(i))
 		{
