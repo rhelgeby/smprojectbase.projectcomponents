@@ -35,6 +35,8 @@
 #include "libraries/utilities"
 #include "libraries/arrays"
 
+//#section querylib
+
 /*
 DESCRIPTION
 
@@ -456,6 +458,8 @@ stock QueryLib_ParseQuery(client,
             errPos += strlen(entries[entry - 1]) + 1;
         }
         
+        // TODO: If optimization is needed, reduce use of strlen.
+        
         // Check for empty entry (double spaces).
         if (strlen(entries[entry]) == 0)
         {
@@ -564,7 +568,7 @@ stock QueryLib_ParseQuery(client,
                 // Parse collection list according to select mode, no filters.
                 retval = QueryLib_ParseCollections(client,
                                 callbackSet,
-                                entries[entry + 2], // Collection list string.
+                                entries[entry][2],  // Collection list string.
                                 0,                  // No filters.
                                 selectMode,
                                 resultList,
@@ -611,7 +615,7 @@ stock QueryLib_ParseQuery(client,
                 // Parse collection list according to select mode, with filters.
                 retval = QueryLib_ParseCollections(client,
                                 callbackSet,
-                                entries[entry], // Collection list string.
+                                collectionList,
                                 filters,
                                 selectMode,
                                 resultList,
@@ -641,7 +645,7 @@ stock QueryLib_ParseQuery(client,
     
     // Get the result value (element, list count or error code). This function
     // will also close the list handle if no longer used.
-    return QueryLib_GetResultValue(list, listCount, resultCount, asList, selectMode, errCode);
+    return QueryLib_GetResultValue(list, listCount, resultCount, selectMode, errCode);
 }
 
 /**
@@ -656,7 +660,8 @@ stock QueryLib_ParseQuery(client,
  * @return              Filter flags in a bit field. -1 on error (with position
  *                      in errPos.)
  */
-static stock QueryLib_ParseFilters(callbackSet[QueryLib_CallbackSet],
+// TODO: Make static when testing is done.
+stock QueryLib_ParseFilters(callbackSet[QueryLib_CallbackSet],
                                    const String:filterList[],
                                    &errPos = 0)
 {
@@ -711,7 +716,8 @@ static stock QueryLib_ParseFilters(callbackSet[QueryLib_CallbackSet],
  *                      Other modes: Element index if found, or a negative
  *                      number on error (see QUERYLIB_ERR_* defines).
  */
-static stock QueryLib_ParseCollections(client,
+// TODO: Make static when testing is done.
+stock QueryLib_ParseCollections(client,
                                        callbackSet[QueryLib_CallbackSet],
                                        const String:sourceList[],
                                        filters = 0,
@@ -731,6 +737,9 @@ static stock QueryLib_ParseCollections(client,
     // Split collection list.
     decl String:collections[QUERYLIB_MAX_ENTRIES][QUERYLIB_IDENTIFIER_LEN];
     listCount = ExplodeString(sourceList, QUERYLIB_LIST_SEPARATOR, collections, QUERYLIB_MAX_ENTRIES, QUERYLIB_IDENTIFIER_LEN);
+    
+    PrintToServer("[DEBUG] ParseCollections - sourceList = \"%s\"", sourceList);
+    PrintToServer("[DEBUG] ParseCollections - listCount = %d", listCount);
     
     // Check if no collections.
     if (listCount == 0)
@@ -752,6 +761,8 @@ static stock QueryLib_ParseCollections(client,
             errPos += strlen(collections[entry - 1]) + 1;
         }
         
+        PrintToServer("[DEBUG] ParseCollection - reading collection \"%s\"", collections[entry]);
+        
         // Parse collection name and get list.
         new Handle:collection = QueryLib_CallGetCollection(collections[entry], callbackSet);
         if (collection != INVALID_HANDLE)
@@ -772,7 +783,7 @@ static stock QueryLib_ParseCollections(client,
     
     // Get the result value (element, list count or error code). This function
     // will also close the list handle if no longer used.
-    return QueryLib_GetResultValue(list, listCount, resultCount, asList, selectMode, errCode);
+    return QueryLib_GetResultValue(list, listCount, resultCount, selectMode, errCode);
 }
 
 /**
@@ -793,7 +804,8 @@ static stock QueryLib_ParseCollections(client,
  *                      Other modes: Element index if found, or a negative
  *                      number on error (see QUERYLIB_ERR_* defines).
  */
-static stock QueryLib_GetEntries(client,
+// TODO: Make static when testing is done.
+stock QueryLib_GetEntries(client,
                                  callbackSet[QueryLib_CallbackSet],
                                  Handle:sourceList,
                                  filters = 0,
@@ -840,20 +852,18 @@ static stock QueryLib_GetEntries(client,
     
     // Get the result value (element, list count or error code). This function
     // will also close the list handle if no longer used.
-    return QueryLib_GetResultValue(list, listCount, resultCount, asList, selectMode, errCode);
+    return QueryLib_GetResultValue(list, listCount, resultCount, selectMode, errCode);
 }
 
 /**
  * Gets the result value according to the specified select mode.
  *
- * Note: This function will close the list handle if not returning the result
- *       as a list.
+ * Note: This function will close the list handle if selection mode is not a
+ *       a list.
  *
  * @param list          List with results.
  * @param listCount     Total number of elements in the result list.
  * @param resultCount   Number of elements that was added to the result list.
- * @param asList        Whether the result is a list or a single element. If
- *                      set to false, the list handle will also be closed.
  * @param selectMode    Selection mode. Defaults to list.
  * @param errCode       Output, optional. Error code.
  *
@@ -863,13 +873,15 @@ static stock QueryLib_GetEntries(client,
  *                      Other modes: Element index if found, or a negative
  *                      number on error (see QUERYLIB_ERR_* defines).
  */
-static stock QueryLib_GetResultValue(&Handle:list,
+// TODO: Make static when testing is done.
+stock QueryLib_GetResultValue(&Handle:list,
                                     listCount,
                                     resultCount,
-                                    bool:asList,
                                     QueryLib_ResultMode:selectMode,
-                                    errCode = 0)
+                                    &errCode = 0)
 {
+    new bool:asList = (selectMode == QueryLib_List);
+    
     // Check if no elements was found.
     if (resultCount == 0)
     {
@@ -937,7 +949,8 @@ static stock QueryLib_GetResultValue(&Handle:list,
  *                      Ignored in list mode.
  *                      Note: Only successful result values, no error codes.
  */
-static stock QueryLib_UpdateCounters(bool:asList, &listCount, &resultCount, retval)
+// TODO: Make static when testing is done.
+stock QueryLib_UpdateCounters(bool:asList, &listCount, &resultCount, retval)
 {
     if (asList)
     {
@@ -960,7 +973,8 @@ static stock QueryLib_UpdateCounters(bool:asList, &listCount, &resultCount, retv
  * @param collectionList    Collection list buffer.
  * @param maxlen            Size of buffers (used for both buffers).
  */
-static stock QueryLib_SplitTypes(const String:entry[],
+// TODO: Make static when testing is done.
+stock QueryLib_SplitTypes(const String:entry[],
                                  String:filterList[],
                                  String:collectionList[],
                                  maxlen)
@@ -995,7 +1009,8 @@ stock Handle:QueryLib_CreateCallbackSet(QueryLib_GetElementList:elementList,
 {
     static const String:errMsg[] = "Invalid function name for %s";
     
-    // Validate functions (caller cannot pass INVALID_FUNCTION intentionally).
+    // Validate functions (to prevent caller passing INVALID_FUNCTION
+    // intentionally).
     if (elementList == INVALID_FUNCTION)
     {
         ThrowError(errMsg, "QueryLib_GetElementList");
@@ -1028,7 +1043,8 @@ stock Handle:QueryLib_CreateCallbackSet(QueryLib_GetElementList:elementList,
     return set;
 }
 
-static stock QueryLib_EntryType:QueryLib_GetEntryType(const String:entry[])
+// TODO: Make static when testing is done.
+stock QueryLib_EntryType:QueryLib_GetEntryType(const String:entry[])
 {
     // Count number of types (no. of ":").
     new typeCount = Array_CountCharsEx(entry, QUERYLIB_TYPE_SEPARATOR);

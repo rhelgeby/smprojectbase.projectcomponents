@@ -107,14 +107,17 @@ stock Array_GetStringMarker(pos, String:buffer[], maxlen, marker = STRING_MARKER
  */
 stock Array_CountChars(const String:value[], c)
 {
-    new count = -1;
-    new pos = -1;
+    new count = 0;
+    new pos = 0;
     
-    do
+    while (value[pos] != 0)
     {
-        count++;
-        pos = FindCharInString(value[pos + 1], c);
-    } while (pos >= 0 && value[pos + 1] != 0);
+        if (value[pos] == c)
+        {
+            count++;
+        }
+        pos++;
+    }
     
     return count;
 }
