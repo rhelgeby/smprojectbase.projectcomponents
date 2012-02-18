@@ -363,7 +363,8 @@ stock QueryLib_ParseQuery(client,
     new element = -1;
     new filters = 0;
     new QueryLib_ResultMode:selectMode = mode;
-    new bool:asList = (mode == QueryLib_List);
+    new bool:asList = (mode == QueryLib_List);  // How the result is _returned_.
+    new bool:listSelectMode = asList;           // Whether elements are selected as list or not.
     new listCount;
     new resultCount;
     
@@ -472,7 +473,7 @@ stock QueryLib_ParseQuery(client,
         // Check entry type.
         new QueryLib_EntryType:entryType = QueryLib_GetEntryType(entries[entry]);
         
-        PrintToServer("[DEBUG] Parsing entry (type id: %d) \"%s\" at position %d", entryType, entries[entry], errPos);
+        //PrintToServer("[DEBUG] Parsing entry (type id: %d) \"%s\" at position %d", entryType, entries[entry], errPos);
         
         // Parse entry.
         switch (entryType)
@@ -499,6 +500,7 @@ stock QueryLib_ParseQuery(client,
                 
                 // Set new select mode.
                 selectMode = tempMode;
+                listSelectMode = (selectMode == QueryLib_List);
             }
             case QueryLibEntry_Element:
             {
@@ -541,7 +543,7 @@ stock QueryLib_ParseQuery(client,
                 new Handle:sourceList = QueryLib_CallGetList(callbackSet);
                 
                 // Get filtered model list. Ignore errors, no result is a valid
-                // case.
+                // case too.
                 retval = QueryLib_GetEntries(client,
                                 callbackSet,
                                 sourceList,
@@ -550,17 +552,19 @@ stock QueryLib_ParseQuery(client,
                                 resultList,
                                 errCode);
                 
-                // Only add if the result was successful.
+                //PrintToServer("[DEBUG] Parse filter entry - Retval: %d", retval);
+                
+                // Only add or update counters if the result was successful.
                 if (errCode == 0)
                 {
-                    if (!asList)
+                    if (!listSelectMode)
                     {
                         // Not retrieving a list, add the element manually.
                         PushArrayCell(resultList, retval);
                     }
                     
                     // Update counters.
-                    QueryLib_UpdateCounters(asList, listCount, resultCount, retval);
+                    QueryLib_UpdateCounters(listSelectMode, listCount, resultCount, retval);
                 }
             }
             case QueryLibEntry_Collection:
@@ -583,14 +587,14 @@ stock QueryLib_ParseQuery(client,
                     return asList ? resultCount : errCode;
                 }
                 
-                if (!asList)
+                if (!listSelectMode)
                 {
                     // Not retrieving a list, add the element manually.
                     PushArrayCell(resultList, retval);
                 }
                 
                 // Update counters.
-                QueryLib_UpdateCounters(asList, listCount, resultCount, retval);
+                QueryLib_UpdateCounters(listSelectMode, listCount, resultCount, retval);
             }
             case QueryLibEntry_FilterCollection:
             {
@@ -631,21 +635,21 @@ stock QueryLib_ParseQuery(client,
                     return asList ? resultCount : errCode;
                 }
                 
-                if (!asList)
+                if (!listSelectMode)
                 {
                     // Not retrieving a list, add the element manually.
                     PushArrayCell(resultList, retval);
                 }
                 
                 // Update counters.
-                QueryLib_UpdateCounters(asList, listCount, resultCount, retval);
+                QueryLib_UpdateCounters(listSelectMode, listCount, resultCount, retval);
             }
         }
     }
     
     // Get the result value (element, list count or error code). This function
     // will also close the list handle if no longer used.
-    return QueryLib_GetResultValue(list, listCount, resultCount, selectMode, errCode);
+    return QueryLib_GetResultValue(list, listCount, resultCount, asList, selectMode, errCode);
 }
 
 /**
@@ -726,9 +730,10 @@ stock QueryLib_ParseCollections(client,
                                        &errCode = 0,
                                        &errPos = 0)
 {
-    new bool:asList = (selectMode == QueryLib_List);
-    new listCount = 0;
-    new resultCount = 0;    // Number of entries added to list.
+    new bool:asList = (resultList != INVALID_HANDLE);
+    new bool:listSelectMode = (selectMode == QueryLib_List);
+    new sourceListCount = 0;    // Number of collections.
+    new resultCount = 0;        // Number of elements added to the list.
     
     // Reset error variables.
     errCode = 0;
@@ -736,23 +741,24 @@ stock QueryLib_ParseCollections(client,
     
     // Split collection list.
     decl String:collections[QUERYLIB_MAX_ENTRIES][QUERYLIB_IDENTIFIER_LEN];
-    listCount = ExplodeString(sourceList, QUERYLIB_LIST_SEPARATOR, collections, QUERYLIB_MAX_ENTRIES, QUERYLIB_IDENTIFIER_LEN);
+    sourceListCount = ExplodeString(sourceList, QUERYLIB_LIST_SEPARATOR, collections, QUERYLIB_MAX_ENTRIES, QUERYLIB_IDENTIFIER_LEN);
     
-    PrintToServer("[DEBUG] ParseCollections - sourceList = \"%s\"", sourceList);
-    PrintToServer("[DEBUG] ParseCollections - listCount = %d", listCount);
+    //PrintToServer("[DEBUG] ParseCollections - selectMode = %d", selectMode);
+    //PrintToServer("[DEBUG] ParseCollections - sourceList = \"%s\"", sourceList);
+    //PrintToServer("[DEBUG] ParseCollections - sourceListCount = %d", sourceListCount);
     
     // Check if no collections.
-    if (listCount == 0)
+    if (sourceListCount == 0)
     {
         errCode = QUERYLIB_ERR_NONE_FOUND;
-        return asList ? listCount : errCode;
+        return asList ? 0 : errCode;
     }
     
     // Create temp array.
-    new Handle:list = asList ? resultList : CreateArray();
+    new Handle:list = listSelectMode ? resultList : CreateArray();
     
     // Loop through collection entries.
-    for (new entry = 0; entry < listCount; entry++)
+    for (new entry = 0; entry < sourceListCount; entry++)
     {
         // Calculate entry position in collection list.
         if (entry > 0)
@@ -761,7 +767,7 @@ stock QueryLib_ParseCollections(client,
             errPos += strlen(collections[entry - 1]) + 1;
         }
         
-        PrintToServer("[DEBUG] ParseCollection - reading collection \"%s\"", collections[entry]);
+        //PrintToServer("[DEBUG] ParseCollections - reading collection \"%s\"", collections[entry]);
         
         // Parse collection name and get list.
         new Handle:collection = QueryLib_CallGetCollection(collections[entry], callbackSet);
@@ -769,7 +775,7 @@ stock QueryLib_ParseCollections(client,
         {
             // Add elements in collection to temp array or list (those who pass
             // the filter). Ignore "none found" error because this is a valid
-            // case.
+            // case too.
             resultCount += QueryLib_GetEntries(client, callbackSet, collection, filters, QueryLib_List, list);
         }
         else
@@ -781,9 +787,13 @@ stock QueryLib_ParseCollections(client,
         }
     }
     
+    new listCount = GetArraySize(list);
+    
+    //PrintToServer("[DEBUG] ParseCollections - %d elements in temp list.", listCount);
+    
     // Get the result value (element, list count or error code). This function
     // will also close the list handle if no longer used.
-    return QueryLib_GetResultValue(list, listCount, resultCount, selectMode, errCode);
+    return QueryLib_GetResultValue(list, listCount, resultCount, listSelectMode, selectMode, errCode);
 }
 
 /**
@@ -813,11 +823,14 @@ stock QueryLib_GetEntries(client,
                                  Handle:resultList = INVALID_HANDLE,
                                  errCode = 0)
 {
+    // How elements are returned.
     new bool:asList = (resultList != INVALID_HANDLE);
-    new resultCount = 0;    // Number of elements added to list.
     
-    // Prepare result list.
-    new Handle:list = asList ? resultList : CreateArray();
+    // Number of elements added to list.
+    new resultCount = 0;
+    
+    // Prepare result list. Use a temp list for non-list select modes.
+    new Handle:list = (selectMode == QueryLib_List) ? resultList : CreateArray();
     
     // Reset error code.
     errCode = 0;
@@ -840,31 +853,32 @@ stock QueryLib_GetEntries(client,
         resultCount++;
     }
     
-    
-    // Set error code if none found.
-    if (resultCount == 0)
+    // Set error code if none found. ---- redundant
+    /*if (resultCount == 0)
     {
         errCode = QUERYLIB_ERR_NONE_FOUND;
-    }
+    }*/
     
     // Get total number of elements in the result list.
     new listCount = GetArraySize(list);
     
     // Get the result value (element, list count or error code). This function
-    // will also close the list handle if no longer used.
-    return QueryLib_GetResultValue(list, listCount, resultCount, selectMode, errCode);
+    // will also close the list handle if no longer used (when asList is false).
+    return QueryLib_GetResultValue(list, listCount, resultCount, asList, selectMode, errCode);
 }
 
 /**
  * Gets the result value according to the specified select mode.
  *
- * Note: This function will close the list handle if selection mode is not a
- *       a list.
+ * Note: This function will close the list handle if asList is false.
  *
  * @param list          List with results.
  * @param listCount     Total number of elements in the result list.
  * @param resultCount   Number of elements that was added to the result list.
- * @param selectMode    Selection mode. Defaults to list.
+ * @param asList        Whether the result is added to a list or returned as a
+ *                      single element. When false, the list handle will be
+ *                      closed.
+ * @param selectMode    Selection mode.
  * @param errCode       Output, optional. Error code.
  *
  * @return              List mode: Number of elements added to the list. On
@@ -877,11 +891,10 @@ stock QueryLib_GetEntries(client,
 stock QueryLib_GetResultValue(&Handle:list,
                                     listCount,
                                     resultCount,
+                                    bool:asList,
                                     QueryLib_ResultMode:selectMode,
                                     &errCode = 0)
 {
-    new bool:asList = (selectMode == QueryLib_List);
-    
     // Check if no elements was found.
     if (resultCount == 0)
     {
@@ -942,17 +955,17 @@ stock QueryLib_GetResultValue(&Handle:list,
 /**
  * Updates the list counters.
  *
- * @param asList        Whether the result is a list or a single element.
- * @param listCount     Total element counter.
- * @param resultCount   Elements added to the list.
- * @param retval        Result value from a element parser helper function.
- *                      Ignored in list mode.
- *                      Note: Only successful result values, no error codes.
+ * @param listSelectMode    Whether the result is a list or a single element.
+ * @param listCount         Total element counter.
+ * @param resultCount       Elements added to the list.
+ * @param retval            Result value from a element parser helper function.
+ *                          Ignored in list mode.
+ *                          Note: Only successful result values, no error codes.
  */
 // TODO: Make static when testing is done.
-stock QueryLib_UpdateCounters(bool:asList, &listCount, &resultCount, retval)
+stock QueryLib_UpdateCounters(bool:listSelectMode, &listCount, &resultCount, retval)
 {
-    if (asList)
+    if (listSelectMode)
     {
         resultCount += retval;
         listCount += retval;

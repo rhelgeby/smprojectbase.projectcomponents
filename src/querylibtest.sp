@@ -533,6 +533,18 @@ RunUnitTests(client)
     BoolToResult(TestResultValue_Handle(), result, sizeof(result));
     ReplyToCommand(client, fmt, "TestResultValue_Handle", result);
     
+    BoolToResult(TestResultValue_Handle2(), result, sizeof(result));
+    ReplyToCommand(client, fmt, "TestResultValue_Handle2", result);
+    
+    BoolToResult(TestResultValue_Handle3(), result, sizeof(result));
+    ReplyToCommand(client, fmt, "TestResultValue_Handle3", result);
+    
+    BoolToResult(TestResultValue_Handle4(), result, sizeof(result));
+    ReplyToCommand(client, fmt, "TestResultValue_Handle4", result);
+    
+    BoolToResult(TestResultValue_Handle5(), result, sizeof(result));
+    ReplyToCommand(client, fmt, "TestResultValue_Handle5", result);
+    
     BoolToResult(TestResultValue_NoResult(), result, sizeof(result));
     ReplyToCommand(client, fmt, "TestResultValue_NoResult", result);
     
@@ -703,10 +715,97 @@ bool:TestResultValue_Handle()
     new QueryLib_ResultMode:selectMode = QueryLib_First;    // Using a non-list mode.
     new errCode = 0;
     
-    QueryLib_GetResultValue(list, listCount, resultCount, selectMode, errCode);
+    QueryLib_GetResultValue(list, listCount, resultCount, false, selectMode, errCode);
     
     // Verify that list handle is closed.
     return list == INVALID_HANDLE;
+}
+
+bool:TestResultValue_Handle2()
+{
+    // Create test list.
+    new Handle:list = CreateArray();
+    PushArrayCell(list, 2);
+    PushArrayCell(list, 5);
+    PushArrayCell(list, 7);
+    PushArrayCell(list, 8);
+    PushArrayCell(list, 9);
+    
+    new listCount = GetArraySize(list);
+    new resultCount = 3;
+    new QueryLib_ResultMode:selectMode = QueryLib_Last;    // Using a non-list mode.
+    new errCode = 0;
+    
+    QueryLib_GetResultValue(list, listCount, resultCount, false, selectMode, errCode);
+    
+    // Verify that list handle is closed.
+    return list == INVALID_HANDLE;
+}
+
+bool:TestResultValue_Handle3()
+{
+    // Create test list.
+    new Handle:list = CreateArray();
+    PushArrayCell(list, 2);
+    PushArrayCell(list, 5);
+    PushArrayCell(list, 7);
+    PushArrayCell(list, 8);
+    PushArrayCell(list, 9);
+    
+    new listCount = GetArraySize(list);
+    new resultCount = 3;
+    new QueryLib_ResultMode:selectMode = QueryLib_Random;    // Using a non-list mode.
+    new errCode = 0;
+    
+    QueryLib_GetResultValue(list, listCount, resultCount, false, selectMode, errCode);
+    
+    // Verify that list handle is closed.
+    return list == INVALID_HANDLE;
+}
+
+bool:TestResultValue_Handle4()
+{
+    // Create test list.
+    new Handle:list = CreateArray();
+    PushArrayCell(list, 2);
+    PushArrayCell(list, 5);
+    PushArrayCell(list, 7);
+    PushArrayCell(list, 8);
+    PushArrayCell(list, 9);
+    
+    new listCount = GetArraySize(list);
+    new resultCount = 3;
+    new QueryLib_ResultMode:selectMode = QueryLib_List;
+    new errCode = 0;
+    
+    // Note: asList set to true so the handle won't be closed.
+    QueryLib_GetResultValue(list, listCount, resultCount, true, selectMode, errCode);
+    
+    // Verify that list handle is NOT closed.
+    return list != INVALID_HANDLE;
+}
+
+bool:TestResultValue_Handle5()
+{
+    // Create test list.
+    new Handle:list = CreateArray();
+    PushArrayCell(list, 2);
+    PushArrayCell(list, 5);
+    PushArrayCell(list, 7);
+    PushArrayCell(list, 8);
+    PushArrayCell(list, 9);
+    
+    new listCount = GetArraySize(list);
+    new resultCount = 3;
+    new QueryLib_ResultMode:selectMode = QueryLib_First;    // Using non-list mode.
+    new errCode = 0;
+    
+    // Note: asList set to true so the handle won't be closed.
+    QueryLib_GetResultValue(list, listCount, resultCount, true, selectMode, errCode);
+    
+    // Verify that list handle is NOT closed. Even if selectMode is a non-list
+    // mode.
+    return list != INVALID_HANDLE;
 }
 
 bool:TestResultValue_NoResult()
@@ -721,7 +820,7 @@ bool:TestResultValue_NoResult()
     new QueryLib_ResultMode:selectMode = QueryLib_First;
     new errCode = 0;
     
-    new retval = QueryLib_GetResultValue(list, listCount, resultCount, selectMode, errCode);
+    new retval = QueryLib_GetResultValue(list, listCount, resultCount, false, selectMode, errCode);
     
     // Verify error code.
     if (errCode != QUERYLIB_ERR_NONE_FOUND)
@@ -753,7 +852,7 @@ bool:TestResultValue_First()
     new QueryLib_ResultMode:selectMode = QueryLib_First;
     new errCode = 0;
     
-    new retval = QueryLib_GetResultValue(list, listCount, resultCount, selectMode, errCode);
+    new retval = QueryLib_GetResultValue(list, listCount, resultCount, false, selectMode, errCode);
     
     // Expect first element.
     return retval == 2;
@@ -774,7 +873,7 @@ bool:TestResultValue_Last()
     new QueryLib_ResultMode:selectMode = QueryLib_Last;
     new errCode = 0;
     
-    new retval = QueryLib_GetResultValue(list, listCount, resultCount, selectMode, errCode);
+    new retval = QueryLib_GetResultValue(list, listCount, resultCount, false, selectMode, errCode);
     
     // Expect last element.
     return retval == 9;
@@ -795,7 +894,7 @@ bool:TestResultValue_Random()
     new QueryLib_ResultMode:selectMode = QueryLib_Random;
     new errCode = 0;
     
-    new retval = QueryLib_GetResultValue(list, listCount, resultCount, selectMode, errCode);
+    new retval = QueryLib_GetResultValue(list, listCount, resultCount, false, selectMode, errCode);
     
     // Verify that one of the elements are selected.
     switch (retval)
@@ -822,8 +921,10 @@ bool:TestResultValue_List()
     new resultCount = 3;
     new QueryLib_ResultMode:selectMode = QueryLib_List;
     new errCode = 0;
-    
-    new retval = QueryLib_GetResultValue(list, listCount, resultCount, selectMode, errCode);
+
+    // Note: asList is set to false to close the list handle (and because the
+    //       result list is fake).
+    new retval = QueryLib_GetResultValue(list, listCount, resultCount, false, selectMode, errCode);
     
     // Expect number of elements added to the list (resultCount).
     return retval == 3;
@@ -839,7 +940,7 @@ bool:TestResultValue_InvalidMode()
     new QueryLib_ResultMode:selectMode = QueryLib_Invalid;
     new errCode = 0;
     
-    QueryLib_GetResultValue(list, listCount, resultCount, selectMode, errCode);
+    QueryLib_GetResultValue(list, listCount, resultCount, false, selectMode, errCode);
     
     // Expect invalid mode error.
     return errCode == QUERYLIB_ERR_INVALID_MODE;
