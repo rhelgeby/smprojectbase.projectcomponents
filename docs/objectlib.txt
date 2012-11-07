@@ -1,0 +1,68 @@
+Object Library
+==============
+
+* Key/value object storage manager
+  Create objects with dynamic contents. Data is inernally stored in ADT Arrays.
+  There is also a Trie name index for named key lookup.
+
+* Dynamic or static
+  Objects can be either mutable or immutable. Both use a compound type
+  descriptor as a template. Mutable objects store a bundled descriptor, while
+  immutable objects store a reference to a shared immutable descriptor.
+  
+  Since each mutable object have their own type descriptor they use more memory
+  than immutable objects.
+
+* Supports built-in and custom data validation
+  The library supports basic validation constraints such as min/max limits in
+  addition to a forward where the user can do custom validation of the object.
+
+* Type safe
+  Each key is assigned a type. This structure requires you to use appropriate
+  get/set functions where the library will check if you use the correct
+  function at runtime - and the compiler will be able to do tag checks.
+
+* Import (and validate) data from Valve KeyValue files
+  Handles reading and building objects based on the contents of a KeyValue file
+  and a user defined compound type descriptor with optional validation
+  constraints.
+
+
+enum ObjectCollection
+{
+    Handle:ObjectCollection_Objects
+}
+
+enum Object
+{
+    Handle:Object_Data,         /** ADT Array with raw data. */
+    Handle:Object_MetaData      /** Handle to common CompoundType descriptor. */
+}
+
+enum CompoundType
+{
+    bool:Type_Locked,           /** Whether this descriptor is read only or not. */
+    Type_BlockSize,             /** Number of cells each value can hold (strings/arrays). */
+    Handle:Type_NameIndex,      /** Trie with names mapped to data indexes. */
+    Handle:Type_DataTypes,      /** ADT Array that stores the type of each key. This one also how many keys this type has. */
+    Handle:Type_Constraints     /** ADT Array of ValidationConstraint enum arrays with constraints for each key. */
+}
+
+ValidationConstraint
+--------------------
++ DataType : enum of DataTypes
++ Min : int
++ Max : int
+
+enum DataTypes
+{
+    DataType_Any,
+    DataType_Cell,
+    DataType_Bool,
+    DataType_Float,
+    DataType_Handle,
+    DataType_Function,
+    DataType_Array,
+    DataType_String,
+}
+
