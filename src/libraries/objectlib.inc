@@ -32,6 +32,8 @@
 #endif
 #define _objectlib_included
 
+#include <sourcemod>
+
 /**
  * Object tag.
  */
@@ -39,6 +41,11 @@ enum Object
 {
     INVALID_OBJECT = -1
 }
+
+/**
+ * Number of bytes reserved for key names.
+ */
+#define OBJECT_KEY_NAME_LEN     32
 
 /**
  * Object type descriptor tag.
@@ -67,6 +74,8 @@ enum ObjectDataType
 
 /**
  * Object entries. Used internally to name array indexes.
+ *
+ * Note: The order of these elements must match code in ObjLib_CreateObject.
  */
 enum ObjectData
 {
@@ -76,27 +85,31 @@ enum ObjectData
 
 /**
  * Object type entries. Used internally to name array indexes.
+ *
+ * Note: The order of these elements must match code in ObjLib_CreateType.
  */
+#define OBJECT_TYPE_DATA_LEN    8   /** Number of elements below. */
 enum ObjectTypeData
 {
-    ObjectType_Locked = 0,  /** Whether type descriptor is read only. */
-    ObjectType_KeySize,     /** Block size of key name array. */
-    ObjectType_BlockSize,   /** Block size of raw data array. */
-    ObjectType_Keys,        /** Handle to array of key names. */
-    ObjectType_NameIndex,   /** Handle to trie index of key names. */
-    ObjectType_DataTypes,   /** Handle to array of data type for each value entry. */
-    ObjectType_Constraints, /** Handle to validation constraints info for each key. */
+    ObjectType_Locked = 0,      /** Whether type descriptor is read only. */
+    ObjectType_ParentObject,    /** Reference to parent object, if any. Used by mutable objects. */
+    ObjectType_KeySize,         /** Block size of key name array. */
+    ObjectType_BlockSize,       /** Block size of raw data array. */
+    ObjectType_Keys,            /** Handle to array of key names (case sensitive). */
+    ObjectType_NameIndex,       /** Handle to trie index of key names. */
+    ObjectType_DataTypes,       /** Handle to array of data type for each value entry. */
+    ObjectType_Constraints,     /** Handle to validation constraints info for each key. */
 }
 
 /**
  * Creates an empty object type descriptor.
  *
+ * Note:
+ * You may use ByteCountToCells to calculate number of cells required to fit a
+ * certain string length for blockSize and keySize.
+ *
  * @param blockSize     (Optional) Maximum number of cells reserved for each
  *                      value entry. Default is 1 cell.
- *                      
- *                      You may Use ByteCountToCells to calculate number of
- *                      cells required to fit a certain string length.
- *
  * @param keySize       (Optional) Maximum number of cells reserved for each
  *                      key name. Default is 8 cells (32 bytes/characters).
  *
@@ -108,6 +121,23 @@ enum ObjectTypeData
  */
 stock ObjectType:ObjLib_CreateType(blockSize = 1, keySzie = 8)
 {
+    // Create array to store type descriptor data.
+    new Handle:typeDescriptor = CreateArray(_, OBJECT_TYPE_DATA_LEN);
+    
+    new Handle:keys = CreateArray(keySzie);         // List of key names (for enumeration or reflection).
+    new Handle:nameIndex = CreateTrie();            // ADT Trie with key names mapped to indexes.
+    new Handle:dataTypes = CreateArray();           // List of data types of each value entry.
+    
+    PushArrayCell(typeDescriptor, 0);                   // ObjectType_Locked
+    PushArrayCell(typeDescriptor, _:INVALID_OBJECT);    // ObjectType_ParentObject
+    PushArrayCell(typeDescriptor, keySzie);             // ObjectType_KeySize
+    PushArrayCell(typeDescriptor, blockSize);           // ObjectType_BlockSize
+    PushArrayCell(typeDescriptor, keys);                // ObjectType_Keys
+    PushArrayCell(typeDescriptor, nameIndex);           // ObjectType_NameIndex
+    PushArrayCell(typeDescriptor, dataTypes);           // ObjectType_DataTypes
+    PushArrayCell(typeDescriptor, INVALID_HANDLE);      // ObjectType_Constraints - not implemented yet.
+    
+    return ObjectType:typeDescriptor;
 }
 
 /**
@@ -122,42 +152,182 @@ stock ObjectType:ObjLib_CreateType(blockSize = 1, keySzie = 8)
  */
 stock ObjLib_DeleteType(&ObjectType:typeDescriptor, bool:resetReference = true)
 {
+    // Validate.
+    if (!ObjLib_IsValidObjectType(typeDescriptor))
+    {
+        ThrowError("Invalid object type descriptor.");
+    }
+    
+    // Check if this type descriptor is attatched to a mutable object.
+    if (ObjectType:GetArrayCell(typeDescriptor, _:ObjectType_ParentObject) != INVALID_OBJECT)
+    {
+        ThrowError("Can't directly delete type descriptor in mutable object. Use ObjLib_DeleteObject.");
+    }
+    
+    // Delete data structures stored in the type descriptor. These handles are
+    // guaranteed to be valid.
+    CloseHandle(Handle:GetArrayCell(typeDescriptor, _:ObjectType_Keys));
+    CloseHandle(Handle:GetArrayCell(typeDescriptor, _:ObjectType_NameIndex));
+    CloseHandle(Handle:GetArrayCell(typeDescriptor, _:ObjectType_DataTypes));
+    
+    // Delete constraints. These are optional.
+    new Handle:constraints = Handle:GetArrayCell(typeDescriptor, _:ObjectType_Constraints);
+    if (constraints != INVALID_HANDLE)
+    {
+        // TODO: Delete constraints.
+    }
+    
+    // Delete type descriptor container.
+    CloseHandle(typeDescriptor);
+    
+    // Reset reference if enabled.
+    if (resetReference)
+    {
+        typeDescriptor = INVALID_OBJECT_TYPE;
+    }
 }
 
 /**
  * Creates a new object type based on the specified type descriptor.
  *
  * @param typeDescriptor    Source object type template.
+ * @param mutableType       (Optional) Whether the object type is mutable
+ *                          (add/remove keys). Default is true.
  *
  * @return                  New object type descriptor. Must be deleted with
  *                          ObjLib_DeleteType when no longer in use.
  */
-stock ObjectType:ObjLib_CloneType(ObjectType:typeDescriptor)
+stock ObjectType:ObjLib_CloneType(ObjectType:typeDescriptor, bool:mutableType = true)
 {
+    // Separate functions:
+    // TODO: clone keys
+    // TODO: clone name index
+    // TODO: clone data types
+    // TODO: clone constraints
+}
+
+/**
+ * Returns whether the object type descriptor is valid.
+ *
+ * @param typeDescriptor    Type descriptor to validate.
+ *
+ * @return                  True if valid, false otherwise.
+ */
+stock bool:ObjLib_IsValidObjectType(ObjectType:typeDescriptor)
+{
+    return typeDescriptor != INVALID_OBJECT_TYPE;
 }
 
 /**
  * Adds a key to an object type descriptor.
  * 
  * @param typeDescriptor    Handle to type descriptor.
- * @param keyName           Name of the new key.
+ * @param keyName           Name of the new key. Case sensitive.
  * @param dataType          Data type of key.
  */
 stock ObjLib_AddKey(ObjectType:typeDescriptor, const String:keyName[], ObjectDataType:dataType = ObjDataType_Any)
 {
+    // Validate.
+    if (!ObjLib_IsValidObjectType(typeDescriptor))
+    {
+        ThrowError("Invalid object type descriptor (%x).", typeDescriptor);
+    }
+    
+    // Check if not mutable.
+    if (!ObjLib_IsObjectTypeMutable(typeDescriptor))
+    {
+        ThrowError("This object type descriptor is immutable (%x).", typeDescriptor);
+    }
+    
+    // Check if key exist.
+    if (ObjLib_KeyExist(typeDescriptor, keyName))
+    {
+        ThrowError("Key already exist.");
+    }
+    
+    new Handle:keys = Handle:GetArrayCell(typeDescriptor, _:ObjectType_Keys);
+    new Handle:nameIndex = Handle:GetArrayCell(typeDescriptor, _:ObjectType_NameIndex);
+    new Handle:dataTypes = Handle:GetArrayCell(typeDescriptor, _:ObjectType_DataTypes);
+    
+    new entryIndex = PushArrayString(keys, keyName);    // Keys
+    SetTrieValue(nameIndex, keyName, entryIndex);       // Name index
+    PushArrayCell(dataTypes, _:dataType);               // Data types
+    
+    // Update parent object if available.
+    new Object:parent = Object:GetArrayCell(typeDescriptor, _:ObjectType_ParentObject);
+    if (parent != INVALID_OBJECT)
+    {
+        // Add initialized data entry. This will push a new empty value at the
+        // same index as the key.
+        ObjLib_InitializeNewValue(parent, dataType);
+    }
 }
 
 /**
  * Removes a key from an object type descriptor, if not locked.
  *
  * @param typeDescriptor    Object type descriptor to remove key from.
- * @param keyName           Name of key to remove.
+ * @param keyName           Name of key to remove. Case sensitive.
  *
  * @return                  True if successful, false if type descriptor was
  *                          locked.
  */
 stock bool:ObjLib_RemoveKey(ObjectType:typeDescriptor, const String:keyName[])
 {
+    // Validate.
+    if (!ObjLib_IsValidObjectType(typeDescriptor))
+    {
+        ThrowError("Invalid object type descriptor (%x).", typeDescriptor);
+    }
+    
+    // Check if not mutable.
+    if (!ObjLib_IsObjectTypeMutable(typeDescriptor))
+    {
+        ThrowError("This object type descriptor is immutable (%x).", typeDescriptor);
+    }
+    
+    // Check if key doesn't exist.
+    if (!ObjLib_KeyExist(typeDescriptor, keyName))
+    {
+        ThrowError("Key already exist.");
+    }
+    
+    new Handle:keys = Handle:GetArrayCell(typeDescriptor, _:ObjectType_Keys);
+    new Handle:nameIndex = Handle:GetArrayCell(typeDescriptor, _:ObjectType_NameIndex);
+    new Handle:dataTypes = Handle:GetArrayCell(typeDescriptor, _:ObjectType_DataTypes);
+    
+    new entryIndex = GetTrieValue(nameIndex, keyName);
+    RemoveFromArray(keys, entryIndex);                  // Keys
+    RemoveFromArray(dataTypes, entryIndex);             // Data types
+    RemoveFromTrie(nameIndex, keyName);                 // Name index
+    
+    // Update parent object if available.
+    new Object:parent = Object:GetArrayCell(typeDescriptor, _:ObjectType_ParentObject);
+    if (parent != INVALID_OBJECT)
+    {
+        // Remove entry.
+        ObjLib_RemoveEntry(parent, entryIndex);
+    }
+}
+
+/**
+ * Returns whether a key exist in an object type descriptor.
+ *
+ * @param typeDescriptor    Obect type descriptor to inspect.
+ * @param keyName           Key to search for (case sensitive).
+ *
+ * @return                  True if found, false otherwise.
+ */
+stock bool:ObjLib_KeyExist(ObjectType:typeDescriptor, const String:keyName[])
+{
+    new Handle:nameIndex = Handle:GetArrayCell(typeDescriptor, _:ObjectType_NameIndex);
+    new dummyBuffer;
+    if (GetTrieValue(nameIndex, keyName, dummyBuffer)
+    {
+        // Key exist.
+        return true;
+    }
+    return false;
 }
 
 /**
@@ -187,6 +357,11 @@ stock bool:ObjLib_RemoveObjectKey(Object:object, const String:keyName[])
  * cannot be added or removed. The type template is used directly and shared
  * between immutable objects. Memory usage is more efficient than mutable
  * objects.
+ *
+ * Important note:
+ * Creating an immutable object will automatically lock the type template
+ * because it's now used directly. If you don't want to lock it, clone it with
+ * ObjLib_CloneType and use the cloned type instead.
  *
  * @param typeTemplate      Object type to use.
  * @param mutableObject     (Optional) Whether the object is mutable (add/remove
@@ -260,4 +435,85 @@ stock bool:ObjLib_IsMutable(Object:object)
  */
 stock bool:ObjLib_IsValidObject(Object:object)
 {
+}
+
+
+/*********************************
+ *   Internal helper functions   *
+ *********************************/
+
+/**
+ * Creates a new initialized value entry.
+ *
+ * Note: Don't make new value entries without updating the type descriptor.
+ *
+ * @param object    Object where new value entry is added.
+ * @param dataType  Data type of initialized value.
+ */
+static stock ObjLib_InitializeNewValue(Object:object, ObjectDataType:dataType)
+{
+    new Handle:data = Handle:GetArrayCell(object, _:Object_Data);
+    
+    switch (dataType)
+    {
+        case ObjDataType_Any:
+        {
+            PushArrayCell(data, 0);
+        }
+        case ObjDataType_Cell:
+        {
+            PushArrayCell(data, 0);
+        }
+        case ObjDataType_Bool:
+        {
+            PushArrayCell(data, 0);
+        }
+        case ObjDataType_Float:
+        {
+            PushArrayCell(data, 0.0);
+        }
+        case ObjDataType_Handle:
+        {
+            PushArrayCell(data, INVALID_HANDLE);
+        }
+        case ObjDataType_Function:
+        {
+            PushArrayCell(data, INVALID_FUNCTION);
+        }
+        case ObjDataType_Array:
+        {
+            new dummyArray[1];
+            PushArrayCell(data, dummyArray);
+        }
+        case ObjDataType_String:
+        {
+            PushArrayString(data, "");
+        }
+        case ObjDataType_Object:
+        {
+            PushArrayCell(data, INVALID_OBJECT);
+        }
+        case ObjDataType_ObjectType:
+        {
+            PushArrayCell(data, INVALID_OBJECT_TYPE);
+        }
+        default:
+        {
+            ThrowError("Unexpected data type.");
+        }
+    }
+}
+
+/**
+ * Removes a value entry from an object.
+ *
+ * Note: Don't make new value entries without updating the type descriptor.
+ *
+ * @param object        Object to remove value from.
+ * @param entryIndex    Data index of value entry.
+ */
+static stock ObjLib_RemoveEntry(Object:object, entryIndex)
+{
+    new Handle:data = Handle:GetArrayCell(object, _:Object_Data);
+    RemoveFromArray(data, entryIndex);
 }
