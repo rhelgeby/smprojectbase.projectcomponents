@@ -511,24 +511,49 @@ stock Object:ObjLib_CloneObject(Object:objectTemplate, bool:mutableObject = true
 }
 
 /**
- * Gets an object's type descriptor.
+ * Returns whether the object reference is valid.
  *
- * @param object            Object reference to get type from.
+ * @param object    Object reference to validate.
  *
- * @return                  Object type descriptor reference.
+ * @return          True if valid, false otherwise.
  */
-stock ObjetType:ObjLib_GetObjectType(Object:object)
+stock bool:ObjLib_IsValidObject(Object:object)
 {
 }
 
+
+
+/********************************
+ *   Object get/set functions   *
+ *                              *
+ * Note: Some are internal and  *
+ * not intended for public use. *
+ ********************************/
+
 /**
- * Returns whether the specified object type descriptor is mutable.
+ * Gets an object's type descriptor.
  *
- * @return      True if mutable, false otherwise.
+ * @param object    Object to get type from.
+ *
+ * @return          Object type descriptor reference.
  */
-stock bool:ObjLib_IsTypeMutable(ObjectType:typeDescriptor)
+stock ObjectType:ObjLib_GetObjectType(Object:object)
 {
+    return ObjectType:GetArrayCell(object, _:Object_MetaData);
 }
+
+/**
+ * Gets an object's raw data array. Internal use only.
+ *
+ * @param object    Object to get data from.
+ *
+ * @return          Object raw data array.
+ */
+static stock Handle:ObjLib_GetObjectData(Object:object)
+{
+    return Handle:GetArrayCell(object, _:Object_Data);
+}
+
 
 /**
  * Returns whether the specified object descriptor is mutable.
@@ -537,16 +562,24 @@ stock bool:ObjLib_IsTypeMutable(ObjectType:typeDescriptor)
  */
 stock bool:ObjLib_IsMutable(Object:object)
 {
+    ObjectType:type = ObjLib_GetObjectType(object);
+    return GetArrayCell(type, _:ObjectType_Locked) == 0;
 }
 
+
+/*************************************
+ *   Object type get/set functions   *
+ *                                   *
+ * Note: Some are internal and not   *
+ * intended for public use.          *
+ *************************************/
+
 /**
- * Returns whether the object reference is valid.
+ * Returns whether the specified object type descriptor is mutable.
  *
- * @param object    Object reference to validate.
- *
- * @return          True if valid, false otherwise.
+ * @return      True if mutable, false otherwise.
  */
-stock bool:ObjLib_IsValidObject(Object:object)
+stock bool:ObjLib_IsTypeMutable(ObjectType:typeDescriptor)
 {
 }
 
