@@ -28,7 +28,7 @@ MAIN FEATURES
   get/set functions where the library will check if you use the correct
   function at runtime - and the compiler will be able to do tag checks.
 
-* Import (and validate) data from Valve KeyValue files
+* Import (and validate) data from Valve's KeyValue file format
   Creates objects based on the contents of a KeyValue file, and a user defined
   object type descriptor with optional validation constraints.
 

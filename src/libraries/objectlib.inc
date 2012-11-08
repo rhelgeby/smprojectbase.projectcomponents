@@ -6,8 +6,8 @@
  *  File:           objectlib.inc
  *  Type:           Library
  *  Description:    Key/value dynamic object storage manager with validation,
- *                  type safety and support for importing from Valve KeyValue
- *                  files.
+ *                  type safety and support for importing from Valve's KeyValue
+ *                  file format.
  *
  *  Copyright (C) 2012  Richard Helgeby, Greyscale
  *
