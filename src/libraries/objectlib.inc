@@ -77,6 +77,7 @@ enum ObjectDataType
  *
  * Note: The order of these elements must match code in ObjLib_CreateObject.
  */
+#define OBJECT_DATA_LEN         2   /** Number of elements below. */
 enum ObjectData
 {
     Object_Data = 0,    /** Data entry. Handle to raw data array. */
@@ -164,8 +165,7 @@ stock ObjLib_DeleteType(&ObjectType:typeDescriptor, bool:resetReference = true)
         ThrowError("Can't directly delete type descriptor in mutable object. Use ObjLib_DeleteObject.");
     }
     
-    // Delete data structures stored in the type descriptor. These handles are
-    // guaranteed to be valid.
+    // Delete data structures stored in the type descriptor.
     CloseHandle(Handle:GetArrayCell(typeDescriptor, _:ObjectType_Keys));
     CloseHandle(Handle:GetArrayCell(typeDescriptor, _:ObjectType_NameIndex));
     CloseHandle(Handle:GetArrayCell(typeDescriptor, _:ObjectType_DataTypes));
@@ -199,6 +199,7 @@ stock ObjLib_DeleteType(&ObjectType:typeDescriptor, bool:resetReference = true)
  */
 stock ObjectType:ObjLib_CloneType(ObjectType:typeDescriptor, bool:mutableType = true)
 {
+    ThrowError("Not implemented");
     // Separate functions:
     // TODO: clone keys
     // TODO: clone name index
@@ -242,7 +243,7 @@ stock ObjLib_AddKey(ObjectType:typeDescriptor, const String:keyName[], ObjectDat
     // Check if key exist.
     if (ObjLib_KeyExist(typeDescriptor, keyName))
     {
-        ThrowError("Key already exist.");
+        ThrowError("Key already exist (\"%s\").", keyName);
     }
     
     new Handle:keys = Handle:GetArrayCell(typeDescriptor, _:ObjectType_Keys);
@@ -289,7 +290,7 @@ stock bool:ObjLib_RemoveKey(ObjectType:typeDescriptor, const String:keyName[])
     // Check if key doesn't exist.
     if (!ObjLib_KeyExist(typeDescriptor, keyName))
     {
-        ThrowError("Key already exist.");
+        ThrowError("Key doesn't exist (\"%s\").", keyName);
     }
     
     new Handle:keys = Handle:GetArrayCell(typeDescriptor, _:ObjectType_Keys);
@@ -342,6 +343,8 @@ stock bool:ObjLib_KeyExist(ObjectType:typeDescriptor, const String:keyName[])
  */
 stock bool:ObjLib_RemoveObjectKey(Object:object, const String:keyName[])
 {
+    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    return ObjLib_RemoveKey(typeDescriptor, keyName);
 }
 
 /**
@@ -372,6 +375,32 @@ stock bool:ObjLib_RemoveObjectKey(Object:object, const String:keyName[])
  */
 stock Object:ObjLib_CreateObject(ObjectType:typeTemplate, bool:mutableObject = true)
 {
+    new Handle:object = CreateArray(_, OBJECT_DATA_LEN);
+    new blockSize = GetArrayCell(typeTemplate, ObjectType_BlockSize);
+    
+    // Create array for storing object data.
+    new Handle:data = CreateArray(blockSize);
+    
+    // Get type descriptor. Mutable objects use their own clone.
+    new ObjectType:type;
+    if (mutableObject)
+    {
+        // Clone type descriptor and make it mutable.
+        type = ObjLib_CloneType(typeTemplate, true);
+    }
+    else
+    {
+        // Use the type template directly.
+        type = typeTemplate;
+        
+        // Lock type template for further modification.
+        ObjLib_LockType(type);
+    }
+    
+    PushArrayCell(object, data);        // Object_Data
+    PushArrayCell(object, type);        // Object_MetaData
+    
+    return Object:object;
 }
 
 /**
@@ -383,6 +412,40 @@ stock Object:ObjLib_CreateObject(ObjectType:typeTemplate, bool:mutableObject = t
  */
 stock ObjLib_DeleteObject(&Object:object, resetReference = true)
 {
+    // Validate.
+    if (!ObjLib_IsValidObject(object))
+    {
+        ThrowError("Invalid object (%x).", object);
+    }
+    
+    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    new Object:parent = Object:GetArrayCell(typeDescriptor, _:ObjectType_ParentObject);
+    if (parent != INVALID_OBJECT)
+    {
+        // Check if the type descriptor actually belong to this object. (Potential bug).
+        if (parent != object)
+        {
+            ThrowError("[BUG] This mutable object (%x) has a type descriptor (%x) that isn't owned by this object. This is a bug!", object, typeDescriptor);
+        }
+        
+        // Unattatch type descriptor from object so it can be deleted.
+        SetArrayCell(typeDescriptor, _:ObjectType_ParentObject, INVALID_OBJECT);
+        
+        // Delete type descriptor.
+        ObjLib_DeleteType(typeDescriptor);
+    }
+    
+    // Delete data array.
+    CloseHandle(Handle:GetArrayCell(object, _:Object_Data));
+    
+    // Delete object.
+    CloseHandle(object);
+    
+    // Reset reference if enabled.
+    if (resetReference)
+    {
+        object = INVALID_OBJECT;
+    }
 }
 
 /**
