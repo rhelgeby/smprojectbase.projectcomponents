@@ -9,7 +9,7 @@
  *                  type safety and support for importing from Valve KeyValue
  *                  files.
  *
- *  Copyright (C) 2009-2012  Richard Helgeby, Greyscale
+ *  Copyright (C) 2012  Richard Helgeby, Greyscale
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -75,7 +75,8 @@ enum ObjectDataType
 /**
  * Object entries. Used internally to name array indexes.
  *
- * Note: The order of these elements must match code in ObjLib_CreateObject.
+ * Note: The order of these elements must match code in ObjLib_CreateObject and
+ *       ObjLib_CloneObject.
  */
 #define OBJECT_DATA_LEN         2   /** Number of elements below. */
 enum ObjectData
@@ -87,7 +88,8 @@ enum ObjectData
 /**
  * Object type entries. Used internally to name array indexes.
  *
- * Note: The order of these elements must match code in ObjLib_CreateType.
+ * Note: The order of these elements must match code in ObjLib_CreateType and
+ *       ObjLib_CloneType.
  */
 #define OBJECT_TYPE_DATA_LEN    8   /** Number of elements below. */
 enum ObjectTypeData
@@ -105,9 +107,8 @@ enum ObjectTypeData
 /**
  * Creates an empty object type descriptor.
  *
- * Note:
- * You may use ByteCountToCells to calculate number of cells required to fit a
- * certain string length for blockSize and keySize.
+ * Note: You may use ByteCountToCells to calculate number of cells required to
+ *       fit a certain string length for blockSize and keySize.
  *
  * @param blockSize     (Optional) Maximum number of cells reserved for each
  *                      value entry. Default is 1 cell.
@@ -190,21 +191,39 @@ stock ObjLib_DeleteType(&ObjectType:typeDescriptor, bool:resetReference = true)
 /**
  * Creates a new object type based on the specified type descriptor.
  *
+ * Note: blockSize and keySize of the new cloned object type cannot be modified.
+ * Note: The new object type will not be attatched to an object.
+ *
  * @param typeDescriptor    Source object type template.
- * @param mutableType       (Optional) Whether the object type is mutable
- *                          (add/remove keys). Default is true.
+ * @param locked            (Optional) Whether the new object type is locked.
+ *                          Default is false.
  *
  * @return                  New object type descriptor. Must be deleted with
  *                          ObjLib_DeleteType when no longer in use.
  */
-stock ObjectType:ObjLib_CloneType(ObjectType:typeDescriptor, bool:mutableType = true)
+stock ObjectType:ObjLib_CloneType(ObjectType:typeDescriptor, bool:locked = false)
 {
-    ThrowError("Not implemented");
-    // Separate functions:
-    // TODO: clone keys
-    // TODO: clone name index
-    // TODO: clone data types
-    // TODO: clone constraints
+    new bool:locked = GetArrayCell(typeDescriptor, ObjectType_Locked);
+    new keySize = GetArrayCell(typeDescriptor, ObjectType_KeySize);
+    new blockSize = GetArrayCell(typeDescriptor, ObjectType_BlockSize);
+    
+    new Handle:keys = CloneArray(Handle:GetArrayCell(typeDescriptor, ObjectType_Keys));
+    new Handle:nameIndex = ObjLib_CloneTrie(Handle:GetArrayCell(typeDescriptor, ObjectType_NameIndex), keys, keySize);
+    new Handle:dataTypes = CloneArray(Handle:GetArrayCell(typeDescriptor, ObjectType_DataTypes));
+    // TODO: clone constraints when implemented
+    
+    new Handle:newType = CreateArray(_, OBJECT_TYPE_DATA_LEN);
+    
+    PushArrayCell(newType, locked);             // ObjectType_Locked
+    PushArrayCell(newType, _:INVALID_OBJECT);   // ObjectType_ParentObject
+    PushArrayCell(newType, keySzie);            // ObjectType_KeySize
+    PushArrayCell(newType, blockSize);          // ObjectType_BlockSize
+    PushArrayCell(newType, keys);               // ObjectType_Keys
+    PushArrayCell(newType, nameIndex);          // ObjectType_NameIndex
+    PushArrayCell(newType, dataTypes);          // ObjectType_DataTypes
+    PushArrayCell(newType, INVALID_HANDLE);     // ObjectType_Constraints - not implemented yet.
+    
+    return ObjectType:newType;
 }
 
 /**
@@ -220,7 +239,7 @@ stock bool:ObjLib_IsValidObjectType(ObjectType:typeDescriptor)
 }
 
 /**
- * Adds a key to an object type descriptor.
+ * Adds a new key to an object type descriptor.
  * 
  * @param typeDescriptor    Handle to type descriptor.
  * @param keyName           Name of the new key. Case sensitive.
@@ -315,7 +334,7 @@ stock bool:ObjLib_RemoveKey(ObjectType:typeDescriptor, const String:keyName[])
  * Returns whether a key exist in an object type descriptor.
  *
  * @param typeDescriptor    Obect type descriptor to inspect.
- * @param keyName           Key to search for (case sensitive).
+ * @param keyName           Key to search for. Case sensitive.
  *
  * @return                  True if found, false otherwise.
  */
@@ -332,12 +351,27 @@ stock bool:ObjLib_KeyExist(ObjectType:typeDescriptor, const String:keyName[])
 }
 
 /**
+ * Adds a new key to an object, if not locked.
+ *
+ * @param object    Object to remove key from.
+ * @param keyName   Name of key to remove. Case sensitive.
+ * @param dataType  Data type of key.
+ *
+ * @return          True if successful, false if object was locked.
+ */
+stock bool:ObjLib_AddObjectKey(Object:object, const String:keyName[], ObjectDataType:dataType = ObjDataType_Any)
+{
+    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    return ObjLib_AddKey(typeDescriptor, keyName, dataType);
+}
+
+/**
  * Removes a key from an object, if not locked.
  *
  * Warning: Data associated with this key will also be deleted.
  *
  * @param object    Object to remove key from.
- * @param keyName   Name of key to remove.
+ * @param keyName   Name of key to remove. Case sensitive.
  *
  * @return          True if successful, false if object was locked.
  */
@@ -361,10 +395,10 @@ stock bool:ObjLib_RemoveObjectKey(Object:object, const String:keyName[])
  * between immutable objects. Memory usage is more efficient than mutable
  * objects.
  *
- * Important note:
+ * Warning:
  * Creating an immutable object will automatically lock the type template
  * because it's now used directly. If you don't want to lock it, clone it with
- * ObjLib_CloneType and use the cloned type instead.
+ * ObjLib_CloneType and use the cloned type template instead.
  *
  * @param typeTemplate      Object type to use.
  * @param mutableObject     (Optional) Whether the object is mutable (add/remove
@@ -386,7 +420,7 @@ stock Object:ObjLib_CreateObject(ObjectType:typeTemplate, bool:mutableObject = t
     if (mutableObject)
     {
         // Clone type descriptor and make it mutable.
-        type = ObjLib_CloneType(typeTemplate, true);
+        type = ObjLib_CloneType(typeTemplate, false);
     }
     else
     {
@@ -451,12 +485,28 @@ stock ObjLib_DeleteObject(&Object:object, resetReference = true)
 /**
  * Creates a clone of an object and its data.
  *
+ * Note: If the object data contain reference values, only the references
+ *       themself will be cloned, not the data they refer to. See the
+ *       cloneHandles parameter for more info.
+ *
+ * Warmomg: Creating an immutable object from a mutable object will also create
+ *          a clone of the type descriptor stored in typeDescriptor. Delete this
+ *          type descriptor when it's no longer in use.
+ *
  * @param objectTemplate    Source object.
  * @param mutableObject     (Optional) Make new object mutable. Default is true.
+ * @param cloneHandles      (Optional) Use CloneHandle on value entries with the
+ *                          handle data type. The handles will still refer to
+ *                          the same data, but through a new cloned handle.
+ *                          Default is false.
+ * @param typeDescriptor    (Optional output) When mutableObject is false, the
+ *                          template object's type descriptor will be cloned.
+ *                          Its clone will be stored here. Must be deleted with
+ *                          ObjLib_DeleteType when no longer in use.
  *
  * @return                  Reference to new cloned object.
  */
-stock Object:ObjLib_CloneObject(Object:objectTemplate, bool:mutableObject = true)
+stock Object:ObjLib_CloneObject(Object:objectTemplate, bool:mutableObject = true, bool:cloneHandles = false, &ObjectType:typeDescriptor = INVALID_OBJECT_TYPE)
 {
 }
 
@@ -579,4 +629,36 @@ static stock ObjLib_RemoveEntry(Object:object, entryIndex)
 {
     new Handle:data = Handle:GetArrayCell(object, _:Object_Data);
     RemoveFromArray(data, entryIndex);
+}
+
+/**
+ * Creates a clone of a trie with the specified keys.
+ *
+ * @param trie      Handle to ADT trie.
+ * @param keys      Handle to ADT array with strings of key names in the trie.
+ * @param keySize   Max key name size (in bytes).
+ *
+ * @return          Handle to cloned trie. Must be closed with CloseHandle.
+ */
+static stock Handle:ObjLib_CloneTrie(Handle:trie, Handle:keys, keySize)
+{
+    new Handle:newTrie = CreateTrie();
+    
+    // Loop through each key.
+    new len = GetArraySize(keys);
+    for (int i = 0; i < len; i++)
+    {
+        // Get key.
+        decl String:key[keySize];
+        GetArrayString(keys, i, key, keySize);
+        
+        // Get source value.
+        new value;
+        GetTrieValue(trie, key, value);
+        
+        // Set new key.
+        SetTrieValue(newTrie, key, value);
+    }
+    
+    return newTrie;
 }

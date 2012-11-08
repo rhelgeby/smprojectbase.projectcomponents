@@ -1,68 +1,87 @@
 Object Library
 ==============
 
-* Key/value object storage manager
-  Create objects with dynamic contents. Data is inernally stored in ADT Arrays.
-  There is also a Trie name index for named key lookup.
+MAIN FEATURES
+-------------
 
-* Dynamic or static
-  Objects can be either mutable or immutable. Both use a compound type
-  descriptor as a template. Mutable objects store a bundled descriptor, while
-  immutable objects store a reference to a shared immutable descriptor.
+* Key/value object storage manager
+  Create objects with dynamic content. Data is internally stored in ADT Arrays.
+
+  Object data can be accessed through get/set functions (which implies
+  validation).
+
+* Mutable or immutable objects
+  Objects can be either mutable or immutable. Immutable objects can't modify
+  their type (add/remove keys) when created, but data in existing keys can be
+  modified.
   
-  Since each mutable object have their own type descriptor they use more memory
-  than immutable objects.
+  Both use a type descriptor as a template. Mutable objects store a bundled
+  descriptor so they can be modified independently, while immutable objects
+  store a reference to a shared read-only type descriptor.
 
 * Supports built-in and custom data validation
   The library supports basic validation constraints such as min/max limits in
   addition to a forward where the user can do custom validation of the object.
 
-* Type safe
+* Type safe (as far as it's possible in SourcePawn)
   Each key is assigned a type. This structure requires you to use appropriate
   get/set functions where the library will check if you use the correct
   function at runtime - and the compiler will be able to do tag checks.
 
 * Import (and validate) data from Valve KeyValue files
-  Handles reading and building objects based on the contents of a KeyValue file
-  and a user defined compound type descriptor with optional validation
-  constraints.
+  Creates objects based on the contents of a KeyValue file, and a user defined
+  object type descriptor with optional validation constraints.
+
+* Reflection
+  Objects or types can be inspected at run time. Loop through keys, get data
+  types or validation constraints.
 
 
-enum ObjectCollection
-{
-    Handle:ObjectCollection_Objects
-}
+WHAT IT DOESN'T DO
+------------------
 
-enum Object
-{
-    Handle:Object_Data,         /** ADT Array with raw data. */
-    Handle:Object_MetaData      /** Handle to common CompoundType descriptor. */
-}
+* Memory management
+  You'll have to make sure objects and types are deleted when no longer in use.
+  Otherwise there will be memory leaks. Read the API documentation carefully.
 
-enum CompoundType
-{
-    bool:Type_Locked,           /** Whether this descriptor is read only or not. */
-    Type_BlockSize,             /** Number of cells each value can hold (strings/arrays). */
-    Handle:Type_NameIndex,      /** Trie with names mapped to data indexes. */
-    Handle:Type_DataTypes,      /** ADT Array that stores the type of each key. This one also how many keys this type has. */
-    Handle:Type_Constraints     /** ADT Array of ValidationConstraint enum arrays with constraints for each key. */
-}
+* It's not a tree structure
+  Regular KeyValue files use a tree structure. This object manager use a plain
+  associative array structure where each object has keys mapped to values.
+  
+  However, a tree structure is indirectly supported by linking object references
+  together. Objects can store references to other objects. It has its own object
+  data type so that the compiler can do tag checking on object references as
+  well.
 
-ValidationConstraint
---------------------
-+ DataType : enum of DataTypes
-+ Min : int
-+ Max : int
 
-enum DataTypes
-{
-    DataType_Any,
-    DataType_Cell,
-    DataType_Bool,
-    DataType_Float,
-    DataType_Handle,
-    DataType_Function,
-    DataType_Array,
-    DataType_String,
-}
+RESOURCE USAGE
+--------------
 
+* Small CPU overhead
+  The main goal isn't a super efficient object manager, but efficient enough.
+  Because of type checking and validation there is a small overhead when
+  modifying data. These checks are basically comparision of primitive values and
+  shouldn't be an issue with normal usage.
+  
+  Another overhead is the native call overhead for reading and writing to ADT
+  array. This overhead is so tiny it shouldn't be mentioned, but it's still
+  there.
+
+  If you have code that's _very_ busy you should consider using buffers or
+  caches in front of the data storage. Use the SourceMod profiler to measure if
+  this really is an issue in your code before optimizing.
+
+* Memory overhead
+  Since it's a dynamic storage manager, objects need to store meta data and will
+  use a little bit more memory than a static hard coded solution would. But it's
+  also a lot more flexible solution.
+
+  However, immutable objects are more memory efficient than mutable objects,
+  since immutable objects share their type descriptor between objects of the
+  same type. Mutable objects have each their own type descriptor.
+  
+  Use immutable objects when you can to reduce memory overhead, especially on
+  object types that aren't modified after creation.
+
+* A little memory and CPU overhead is a trade off for writing more code
+  yourself. It can still be efficient if used correctly.
