@@ -516,9 +516,10 @@ stock ObjLib_DeleteObject(&Object:object, resetReference = true)
  *       themself will be cloned, not the data they refer to. See the
  *       cloneHandles parameter for more info.
  *
- * Warmomg: Creating an immutable object from a mutable object will also create
- *          a clone of the type descriptor stored in typeDescriptor. Delete this
- *          type descriptor when it's no longer in use.
+ * Warning: Creating an immutable object from a mutable object will also create
+ *          a clone of the source type descriptor. Delete this type descriptor 
+ *          when it's no longer in use. This can be retrieved from the cloned
+ *          object with ObjLib_GetObjectType.
  *
  * @param objectTemplate    Source object.
  * @param mutableObject     (Optional) Make new object mutable. Default is true.
@@ -526,15 +527,93 @@ stock ObjLib_DeleteObject(&Object:object, resetReference = true)
  *                          handle data type. The handles will still refer to
  *                          the same data, but through a new cloned handle.
  *                          Default is false.
- * @param typeDescriptor    (Optional output) When mutableObject is false, the
- *                          template object's type descriptor will be cloned.
- *                          Its clone will be stored here. Must be deleted with
- *                          ObjLib_DeleteType when no longer in use.
  *
  * @return                  Reference to new cloned object.
  */
-stock Object:ObjLib_CloneObject(Object:objectTemplate, bool:mutableObject = true, bool:cloneHandles = false, &ObjectType:typeDescriptor = INVALID_OBJECT_TYPE)
+stock Object:ObjLib_CloneObject(Object:objectTemplate, bool:mutableObject = true, bool:cloneHandles = false)
 {
+    // Validate.
+    if (!ObjLib_IsValidObject(objectTemplate))
+    {
+        ThrowError("Invalid object (%x).", objectTemplate);
+    }
+    
+    // Create new object array.
+    new Handle:object = CreateArray(_, OBJECT_DATA_LEN);
+    
+    // Clone data array.
+    new Handle:data = CloneArray(ObjLib_GetObjectData(objectTemplate));
+    
+    // Clone type.
+    new ObjectType:typeTemplate = ObjLib_GetObjectType(objectTemplate);
+    new bool:mutableSource = ObjLib_IsObjectMutable(objectTemplate);
+    
+    /*
+    The if block below decides how the type should be cloned and attached.
+    
+    m = mutable
+    i = immutable
+    c = clone type
+    cl = clone and lock
+    s = use same type
+    X = invalid
+    
+                source-i    dest-i  source-m    dest-m
+    source-i    X           s       X           c
+    dest-i      s           X       cl          X
+    source-m    X           cl      X           c
+    dest-m      c           X       c           X
+    */
+    if (!mutableSource && !mutableObject)
+    {
+        // Template and destination object is immutable. Use the same type
+        // descriptor.
+        ObjLib_SetObjectType(object, typeTemplate);
+    }
+    else
+    {
+        // Either source or destination is mutable. Clone type, as unlocked.
+        new ObjectType:type = ObjLib_CloneType(typeTemplate, false);
+        
+        if (mutableObject)
+        {
+            // Destination is mutable. Attatch cloned type.
+            ObjLib_SetTypeParentObject(type, _:object);
+            ObjLib_SetObjectType(object, type);
+        }
+        else
+        {
+            // Destination is immutable. Link cloned type.
+            ObjLib_SetObjectType(object, type);
+
+            // Lock type.
+            ObjLib_SetTypeLocked(type, true);
+        }
+    }
+    
+    // Clone handles if enabled.
+    if (cloneHandles)
+    {
+        new len = GetArraySize(data);
+        new Handle:dataTypes = ObjLib_GetTypeDataTypes(ObjLib_GetObjectType(object));
+        
+        // Loop through data values.
+        for (int i = 0; i < len; i++)
+        {
+            new ObjectDataType:dataType = ObjectDataType:GetArrayCell(dataTypes, i);
+            if (dataType == ObjDataType_Handle)
+            {
+                // Get original handle.
+                new Handle:value = Handle:GetArrayCell(data, i);
+                
+                // Replace with cloned handle.
+                value = CloneHandle(value);
+                SetArrayCell(data, i, value);
+            }
+        }
+    }
+    
+    return Object:object;
 }
 
 /**
