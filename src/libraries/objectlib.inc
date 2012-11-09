@@ -123,13 +123,23 @@ enum ObjectTypeData
  */
 stock ObjectType:ObjLib_CreateType(blockSize = 1, keySzie = 8)
 {
-    // Create array to store type descriptor data.
+    // Create array to store type descriptor data. Reserve space required.
     new Handle:typeDescriptor = CreateArray(_, OBJECT_TYPE_DATA_LEN);
     
     new Handle:keys = CreateArray(keySzie);         // List of key names (for enumeration or reflection).
     new Handle:nameIndex = CreateTrie();            // ADT Trie with key names mapped to indexes.
     new Handle:dataTypes = CreateArray();           // List of data types of each value entry.
     
+    ObjLib_SetTypeLocked(typeDescriptor,        false);
+    ObjLib_SetTypeParentObject(typeDescriptor,  INVALID_OBJECT);
+    ObjLib_SetTypeKeySize(typeDescriptor,       keySzie);
+    ObjLib_SetTypeBlockSize(typeDescriptor,     blockSize);
+    ObjLib_SetTypeKeys(typeDescriptor,          keys);
+    ObjLib_SetTypeNameIndex(typeDescriptor,     nameIndex);
+    ObjLib_SetTypeDataTypes(typeDescriptor,     dataTypes);
+    //ObjLib_SetTypeConstraints(ObjectType:typeDescriptor,  INVALID_HANDLE);     // Not implemented yet.
+    
+    /*
     PushArrayCell(typeDescriptor, 0);                   // ObjectType_Locked
     PushArrayCell(typeDescriptor, _:INVALID_OBJECT);    // ObjectType_ParentObject
     PushArrayCell(typeDescriptor, keySzie);             // ObjectType_KeySize
@@ -138,6 +148,7 @@ stock ObjectType:ObjLib_CreateType(blockSize = 1, keySzie = 8)
     PushArrayCell(typeDescriptor, nameIndex);           // ObjectType_NameIndex
     PushArrayCell(typeDescriptor, dataTypes);           // ObjectType_DataTypes
     PushArrayCell(typeDescriptor, INVALID_HANDLE);      // ObjectType_Constraints - not implemented yet.
+    */
     
     return ObjectType:typeDescriptor;
 }
@@ -161,25 +172,25 @@ stock ObjLib_DeleteType(&ObjectType:typeDescriptor, bool:resetReference = true)
     }
     
     // Check if this type descriptor is attatched to a mutable object.
-    if (ObjectType:GetArrayCell(typeDescriptor, _:ObjectType_ParentObject) != INVALID_OBJECT)
+    if (ObjLib_GetTypeParentObject(typeDescriptor) != INVALID_OBJECT)
     {
         ThrowError("Can't directly delete type descriptor in mutable object. Use ObjLib_DeleteObject.");
     }
     
     // Delete data structures stored in the type descriptor.
-    CloseHandle(Handle:GetArrayCell(typeDescriptor, _:ObjectType_Keys));
-    CloseHandle(Handle:GetArrayCell(typeDescriptor, _:ObjectType_NameIndex));
-    CloseHandle(Handle:GetArrayCell(typeDescriptor, _:ObjectType_DataTypes));
+    CloseHandle(ObjLib_GetTypeKeys(typeDescriptor));
+    CloseHandle(ObjLib_GetTypeNameIndex(typeDescriptor));
+    CloseHandle(ObjLib_GetTypeDataTypes(typeDescriptor));
     
-    // Delete constraints. These are optional.
-    new Handle:constraints = Handle:GetArrayCell(typeDescriptor, _:ObjectType_Constraints);
+    // TODO: Delete constraints. These are optional.
+    /*new Handle:constraints = ObjLib_GetTypeConstraints(ObjectType:typeDescriptor);
     if (constraints != INVALID_HANDLE)
     {
-        // TODO: Delete constraints.
-    }
+        // Delete constraints.
+    }*/
     
     // Delete type descriptor container.
-    CloseHandle(typeDescriptor);
+    CloseHandle(Handle:typeDescriptor);
     
     // Reset reference if enabled.
     if (resetReference)
@@ -203,17 +214,27 @@ stock ObjLib_DeleteType(&ObjectType:typeDescriptor, bool:resetReference = true)
  */
 stock ObjectType:ObjLib_CloneType(ObjectType:typeDescriptor, bool:locked = false)
 {
-    new bool:locked = GetArrayCell(typeDescriptor, ObjectType_Locked);
-    new keySize = GetArrayCell(typeDescriptor, ObjectType_KeySize);
-    new blockSize = GetArrayCell(typeDescriptor, ObjectType_BlockSize);
+    new bool:locked = !ObjLib_IsTypeMutable(typeDescriptor);
+    new keySize = ObjLib_GetTypeKeySize(typeDescriptor);
+    new blockSize = ObjLib_GetTypeBlockSize(typeDescriptor);
     
-    new Handle:keys = CloneArray(Handle:GetArrayCell(typeDescriptor, ObjectType_Keys));
-    new Handle:nameIndex = ObjLib_CloneTrie(Handle:GetArrayCell(typeDescriptor, ObjectType_NameIndex), keys, keySize);
-    new Handle:dataTypes = CloneArray(Handle:GetArrayCell(typeDescriptor, ObjectType_DataTypes));
+    new Handle:keys = CloneArray(ObjLib_GetTypeKeys(typeDescriptor));
+    new Handle:nameIndex = ObjLib_CloneTrie(ObjLib_GetTypeNameIndex(typeDescriptor), keys, keySize);
+    new Handle:dataTypes = CloneArray(ObjLib_GetTypeDataTypes(typeDescriptor));
     // TODO: clone constraints when implemented
     
     new Handle:newType = CreateArray(_, OBJECT_TYPE_DATA_LEN);
     
+    ObjLib_SetTypeLocked(newType,           locked);
+    ObjLib_SetTypeParentObject(newType,     INVALID_OBJECT);
+    ObjLib_SetTypeKeySize(newType,          keySzie);
+    ObjLib_SetTypeBlockSize(newType,        blockSize);
+    ObjLib_SetTypeKeys(newType,             keys);
+    ObjLib_SetTypeNameIndex(newType,        nameIndex);
+    ObjLib_SetTypeDataTypes(newType,        dataTypes);
+    //ObjLib_SetTypeConstraints(newType,    INVALID_HANDLE);     // Not implemented yet.
+    
+    /*
     PushArrayCell(newType, locked);             // ObjectType_Locked
     PushArrayCell(newType, _:INVALID_OBJECT);   // ObjectType_ParentObject
     PushArrayCell(newType, keySzie);            // ObjectType_KeySize
@@ -222,6 +243,7 @@ stock ObjectType:ObjLib_CloneType(ObjectType:typeDescriptor, bool:locked = false
     PushArrayCell(newType, nameIndex);          // ObjectType_NameIndex
     PushArrayCell(newType, dataTypes);          // ObjectType_DataTypes
     PushArrayCell(newType, INVALID_HANDLE);     // ObjectType_Constraints - not implemented yet.
+    */
     
     return ObjectType:newType;
 }
@@ -265,16 +287,16 @@ stock ObjLib_AddKey(ObjectType:typeDescriptor, const String:keyName[], ObjectDat
         ThrowError("Key already exist (\"%s\").", keyName);
     }
     
-    new Handle:keys = Handle:GetArrayCell(typeDescriptor, _:ObjectType_Keys);
-    new Handle:nameIndex = Handle:GetArrayCell(typeDescriptor, _:ObjectType_NameIndex);
-    new Handle:dataTypes = Handle:GetArrayCell(typeDescriptor, _:ObjectType_DataTypes);
+    new Handle:keys = ObjLib_GetTypeKeys(typeDescriptor);
+    new Handle:nameIndex = ObjLib_GetTypeNameIndex(typeDescriptor);
+    new Handle:dataTypes = ObjLib_GetTypeDataTypes(typeDescriptor);
     
     new entryIndex = PushArrayString(keys, keyName);    // Keys
     SetTrieValue(nameIndex, keyName, entryIndex);       // Name index
-    PushArrayCell(dataTypes, _:dataType);               // Data types
+    PushArrayCell(dataTypes, dataType);                 // Data types
     
     // Update parent object if available.
-    new Object:parent = Object:GetArrayCell(typeDescriptor, _:ObjectType_ParentObject);
+    new Object:parent = ObjLib_GetTypeParentObject(typeDescriptor);
     if (parent != INVALID_OBJECT)
     {
         // Add initialized data entry. This will push a new empty value at the
@@ -312,9 +334,9 @@ stock bool:ObjLib_RemoveKey(ObjectType:typeDescriptor, const String:keyName[])
         ThrowError("Key doesn't exist (\"%s\").", keyName);
     }
     
-    new Handle:keys = Handle:GetArrayCell(typeDescriptor, _:ObjectType_Keys);
-    new Handle:nameIndex = Handle:GetArrayCell(typeDescriptor, _:ObjectType_NameIndex);
-    new Handle:dataTypes = Handle:GetArrayCell(typeDescriptor, _:ObjectType_DataTypes);
+    new Handle:keys = ObjLib_GetTypeKeys(typeDescriptor);
+    new Handle:nameIndex = ObjLib_GetTypeNameIndex(typeDescriptor);
+    new Handle:dataTypes = ObjLib_GetTypeDataTypes(typeDescriptor);
     
     new entryIndex = GetTrieValue(nameIndex, keyName);
     RemoveFromArray(keys, entryIndex);                  // Keys
@@ -322,7 +344,7 @@ stock bool:ObjLib_RemoveKey(ObjectType:typeDescriptor, const String:keyName[])
     RemoveFromTrie(nameIndex, keyName);                 // Name index
     
     // Update parent object if available.
-    new Object:parent = Object:GetArrayCell(typeDescriptor, _:ObjectType_ParentObject);
+    new Object:parent = ObjLib_GetTypeParentObject(typeDescriptor);
     if (parent != INVALID_OBJECT)
     {
         // Remove entry.
@@ -340,7 +362,7 @@ stock bool:ObjLib_RemoveKey(ObjectType:typeDescriptor, const String:keyName[])
  */
 stock bool:ObjLib_KeyExist(ObjectType:typeDescriptor, const String:keyName[])
 {
-    new Handle:nameIndex = Handle:GetArrayCell(typeDescriptor, _:ObjectType_NameIndex);
+    new Handle:nameIndex = ObjLib_GetTypeNameIndex(typeDescriptor);
     new dummyBuffer;
     if (GetTrieValue(nameIndex, keyName, dummyBuffer)
     {
@@ -410,7 +432,7 @@ stock bool:ObjLib_RemoveObjectKey(Object:object, const String:keyName[])
 stock Object:ObjLib_CreateObject(ObjectType:typeTemplate, bool:mutableObject = true)
 {
     new Handle:object = CreateArray(_, OBJECT_DATA_LEN);
-    new blockSize = GetArrayCell(typeTemplate, ObjectType_BlockSize);
+    new blockSize = ObjLib_GetTypeBlockSize(typeTemplate);
     
     // Create array for storing object data.
     new Handle:data = CreateArray(blockSize);
@@ -428,7 +450,7 @@ stock Object:ObjLib_CreateObject(ObjectType:typeTemplate, bool:mutableObject = t
         type = typeTemplate;
         
         // Lock type template for further modification.
-        ObjLib_LockType(type);
+        ObjLib_SetTypeLocked(type, true);
     }
     
     PushArrayCell(object, data);        // Object_Data
@@ -453,7 +475,7 @@ stock ObjLib_DeleteObject(&Object:object, resetReference = true)
     }
     
     new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
-    new Object:parent = Object:GetArrayCell(typeDescriptor, _:ObjectType_ParentObject);
+    new Object:parent = ObjLib_GetTypeParentObject(typeDescriptor);
     if (parent != INVALID_OBJECT)
     {
         // Check if the type descriptor actually belong to this object. (Potential bug).
@@ -463,7 +485,7 @@ stock ObjLib_DeleteObject(&Object:object, resetReference = true)
         }
         
         // Unattatch type descriptor from object so it can be deleted.
-        SetArrayCell(typeDescriptor, _:ObjectType_ParentObject, INVALID_OBJECT);
+        ObjLib_SetTypeParentObject(typeDescriptor, INVALID_OBJECT);
         
         // Delete type descriptor.
         ObjLib_DeleteType(typeDescriptor);
@@ -583,22 +605,113 @@ stock bool:ObjLib_IsTypeMutable(ObjectType:typeDescriptor)
     return GetArrayCell(typeDescriptor, _:ObjectType_Locked) == 0;
 }
 
+/** Internal use only! */
+static stock ObjLib_SetTypeLocked(ObjectType:typeDescriptor, bool:locked)
+{
+    SetArrayCell(typeDescriptor, _:ObjectType_Locked, locked);
+}
+
+/** Internal use only! */
+static stock Object:ObjLib_GetTypeParentObject(ObjectType:typeDescriptor)
+{
+    return Object:GetArrayCell(typeDescriptor, _:ObjectType_ParentObject);
+}
+
+/** Internal use only! */
+static stock ObjLib_SetTypeParentObject(ObjectType:typeDescriptor, Object:parent)
+{
+    SetArrayCell(typeDescriptor, _:ObjectType_ParentObject, parent);
+}
+
+/** Internal use only! */
+static stock ObjLib_GetTypeKeySize(ObjectType:typeDescriptor)
+{
+    return GetArrayCell(typeDescriptor, _:ObjectType_KeySize);
+}
+
+/** Internal use only! */
+static stock ObjLib_SetTypeKeySize(ObjectType:typeDescriptor, keySize)
+{
+    SetArrayCell(typeDescriptor, _:ObjectType_KeySize, keySize);
+}
+
+/** Internal use only! */
+static stock ObjLib_GetTypeBlockSize(ObjectType:typeDescriptor)
+{
+    return GetArrayCell(typeDescriptor, _:ObjectType_BlockSize);
+}
+
+/** Internal use only! */
+static stock ObjLib_SetTypeBlockSize(ObjectType:typeDescriptor, blockSize)
+{
+    SetArrayCell(typeDescriptor, _:ObjectType_BlockSize, blockSize);
+}
+
+/** Internal use only! */
+static stock Handle:ObjLib_GetTypeKeys(ObjectType:typeDescriptor)
+{
+    return Handle:GetArrayCell(typeDescriptor, _:ObjectType_Keys);
+}
+
+/** Internal use only! */
+static stock ObjLib_SetTypeKeys(ObjectType:typeDescriptor, Handle:keys)
+{
+    SetArrayCell(typeDescriptor, _:ObjectType_Keys, keys);
+}
+
+/** Internal use only! */
+static stock Handle:ObjLib_GetTypeNameIndex(ObjectType:typeDescriptor)
+{
+    return Handle:GetArrayCell(typeDescriptor, _:ObjectType_NameIndex);
+}
+
+/** Internal use only! */
+static stock ObjLib_SetTypeNameIndex(ObjectType:typeDescriptor, Handle:nameIndex)
+{
+    SetArrayCell(typeDescriptor, _:ObjectType_NameIndex, nameIndex);
+}
+
+/** Internal use only! */
+static stock Handle:ObjLib_GetTypeDataTypes(ObjectType:typeDescriptor)
+{
+    return Handle:GetArrayCell(typeDescriptor, _:ObjectType_DataTypes);
+}
+
+/** Internal use only! */
+static stock ObjLib_SetTypeDataTypes(ObjectType:typeDescriptor, Handle:dataTypes)
+{
+    SetArrayCell(typeDescriptor, _:ObjectType_DataTypes, dataTypes);
+}
+
+/** Internal use only! */
+static stock Handle:ObjLib_GetTypeConstraints(ObjectType:typeDescriptor)
+{
+    ThrowError("Not implemented");
+}
+
+/** Internal use only! */
+static stock ObjLib_SetTypeConstraints(ObjectType:typeDescriptor, Handle:constraints)
+{
+    ThrowError("Not implemented");
+}
+
 
 /*********************************
  *   Internal helper functions   *
  *********************************/
 
 /**
- * Creates a new initialized value entry.
+ * Creates a new initialized value entry at the end of the object data array.
  *
  * Note: Don't make new value entries without updating the type descriptor.
+ *       These must match.
  *
  * @param object    Object where new value entry is added.
  * @param dataType  Data type of initialized value.
  */
 static stock ObjLib_InitializeNewValue(Object:object, ObjectDataType:dataType)
 {
-    new Handle:data = Handle:GetArrayCell(object, _:Object_Data);
+    new Handle:data = ObjLib_GetObjectData(object);
     
     switch (dataType)
     {
@@ -645,7 +758,7 @@ static stock ObjLib_InitializeNewValue(Object:object, ObjectDataType:dataType)
         }
         default:
         {
-            ThrowError("Unexpected data type.");
+            ThrowError("Unexpected data type. This is a bug in objectlib.");
         }
     }
 }

@@ -42,12 +42,13 @@ WHAT IT DOESN'T DO
 
 * Memory management
   You'll have to make sure objects and types are deleted when no longer in use.
-  Otherwise there will be memory leaks. Read the API documentation carefully.
+  Otherwise there will be memory leaks. Read the API documentation carefully
+  to see which functions that return resources that must be released again.
 
 * It's not a tree structure
   Regular KeyValue files use a tree structure. This object manager use a plain
   associative array structure where each object has keys mapped to values.
-  
+
   However, a tree structure is indirectly supported by linking object references
   together. Objects can store references to other objects. It has its own object
   data type so that the compiler can do tag checking on object references as
@@ -60,16 +61,17 @@ RESOURCE USAGE
 * Small CPU overhead
   The main goal isn't a super efficient object manager, but efficient enough.
   Because of type checking and validation there is a small overhead when
-  modifying data. These checks are basically comparision of primitive values and
+  modifying data. These checks are basically comparison of primitive values and
   shouldn't be an issue with normal usage.
-  
+
   Another overhead is the native call overhead for reading and writing to ADT
-  array. This overhead is so tiny it shouldn't be mentioned, but it's still
-  there.
+  arrays. This overhead is so tiny it shouldn't be mentioned, but it's still
+  there. Remember that just because something is _slower_ doesn't mean it's
+  slow.
 
   If you have code that's _very_ busy you should consider using buffers or
   caches in front of the data storage. Use the SourceMod profiler to measure if
-  this really is an issue in your code before optimizing.
+  this really is an issue in your code - before optimizing.
 
 * Memory overhead
   Since it's a dynamic storage manager, objects need to store meta data and will
