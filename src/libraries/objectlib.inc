@@ -453,8 +453,13 @@ stock Object:ObjLib_CreateObject(ObjectType:typeTemplate, bool:mutableObject = t
         ObjLib_SetTypeLocked(type, true);
     }
     
+    ObjLib_SetObjectData(object, data);
+    ObjLib_SetObjectType(object, type);
+    
+    /*
     PushArrayCell(object, data);        // Object_Data
     PushArrayCell(object, type);        // Object_MetaData
+    */
     
     return Object:object;
 }
@@ -492,7 +497,7 @@ stock ObjLib_DeleteObject(&Object:object, resetReference = true)
     }
     
     // Delete data array.
-    CloseHandle(Handle:GetArrayCell(object, _:Object_Data));
+    CloseHandle(ObjLib_GetObjectData(object));
     
     // Delete object.
     CloseHandle(object);
@@ -544,39 +549,6 @@ stock bool:ObjLib_IsValidObject(Object:object)
     return object != INVALID_OBJECT;
 }
 
-
-
-/********************************
- *   Object get/set functions   *
- *                              *
- * Note: Some are internal and  *
- * not intended for public use. *
- ********************************/
-
-/**
- * Gets an object's type descriptor.
- *
- * @param object    Object to get type from.
- *
- * @return          Object type descriptor reference.
- */
-stock ObjectType:ObjLib_GetObjectType(Object:object)
-{
-    return ObjectType:GetArrayCell(object, _:Object_MetaData);
-}
-
-/**
- * Gets an object's raw data array. Internal use only.
- *
- * @param object    Object to get data from.
- *
- * @return          Object raw data array.
- */
-static stock Handle:ObjLib_GetObjectData(Object:object)
-{
-    return Handle:GetArrayCell(object, _:Object_Data);
-}
-
 /**
  * Returns whether the specified object is mutable.
  *
@@ -588,11 +560,43 @@ stock bool:ObjLib_IsMutable(Object:object)
 }
 
 
+/********************************
+ *   Object get/set functions   *
+ ********************************/
+
+/**
+ * Gets an object's type descriptor.
+ *
+ * @param object    Object to get type from.
+ *
+ * @return          Object type descriptor reference.
+ */
+stock ObjectType:ObjLib_GetObjectType(Object:object)
+{
+    return ObjectType:GetArrayCell(Handle:object, _:Object_MetaData);
+}
+
+/** Internal use only! */
+static stock Handle:ObjLib_SetObjectType(Object:object, ObjectType:typeDescriptor)
+{
+    SetArrayCell(Handle:object, _:Object_MetaData, typeDescriptor);
+}
+
+/** Internal use only! */
+static stock Handle:ObjLib_GetObjectData(Object:object)
+{
+    return Handle:GetArrayCell(Handle:object, _:Object_Data);
+}
+
+/** Internal use only! */
+static stock Handle:ObjLib_SetObjectData(Object:object, Handle:data)
+{
+    SetArrayCell(Handle:object, _:Object_Data, data);
+}
+
+
 /*************************************
  *   Object type get/set functions   *
- *                                   *
- * Note: Some are internal and not   *
- * intended for public use.          *
  *************************************/
 
 /**
@@ -602,85 +606,85 @@ stock bool:ObjLib_IsMutable(Object:object)
  */
 stock bool:ObjLib_IsTypeMutable(ObjectType:typeDescriptor)
 {
-    return GetArrayCell(typeDescriptor, _:ObjectType_Locked) == 0;
+    return GetArrayCell(Handle:typeDescriptor, _:ObjectType_Locked) == 0;
 }
 
 /** Internal use only! */
 static stock ObjLib_SetTypeLocked(ObjectType:typeDescriptor, bool:locked)
 {
-    SetArrayCell(typeDescriptor, _:ObjectType_Locked, locked);
+    SetArrayCell(Handle:typeDescriptor, _:ObjectType_Locked, locked);
 }
 
 /** Internal use only! */
 static stock Object:ObjLib_GetTypeParentObject(ObjectType:typeDescriptor)
 {
-    return Object:GetArrayCell(typeDescriptor, _:ObjectType_ParentObject);
+    return Object:GetArrayCell(Handle:typeDescriptor, _:ObjectType_ParentObject);
 }
 
 /** Internal use only! */
 static stock ObjLib_SetTypeParentObject(ObjectType:typeDescriptor, Object:parent)
 {
-    SetArrayCell(typeDescriptor, _:ObjectType_ParentObject, parent);
+    SetArrayCell(Handle:typeDescriptor, _:ObjectType_ParentObject, parent);
 }
 
 /** Internal use only! */
 static stock ObjLib_GetTypeKeySize(ObjectType:typeDescriptor)
 {
-    return GetArrayCell(typeDescriptor, _:ObjectType_KeySize);
+    return GetArrayCell(Handle:typeDescriptor, _:ObjectType_KeySize);
 }
 
 /** Internal use only! */
 static stock ObjLib_SetTypeKeySize(ObjectType:typeDescriptor, keySize)
 {
-    SetArrayCell(typeDescriptor, _:ObjectType_KeySize, keySize);
+    SetArrayCell(Handle:typeDescriptor, _:ObjectType_KeySize, keySize);
 }
 
 /** Internal use only! */
 static stock ObjLib_GetTypeBlockSize(ObjectType:typeDescriptor)
 {
-    return GetArrayCell(typeDescriptor, _:ObjectType_BlockSize);
+    return GetArrayCell(Handle:typeDescriptor, _:ObjectType_BlockSize);
 }
 
 /** Internal use only! */
 static stock ObjLib_SetTypeBlockSize(ObjectType:typeDescriptor, blockSize)
 {
-    SetArrayCell(typeDescriptor, _:ObjectType_BlockSize, blockSize);
+    SetArrayCell(Handle:typeDescriptor, _:ObjectType_BlockSize, blockSize);
 }
 
 /** Internal use only! */
 static stock Handle:ObjLib_GetTypeKeys(ObjectType:typeDescriptor)
 {
-    return Handle:GetArrayCell(typeDescriptor, _:ObjectType_Keys);
+    return Handle:GetArrayCell(Handle:typeDescriptor, _:ObjectType_Keys);
 }
 
 /** Internal use only! */
 static stock ObjLib_SetTypeKeys(ObjectType:typeDescriptor, Handle:keys)
 {
-    SetArrayCell(typeDescriptor, _:ObjectType_Keys, keys);
+    SetArrayCell(Handle:typeDescriptor, _:ObjectType_Keys, keys);
 }
 
 /** Internal use only! */
 static stock Handle:ObjLib_GetTypeNameIndex(ObjectType:typeDescriptor)
 {
-    return Handle:GetArrayCell(typeDescriptor, _:ObjectType_NameIndex);
+    return Handle:GetArrayCell(Handle:typeDescriptor, _:ObjectType_NameIndex);
 }
 
 /** Internal use only! */
 static stock ObjLib_SetTypeNameIndex(ObjectType:typeDescriptor, Handle:nameIndex)
 {
-    SetArrayCell(typeDescriptor, _:ObjectType_NameIndex, nameIndex);
+    SetArrayCell(Handle:typeDescriptor, _:ObjectType_NameIndex, nameIndex);
 }
 
 /** Internal use only! */
 static stock Handle:ObjLib_GetTypeDataTypes(ObjectType:typeDescriptor)
 {
-    return Handle:GetArrayCell(typeDescriptor, _:ObjectType_DataTypes);
+    return Handle:GetArrayCell(Handle:typeDescriptor, _:ObjectType_DataTypes);
 }
 
 /** Internal use only! */
 static stock ObjLib_SetTypeDataTypes(ObjectType:typeDescriptor, Handle:dataTypes)
 {
-    SetArrayCell(typeDescriptor, _:ObjectType_DataTypes, dataTypes);
+    SetArrayCell(Handle:typeDescriptor, _:ObjectType_DataTypes, dataTypes);
 }
 
 /** Internal use only! */
@@ -773,7 +777,7 @@ static stock ObjLib_InitializeNewValue(Object:object, ObjectDataType:dataType)
  */
 static stock ObjLib_RemoveEntry(Object:object, entryIndex)
 {
-    new Handle:data = Handle:GetArrayCell(object, _:Object_Data);
+    new Handle:data = ObjLib_GetObjectData(object);
     RemoveFromArray(data, entryIndex);
 }
 
