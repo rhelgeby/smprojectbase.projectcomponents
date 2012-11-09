@@ -519,6 +519,7 @@ stock Object:ObjLib_CloneObject(Object:objectTemplate, bool:mutableObject = true
  */
 stock bool:ObjLib_IsValidObject(Object:object)
 {
+    return object != INVALID_OBJECT;
 }
 
 
@@ -554,16 +555,14 @@ static stock Handle:ObjLib_GetObjectData(Object:object)
     return Handle:GetArrayCell(object, _:Object_Data);
 }
 
-
 /**
- * Returns whether the specified object descriptor is mutable.
+ * Returns whether the specified object is mutable.
  *
  * @return      True if mutable, false otherwise.
  */
 stock bool:ObjLib_IsMutable(Object:object)
 {
-    ObjectType:type = ObjLib_GetObjectType(object);
-    return GetArrayCell(type, _:ObjectType_Locked) == 0;
+    return ObjLib_IsTypeMutable(ObjLib_GetObjectType(object));
 }
 
 
@@ -575,12 +574,13 @@ stock bool:ObjLib_IsMutable(Object:object)
  *************************************/
 
 /**
- * Returns whether the specified object type descriptor is mutable.
+ * Returns whether the specified object type descriptor is mutable (not locked).
  *
  * @return      True if mutable, false otherwise.
  */
 stock bool:ObjLib_IsTypeMutable(ObjectType:typeDescriptor)
 {
+    return GetArrayCell(typeDescriptor, _:ObjectType_Locked) == 0;
 }
 
 
