@@ -166,10 +166,7 @@ stock ObjectType:ObjLib_CreateType(blockSize = 1, keySzie = 8)
 stock ObjLib_DeleteType(&ObjectType:typeDescriptor, bool:resetReference = true)
 {
     // Validate.
-    if (!ObjLib_IsValidObjectType(typeDescriptor))
-    {
-        ThrowError("Invalid object type descriptor.");
-    }
+    ObjLib_ValidateObjectType(typeDescriptor);
     
     // Check if this type descriptor is attatched to a mutable object.
     if (ObjLib_GetTypeParentObject(typeDescriptor) != INVALID_OBJECT)
@@ -270,10 +267,7 @@ stock bool:ObjLib_IsValidObjectType(ObjectType:typeDescriptor)
 stock ObjLib_AddKey(ObjectType:typeDescriptor, const String:keyName[], ObjectDataType:dataType = ObjDataType_Any)
 {
     // Validate.
-    if (!ObjLib_IsValidObjectType(typeDescriptor))
-    {
-        ThrowError("Invalid object type descriptor (%x).", typeDescriptor);
-    }
+    ObjLib_ValidateObjectType(typeDescriptor);
     
     // Check if not mutable.
     if (!ObjLib_IsObjectTypeMutable(typeDescriptor))
@@ -317,10 +311,7 @@ stock ObjLib_AddKey(ObjectType:typeDescriptor, const String:keyName[], ObjectDat
 stock bool:ObjLib_RemoveKey(ObjectType:typeDescriptor, const String:keyName[])
 {
     // Validate.
-    if (!ObjLib_IsValidObjectType(typeDescriptor))
-    {
-        ThrowError("Invalid object type descriptor (%x).", typeDescriptor);
-    }
+    ObjLib_ValidateObjectType(typeDescriptor);
     
     // Check if not mutable.
     if (!ObjLib_IsObjectTypeMutable(typeDescriptor))
@@ -474,10 +465,7 @@ stock Object:ObjLib_CreateObject(ObjectType:typeTemplate, bool:mutableObject = t
 stock ObjLib_DeleteObject(&Object:object, resetReference = true)
 {
     // Validate.
-    if (!ObjLib_IsValidObject(object))
-    {
-        ThrowError("Invalid object (%x).", object);
-    }
+    ObjLib_ValidateObject(object);
     
     new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
     new Object:parent = ObjLib_GetTypeParentObject(typeDescriptor);
@@ -532,11 +520,8 @@ stock ObjLib_DeleteObject(&Object:object, resetReference = true)
  */
 stock Object:ObjLib_CloneObject(Object:objectTemplate, bool:mutableObject = true, bool:cloneHandles = false)
 {
-    // Validate.
-    if (!ObjLib_IsValidObject(objectTemplate))
-    {
-        ThrowError("Invalid object (%x).", objectTemplate);
-    }
+    // Validate object.
+    ObjLib_ValidateObject(objectTemplate);
     
     // Create new object array.
     new Handle:object = CreateArray(_, OBJECT_DATA_LEN);
@@ -638,6 +623,88 @@ stock bool:ObjLib_IsMutable(Object:object)
     return ObjLib_IsTypeMutable(ObjLib_GetObjectType(object));
 }
 
+/**************************************
+ *   Object data accessor functions   *
+ **************************************/
+
+/**
+ * Gets a value of type "any" from the specified key.
+ *
+ * @param object    Object to get value from.
+ * @param keyName   Name of key. Case sensitive.
+ *
+ * @return          Value in the specified key.
+ *
+ * @error           Invalid object, key name or key type mismatch.
+ */
+stock any:ObjLib_GetAny(Object:object, const String:keyName[])
+{
+    new keyIndex = ObjLib_GetKeyIndexOrFail(object, keyName);
+    return ObjLib_GetAnyAt(object, keyIndex);
+}
+
+/**
+ * Sets a value of type "any" in the specified key.
+ *
+ * @param object    Object to update.
+ * @param keyName   Name of key. Case sensitive.
+ * @param value     Value to set.
+ *
+ * @error           Invalid object, key name or key type mismatch.
+ */
+stock ObjLib_SetAny(Object:object, const String:keyName[], any:value)
+{
+    new keyIndex = ObjLib_GetKeyIndexOrFail(object, keyName);
+    return ObjLib_GetAnyAt(object, keyIndex);
+}
+
+/**
+ * Gets a value of type "any" at the specified key index.
+ *
+ * @param object    Object to get value from.
+ * @param index     Index of key.
+ *
+ * @return          Value in the specified key.
+ *
+ * @error           Invalid object, key index or key type mismatch.
+ */
+stock any:ObjLib_GetAnyAt(Object:object, index)
+{
+    // Validate object.
+    ObjLib_ValidateObject(object);
+    
+    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    
+    // Validate type.
+    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, keyIndex, ObjDataType_Any);
+    
+    // Get value.
+    new Handle:data = ObjLib_GetObjectData(object);
+    return any:GetArrayCell(data, index);
+}
+
+/**
+ * Sets a value of type "any" at the specified key index.
+ *
+ * @param object    Object to update.
+ * @param index     Index of key.
+ * @param value     Value to set.
+ */
+stock ObjLib_SetAnyAt(Object:object, index, any:value)
+{
+    // Validate object.
+    ObjLib_ValidateObject(object);
+    
+    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    
+    // Validate type.
+    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, keyIndex, ObjDataType_Any);
+    
+    // Get value.
+    new Handle:data = ObjLib_GetObjectData(object);
+    return any:GetArrayCell(data, index);
+}
+
 
 /********************************
  *   Object get/set functions   *
@@ -652,7 +719,50 @@ stock bool:ObjLib_IsMutable(Object:object)
  */
 stock ObjectType:ObjLib_GetObjectType(Object:object)
 {
+    // Validate object.
+    ObjLib_ValidateObject(object);
+    
     return ObjectType:GetArrayCell(Handle:object, _:Object_MetaData);
+}
+
+/**
+ * Gets the index for the specified key in an object.
+ *
+ * @param object    Object to get index from.
+ * @param keyName   Name of key. Case sensitive.
+ *
+ * @return          Key index if successful, or -1 if it doesn't exist.
+ */
+stock ObjLib_GetKeyIndex(Object:object, const String:keyName[])
+{
+    // Validate object.
+    ObjLib_ValidateObject(object);
+    
+    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    new Handle:nameIndex = ObjLib_GetTypeNameIndex(typeDescriptor);
+    
+    new index = -1;
+    if (GetTrieValue(nameIndex, keyName, index))
+    {
+        // Key found.
+        return index;
+    }
+    
+    // Key not found.
+    return -1;
+}
+
+/** Internal use only! */
+static stock ObjLib_GetKeyIndexOrFail(Object:object, const String:keyName[])
+{
+    new keyIndex = ObjLib_GetKeyIndex(object, keyName);
+    
+    if (keyIndex < 0)
+    {
+        ThrowError("Invalid key name (%s).", keyName);
+    }
+    
+    return keyIndex;
 }
 
 /** Internal use only! */
@@ -890,4 +1000,77 @@ static stock Handle:ObjLib_CloneTrie(Handle:trie, Handle:keys, keySize)
     }
     
     return newTrie;
+}
+
+/**
+ * Validates a key type against an object's key type at the specified index.
+ *
+ * This function will throw an validation error on key type mismatch.
+ *
+ * @param typeDescriptor    Object type descriptor.
+ * @param keyIndex          Index of key to validate against.
+ * @param keyType           Type of key to validate.
+ */
+static stock ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, keyIndex, ObjectDataType:keyType)
+{
+    // Validate key index.
+    if (keyIndex < 0)
+    {
+        ThrowError("Invalid key index (%d).", keyIndex);
+    }
+    
+    new Handle:dataTypes = ObjLib_GetTypeDataTypes(typeDescriptor);
+    new ObjectDataType:destType = ObjectDataType:GetArrayCell(dataTypes, keyIndex);
+    
+    if (keyType != destType)
+    {
+        // Key mismatch. Throw error.
+        ObjLib_KeyTypeMismatchError(keyType, destType);
+    }
+}
+
+static stock ObjLib_KeyTypeMismatchError(ObjectDataType:actual, ObjectDataType:expected)
+{
+    new String:actualName[16];
+    new String:expectedName[16];
+    
+    ObjLib_DataTypeToString(actual, actualName, sizeof(actualName));
+    ObjLib_DataTypeToString(expected, expectedName, sizeof(expectedName));
+    
+    ThrowError("Key type mismatch. Expected \"%s\", but \"%s\" was used.", expectedName, actualName);
+}
+
+static stock ObjLib_DataTypeToString(ObjectDataType:dataType, String:buffer[], maxlen)
+{
+    switch (dataType)
+    {
+        case ObjDataType_Any:           return strcopy(buffer, maxlen, "Any");
+        case ObjDataType_Cell:          return strcopy(buffer, maxlen, "Cell");
+        case ObjDataType_Bool:          return strcopy(buffer, maxlen, "Bool");
+        case ObjDataType_Float:         return strcopy(buffer, maxlen, "Handle");
+        case ObjDataType_Handle:        return strcopy(buffer, maxlen, "Float");
+        case ObjDataType_Function:      return strcopy(buffer, maxlen, "Function");
+        case ObjDataType_Array:         return strcopy(buffer, maxlen, "Array");
+        case ObjDataType_String:        return strcopy(buffer, maxlen, "String");
+        case ObjDataType_Object:        return strcopy(buffer, maxlen, "Object");
+        case ObjDataType_ObjectType:    return strcopy(buffer, maxlen, "ObjectType");
+    }
+    
+    return 0;
+}
+
+static stock ObjLib_ValidateObject(Object:object)
+{
+    if (!ObjLib_IsValidObject(object))
+    {
+        ThrowError("Invalid object (%x).", object);
+    }
+}
+
+static stock ObjLib_ValidateObjectType(ObjectType:typeDescriptor)
+{
+    if (!ObjLib_IsValidObjectType(typeDescriptor))
+    {
+        ThrowError("Invalid object type (%x).", typeDescriptor);
+    }
 }
