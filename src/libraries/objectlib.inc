@@ -39,7 +39,7 @@
  */
 enum Object
 {
-    INVALID_OBJECT = -1
+    INVALID_OBJECT = 0
 }
 
 /**
@@ -52,7 +52,7 @@ enum Object
  */
 enum ObjectType
 {
-    INVALID_OBJECT_TYPE = -1
+    INVALID_OBJECT_TYPE = 0
 }
 
 /**
@@ -655,6 +655,37 @@ stock ObjLib_SetAny(Object:object, const String:keyName[], any:value)
 }
 
 /**
+ * Gets a value of type "cell" from the specified key.
+ *
+ * @param object    Object to get value from.
+ * @param keyName   Name of key. Case sensitive.
+ *
+ * @return          Value in the specified key.
+ *
+ * @error           Invalid object, key name or key type mismatch.
+ */
+stock ObjLib_GetCell(Object:object, const String:keyName[])
+{
+    new keyIndex = ObjLib_GetKeyIndexOrFail(object, keyName);
+    return ObjLib_GetCellAt(object, keyIndex);
+}
+
+/**
+ * Sets a value of type "cell" in the specified key.
+ *
+ * @param object    Object to update.
+ * @param keyName   Name of key. Case sensitive.
+ * @param value     Value to set.
+ *
+ * @error           Invalid object, key name or key type mismatch.
+ */
+stock ObjLib_SetCell(Object:object, const String:keyName[], any:value)
+{
+    new keyIndex = ObjLib_GetKeyIndexOrFail(object, keyName);
+    ObjLib_SetCellAt(object, keyIndex, value);
+}
+
+/**
  * Gets a value of type "any" at the specified key index.
  *
  * @param object    Object to get value from.
@@ -748,6 +779,390 @@ stock ObjLib_SetCellAt(Object:object, index, value)
     SetArrayCell(data, index, value);
 }
 
+/**
+ * Gets a value of type "bool" at the specified key index.
+ *
+ * @param object    Object to get value from.
+ * @param index     Index of key.
+ *
+ * @return          Value in the specified key.
+ *
+ * @error           Invalid object, key index or key type mismatch.
+ */
+stock bool:ObjLib_GetBoolAt(Object:object, index)
+{
+    // Validate object.
+    ObjLib_ValidateObject(object);
+    
+    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    
+    // Validate type.
+    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Bool);
+    
+    // Get value.
+    new Handle:data = ObjLib_GetObjectData(object);
+    return bool:GetArrayCell(data, index);
+}
+
+/**
+ * Sets a value of type "bool" at the specified key index.
+ *
+ * @param object    Object to update.
+ * @param index     Index of key.
+ * @param value     Value to set.
+ */
+stock ObjLib_SetBoolAt(Object:object, index, bool:value)
+{
+    // Validate object.
+    ObjLib_ValidateObject(object);
+    
+    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    
+    // Validate type.
+    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Bool);
+    
+    // Get value.
+    new Handle:data = ObjLib_GetObjectData(object);
+    SetArrayCell(data, index, value);
+}
+
+/**
+ * Gets a value of type "float" at the specified key index.
+ *
+ * @param object    Object to get value from.
+ * @param index     Index of key.
+ *
+ * @return          Value in the specified key.
+ *
+ * @error           Invalid object, key index or key type mismatch.
+ */
+stock Float:ObjLib_GetFloatAt(Object:object, index)
+{
+    // Validate object.
+    ObjLib_ValidateObject(object);
+    
+    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    
+    // Validate type.
+    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Float);
+    
+    // Get value.
+    new Handle:data = ObjLib_GetObjectData(object);
+    return Float:GetArrayCell(data, index);
+}
+
+/**
+ * Sets a value of type "float" at the specified key index.
+ *
+ * @param object    Object to update.
+ * @param index     Index of key.
+ * @param value     Value to set.
+ */
+stock ObjLib_SetFloatAt(Object:object, index, Float:value)
+{
+    // Validate object.
+    ObjLib_ValidateObject(object);
+    
+    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    
+    // Validate type.
+    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Float);
+    
+    // Get value.
+    new Handle:data = ObjLib_GetObjectData(object);
+    SetArrayCell(data, index, value);
+}
+
+/**
+ * Gets a value of type "handle" at the specified key index.
+ *
+ * @param object    Object to get value from.
+ * @param index     Index of key.
+ *
+ * @return          Value in the specified key.
+ *
+ * @error           Invalid object, key index or key type mismatch.
+ */
+stock Handle:ObjLib_GetHandleAt(Object:object, index)
+{
+    // Validate object.
+    ObjLib_ValidateObject(object);
+    
+    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    
+    // Validate type.
+    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Handle);
+    
+    // Get value.
+    new Handle:data = ObjLib_GetObjectData(object);
+    return Handle:GetArrayCell(data, index);
+}
+
+/**
+ * Sets a value of type "handle" at the specified key index.
+ *
+ * @param object    Object to update.
+ * @param index     Index of key.
+ * @param value     Value to set.
+ */
+stock ObjLib_SetHandleAt(Object:object, index, Handle:value)
+{
+    // Validate object.
+    ObjLib_ValidateObject(object);
+    
+    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    
+    // Validate type.
+    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Handle);
+    
+    // Get value.
+    new Handle:data = ObjLib_GetObjectData(object);
+    SetArrayCell(data, index, value);
+}
+
+/**
+ * Gets a value of type "function" at the specified key index.
+ *
+ * @param object    Object to get value from.
+ * @param index     Index of key.
+ *
+ * @return          Value in the specified key.
+ *
+ * @error           Invalid object, key index or key type mismatch.
+ */
+stock Function:ObjLib_GetFunctionAt(Object:object, index)
+{
+    // Validate object.
+    ObjLib_ValidateObject(object);
+    
+    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    
+    // Validate type.
+    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Function);
+    
+    // Get value.
+    new Handle:data = ObjLib_GetObjectData(object);
+    return Function:GetArrayCell(data, index);
+}
+
+/**
+ * Sets a value of type "function" at the specified key index.
+ *
+ * @param object    Object to update.
+ * @param index     Index of key.
+ * @param value     Value to set.
+ */
+stock ObjLib_SetFunctionAt(Object:object, index, Function:value)
+{
+    // Validate object.
+    ObjLib_ValidateObject(object);
+    
+    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    
+    // Validate type.
+    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Function);
+    
+    // Get value.
+    new Handle:data = ObjLib_GetObjectData(object);
+    SetArrayCell(data, index, value);
+}
+
+/**
+ * Gets a value of type "array" at the specified key index.
+ *
+ * @param object    Object to get value from.
+ * @param index     Index of key.
+ * @param buffer    Destination buffer.
+ * @param maxlen    Size of buffer.
+ *
+ * @return          Number of cells copied.
+ *
+ * @error           Invalid object, key index or key type mismatch.
+ */
+stock ObjLib_GetArrayAt(Object:object, index, any:buffer[], maxlen)
+{
+    // Validate object.
+    ObjLib_ValidateObject(object);
+    
+    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    
+    // Validate type.
+    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Array);
+    
+    // Get value.
+    new Handle:data = ObjLib_GetObjectData(object);
+    return GetArrayArray(data, index, buffer, maxlen);
+}
+
+/**
+ * Sets a value of type "array" at the specified key index.
+ *
+ * @param object    Object to update.
+ * @param index     Index of key.
+ * @param values    Array to set.
+ * @param maxlen    Size of array.
+ *
+ * @return          Number of cells copied.
+ */
+stock ObjLib_SetArrayAt(Object:object, index, const any:values[], maxlen)
+{
+    // Validate object.
+    ObjLib_ValidateObject(object);
+    
+    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    
+    // Validate type.
+    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Array);
+    
+    // Get value.
+    new Handle:data = ObjLib_GetObjectData(object);
+    return SetArrayArray(data, index, values, maxlen);
+}
+
+/**
+ * Gets a value of type "string" at the specified key index.
+ *
+ * @param object    Object to get value from.
+ * @param index     Index of key.
+ * @param buffer    Destination buffer.
+ * @param maxlen    Size of buffer.
+ *
+ * @return          Number of characters copied.
+ *
+ * @error           Invalid object, key index or key type mismatch.
+ */
+stock ObjLib_GetStringAt(Object:object, index, String:buffer[], maxlen)
+{
+    // Validate object.
+    ObjLib_ValidateObject(object);
+    
+    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    
+    // Validate type.
+    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_String);
+    
+    // Get value.
+    new Handle:data = ObjLib_GetObjectData(object);
+    return GetArrayString(data, index, buffer, maxlen);
+}
+
+/**
+ * Sets a value of type "string" at the specified key index.
+ *
+ * @param object    Object to update.
+ * @param index     Index of key.
+ * @param value     String to set.
+ *
+ * @return          Number of characters copied.
+ */
+stock ObjLib_SetStringAt(Object:object, index, const String:value[])
+{
+    // Validate object.
+    ObjLib_ValidateObject(object);
+    
+    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    
+    // Validate type.
+    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_String);
+    
+    // Get value.
+    new Handle:data = ObjLib_GetObjectData(object);
+    return SetArrayString(data, index, value);
+}
+
+/**
+ * Gets a value of type "object" at the specified key index.
+ *
+ * @param object    Object to get value from.
+ * @param index     Index of key.
+ *
+ * @return          Value in the specified key.
+ *
+ * @error           Invalid object, key index or key type mismatch.
+ */
+stock Object:ObjLib_GetObjectAt(Object:object, index)
+{
+    // Validate object.
+    ObjLib_ValidateObject(object);
+    
+    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    
+    // Validate type.
+    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Object);
+    
+    // Get value.
+    new Handle:data = ObjLib_GetObjectData(object);
+    return Object:GetArrayCell(data, index);
+}
+
+/**
+ * Sets a value of type "object" at the specified key index.
+ *
+ * @param object    Object to update.
+ * @param index     Index of key.
+ * @param value     Value to set.
+ */
+stock ObjLib_SetObjectAt(Object:object, index, Object:value)
+{
+    // Validate object.
+    ObjLib_ValidateObject(object);
+    
+    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    
+    // Validate type.
+    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Object);
+    
+    // Get value.
+    new Handle:data = ObjLib_GetObjectData(object);
+    SetArrayCell(data, index, value);
+}
+
+/**
+ * Gets a value of type "object type" at the specified key index.
+ *
+ * @param object    Object to get value from.
+ * @param index     Index of key.
+ *
+ * @return          Value in the specified key.
+ *
+ * @error           Invalid object, key index or key type mismatch.
+ */
+stock ObjectType:ObjLib_GetObjectTypeAt(Object:object, index)
+{
+    // Validate object.
+    ObjLib_ValidateObject(object);
+    
+    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    
+    // Validate type.
+    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_ObjectType);
+    
+    // Get value.
+    new Handle:data = ObjLib_GetObjectData(object);
+    return ObjectType:GetArrayCell(data, index);
+}
+
+/**
+ * Sets a value of type "object type" at the specified key index.
+ *
+ * @param object    Object to update.
+ * @param index     Index of key.
+ * @param value     Value to set.
+ */
+stock ObjLib_SetObjectTypeAt(Object:object, index, ObjectType:value)
+{
+    // Validate object.
+    ObjLib_ValidateObject(object);
+    
+    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    
+    // Validate type.
+    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_ObjectType);
+    
+    // Get value.
+    new Handle:data = ObjLib_GetObjectData(object);
+    SetArrayCell(data, index, value);
+}
 
 
 /********************************
