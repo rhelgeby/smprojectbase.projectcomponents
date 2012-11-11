@@ -1,0 +1,9 @@
+# use glob syntax.
+syntax: glob
+
+patch.diff
+patch.txt
+
+.DS_Store
+
+.smx
