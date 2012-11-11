@@ -130,13 +130,13 @@ stock ObjectType:ObjLib_CreateType(blockSize = 1, keySzie = 8)
     new Handle:nameIndex = CreateTrie();            // ADT Trie with key names mapped to indexes.
     new Handle:dataTypes = CreateArray();           // List of data types of each value entry.
     
-    ObjLib_SetTypeLocked(typeDescriptor,        false);
-    ObjLib_SetTypeParentObject(typeDescriptor,  INVALID_OBJECT);
-    ObjLib_SetTypeKeySize(typeDescriptor,       keySzie);
-    ObjLib_SetTypeBlockSize(typeDescriptor,     blockSize);
-    ObjLib_SetTypeKeys(typeDescriptor,          keys);
-    ObjLib_SetTypeNameIndex(typeDescriptor,     nameIndex);
-    ObjLib_SetTypeDataTypes(typeDescriptor,     dataTypes);
+    ObjLib_SetTypeLocked(ObjectType:typeDescriptor,         false);
+    ObjLib_SetTypeParentObject(ObjectType:typeDescriptor,   INVALID_OBJECT);
+    ObjLib_SetTypeKeySize(ObjectType:typeDescriptor,        keySzie);
+    ObjLib_SetTypeBlockSize(ObjectType:typeDescriptor,      blockSize);
+    ObjLib_SetTypeKeys(ObjectType:typeDescriptor,           keys);
+    ObjLib_SetTypeNameIndex(ObjectType:typeDescriptor,      nameIndex);
+    ObjLib_SetTypeDataTypes(ObjectType:typeDescriptor,      dataTypes);
     //ObjLib_SetTypeConstraints(ObjectType:typeDescriptor,  INVALID_HANDLE);     // Not implemented yet.
     
     /*
@@ -211,7 +211,6 @@ stock ObjLib_DeleteType(&ObjectType:typeDescriptor, bool:resetReference = true)
  */
 stock ObjectType:ObjLib_CloneType(ObjectType:typeDescriptor, bool:locked = false)
 {
-    new bool:locked = !ObjLib_IsTypeMutable(typeDescriptor);
     new keySize = ObjLib_GetTypeKeySize(typeDescriptor);
     new blockSize = ObjLib_GetTypeBlockSize(typeDescriptor);
     
@@ -222,14 +221,14 @@ stock ObjectType:ObjLib_CloneType(ObjectType:typeDescriptor, bool:locked = false
     
     new Handle:newType = CreateArray(_, OBJECT_TYPE_DATA_LEN);
     
-    ObjLib_SetTypeLocked(newType,           locked);
-    ObjLib_SetTypeParentObject(newType,     INVALID_OBJECT);
-    ObjLib_SetTypeKeySize(newType,          keySzie);
-    ObjLib_SetTypeBlockSize(newType,        blockSize);
-    ObjLib_SetTypeKeys(newType,             keys);
-    ObjLib_SetTypeNameIndex(newType,        nameIndex);
-    ObjLib_SetTypeDataTypes(newType,        dataTypes);
-    //ObjLib_SetTypeConstraints(newType,    INVALID_HANDLE);     // Not implemented yet.
+    ObjLib_SetTypeLocked(ObjectType:newType,        locked);
+    ObjLib_SetTypeParentObject(ObjectType:newType,  INVALID_OBJECT);
+    ObjLib_SetTypeKeySize(ObjectType:newType,       keySize);
+    ObjLib_SetTypeBlockSize(ObjectType:newType,     blockSize);
+    ObjLib_SetTypeKeys(ObjectType:newType,          keys);
+    ObjLib_SetTypeNameIndex(ObjectType:newType,     nameIndex);
+    ObjLib_SetTypeDataTypes(ObjectType:newType,     dataTypes);
+    //ObjLib_SetTypeConstraints(ObjectType:newType, INVALID_HANDLE);     // Not implemented yet.
     
     /*
     PushArrayCell(newType, locked);             // ObjectType_Locked
@@ -270,7 +269,7 @@ stock ObjLib_AddKey(ObjectType:typeDescriptor, const String:keyName[], ObjectDat
     ObjLib_ValidateObjectType(typeDescriptor);
     
     // Check if not mutable.
-    if (!ObjLib_IsObjectTypeMutable(typeDescriptor))
+    if (!ObjLib_IsTypeMutable(typeDescriptor))
     {
         ThrowError("This object type descriptor is immutable (%x).", typeDescriptor);
     }
@@ -314,7 +313,7 @@ stock bool:ObjLib_RemoveKey(ObjectType:typeDescriptor, const String:keyName[])
     ObjLib_ValidateObjectType(typeDescriptor);
     
     // Check if not mutable.
-    if (!ObjLib_IsObjectTypeMutable(typeDescriptor))
+    if (!ObjLib_IsTypeMutable(typeDescriptor))
     {
         ThrowError("This object type descriptor is immutable (%x).", typeDescriptor);
     }
@@ -329,7 +328,8 @@ stock bool:ObjLib_RemoveKey(ObjectType:typeDescriptor, const String:keyName[])
     new Handle:nameIndex = ObjLib_GetTypeNameIndex(typeDescriptor);
     new Handle:dataTypes = ObjLib_GetTypeDataTypes(typeDescriptor);
     
-    new entryIndex = GetTrieValue(nameIndex, keyName);
+    new entryIndex = -1;
+    GetTrieValue(nameIndex, keyName, entryIndex);
     RemoveFromArray(keys, entryIndex);                  // Keys
     RemoveFromArray(dataTypes, entryIndex);             // Data types
     RemoveFromTrie(nameIndex, keyName);                 // Name index
@@ -355,7 +355,7 @@ stock bool:ObjLib_KeyExist(ObjectType:typeDescriptor, const String:keyName[])
 {
     new Handle:nameIndex = ObjLib_GetTypeNameIndex(typeDescriptor);
     new dummyBuffer;
-    if (GetTrieValue(nameIndex, keyName, dummyBuffer)
+    if (GetTrieValue(nameIndex, keyName, dummyBuffer))
     {
         // Key exist.
         return true;
@@ -369,13 +369,11 @@ stock bool:ObjLib_KeyExist(ObjectType:typeDescriptor, const String:keyName[])
  * @param object    Object to remove key from.
  * @param keyName   Name of key to remove. Case sensitive.
  * @param dataType  Data type of key.
- *
- * @return          True if successful, false if object was locked.
  */
 stock bool:ObjLib_AddObjectKey(Object:object, const String:keyName[], ObjectDataType:dataType = ObjDataType_Any)
 {
     new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
-    return ObjLib_AddKey(typeDescriptor, keyName, dataType);
+    ObjLib_AddKey(typeDescriptor, keyName, dataType);
 }
 
 /**
@@ -385,13 +383,11 @@ stock bool:ObjLib_AddObjectKey(Object:object, const String:keyName[], ObjectData
  *
  * @param object    Object to remove key from.
  * @param keyName   Name of key to remove. Case sensitive.
- *
- * @return          True if successful, false if object was locked.
  */
-stock bool:ObjLib_RemoveObjectKey(Object:object, const String:keyName[])
+stock ObjLib_RemoveObjectKey(Object:object, const String:keyName[])
 {
     new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
-    return ObjLib_RemoveKey(typeDescriptor, keyName);
+    ObjLib_RemoveKey(typeDescriptor, keyName);
 }
 
 /**
@@ -444,8 +440,8 @@ stock Object:ObjLib_CreateObject(ObjectType:typeTemplate, bool:mutableObject = t
         ObjLib_SetTypeLocked(type, true);
     }
     
-    ObjLib_SetObjectData(object, data);
-    ObjLib_SetObjectType(object, type);
+    ObjLib_SetObjectData(Object:object, data);
+    ObjLib_SetObjectType(Object:object, type);
     
     /*
     PushArrayCell(object, data);        // Object_Data
@@ -488,7 +484,7 @@ stock ObjLib_DeleteObject(&Object:object, resetReference = true)
     CloseHandle(ObjLib_GetObjectData(object));
     
     // Delete object.
-    CloseHandle(object);
+    CloseHandle(Handle:object);
     
     // Reset reference if enabled.
     if (resetReference)
@@ -531,7 +527,7 @@ stock Object:ObjLib_CloneObject(Object:objectTemplate, bool:mutableObject = true
     
     // Clone type.
     new ObjectType:typeTemplate = ObjLib_GetObjectType(objectTemplate);
-    new bool:mutableSource = ObjLib_IsObjectMutable(objectTemplate);
+    new bool:mutableSource = ObjLib_IsMutable(objectTemplate);
     
     /*
     The if block below decides how the type should be cloned and attached.
@@ -553,7 +549,7 @@ stock Object:ObjLib_CloneObject(Object:objectTemplate, bool:mutableObject = true
     {
         // Template and destination object is immutable. Use the same type
         // descriptor.
-        ObjLib_SetObjectType(object, typeTemplate);
+        ObjLib_SetObjectType(Object:object, typeTemplate);
     }
     else
     {
@@ -563,13 +559,13 @@ stock Object:ObjLib_CloneObject(Object:objectTemplate, bool:mutableObject = true
         if (mutableObject)
         {
             // Destination is mutable. Attatch cloned type.
-            ObjLib_SetTypeParentObject(type, _:object);
-            ObjLib_SetObjectType(object, type);
+            ObjLib_SetTypeParentObject(type, Object:object);
+            ObjLib_SetObjectType(Object:object, type);
         }
         else
         {
             // Destination is immutable. Link cloned type.
-            ObjLib_SetObjectType(object, type);
+            ObjLib_SetObjectType(Object:object, type);
 
             // Lock type.
             ObjLib_SetTypeLocked(type, true);
@@ -580,10 +576,10 @@ stock Object:ObjLib_CloneObject(Object:objectTemplate, bool:mutableObject = true
     if (cloneHandles)
     {
         new len = GetArraySize(data);
-        new Handle:dataTypes = ObjLib_GetTypeDataTypes(ObjLib_GetObjectType(object));
+        new Handle:dataTypes = ObjLib_GetTypeDataTypes(ObjLib_GetObjectType(Object:object));
         
         // Loop through data values.
-        for (int i = 0; i < len; i++)
+        for (new i = 0; i < len; i++)
         {
             new ObjectDataType:dataType = ObjectDataType:GetArrayCell(dataTypes, i);
             if (dataType == ObjDataType_Handle)
@@ -655,7 +651,7 @@ stock any:ObjLib_GetAny(Object:object, const String:keyName[])
 stock ObjLib_SetAny(Object:object, const String:keyName[], any:value)
 {
     new keyIndex = ObjLib_GetKeyIndexOrFail(object, keyName);
-    return ObjLib_GetAnyAt(object, keyIndex);
+    ObjLib_SetAnyAt(object, keyIndex, value);
 }
 
 /**
@@ -676,7 +672,7 @@ stock any:ObjLib_GetAnyAt(Object:object, index)
     new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
     
     // Validate type.
-    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, keyIndex, ObjDataType_Any);
+    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Any);
     
     // Get value.
     new Handle:data = ObjLib_GetObjectData(object);
@@ -698,12 +694,60 @@ stock ObjLib_SetAnyAt(Object:object, index, any:value)
     new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
     
     // Validate type.
-    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, keyIndex, ObjDataType_Any);
+    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Any);
     
     // Get value.
     new Handle:data = ObjLib_GetObjectData(object);
-    return any:GetArrayCell(data, index);
+    SetArrayCell(data, index, value);
 }
+
+/**
+ * Gets a value of type "cell" at the specified key index.
+ *
+ * @param object    Object to get value from.
+ * @param index     Index of key.
+ *
+ * @return          Value in the specified key.
+ *
+ * @error           Invalid object, key index or key type mismatch.
+ */
+stock ObjLib_GetCellAt(Object:object, index)
+{
+    // Validate object.
+    ObjLib_ValidateObject(object);
+    
+    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    
+    // Validate type.
+    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Cell);
+    
+    // Get value.
+    new Handle:data = ObjLib_GetObjectData(object);
+    return GetArrayCell(data, index);
+}
+
+/**
+ * Sets a value of type "cell" at the specified key index.
+ *
+ * @param object    Object to update.
+ * @param index     Index of key.
+ * @param value     Value to set.
+ */
+stock ObjLib_SetCellAt(Object:object, index, value)
+{
+    // Validate object.
+    ObjLib_ValidateObject(object);
+    
+    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    
+    // Validate type.
+    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Cell);
+    
+    // Get value.
+    new Handle:data = ObjLib_GetObjectData(object);
+    SetArrayCell(data, index, value);
+}
+
 
 
 /********************************
@@ -935,7 +979,7 @@ static stock ObjLib_InitializeNewValue(Object:object, ObjectDataType:dataType)
         case ObjDataType_Array:
         {
             new dummyArray[1];
-            PushArrayCell(data, dummyArray);
+            PushArrayArray(data, dummyArray, sizeof(dummyArray));
         }
         case ObjDataType_String:
         {
@@ -985,7 +1029,7 @@ static stock Handle:ObjLib_CloneTrie(Handle:trie, Handle:keys, keySize)
     
     // Loop through each key.
     new len = GetArraySize(keys);
-    for (int i = 0; i < len; i++)
+    for (new i = 0; i < len; i++)
     {
         // Get key.
         decl String:key[keySize];
