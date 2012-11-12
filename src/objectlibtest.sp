@@ -13,7 +13,13 @@ public OnPluginStart()
     InitObjectTests();
     
     PawnUnit_Run(TypeTests);
+    PawnUnit_PrintResults(TypeTests);
+    
+    PawnUnit_ResetStates();
+    PawnUnit_ResetStatistics();
     PawnUnit_Run(ObjectTests);
+    PawnUnit_PrintResults(ObjectTests);
+    
     //PawnUnit_Run(ObjectDataTests);
 }
 
