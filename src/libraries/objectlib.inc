@@ -524,6 +524,7 @@ stock Object:ObjLib_CloneObject(Object:objectTemplate, bool:mutableObject = true
     
     // Clone data array.
     new Handle:data = CloneArray(ObjLib_GetObjectData(objectTemplate));
+    ObjLib_SetObjectData(Object:object, data);
     
     // Clone type.
     new ObjectType:typeTemplate = ObjLib_GetObjectType(objectTemplate);
