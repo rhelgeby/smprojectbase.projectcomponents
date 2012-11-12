@@ -25,7 +25,7 @@ InitTypeTests()
     PawnUnit_AddTestPhase(createTypeTest, CreateTypeTest);
     
     new TestCase:cloneTypeTest = PawnUnit_CreateTestCase("Clone type");
-    PawnUnit_AddTestPhase(:cloneTypeTest, CloneTypeTest);
+    PawnUnit_AddTestPhase(cloneTypeTest, CloneTypeTest);
     
     new TestCase:addKeyTest = PawnUnit_CreateTestCase("Add key");
     PawnUnit_AddTestPhase(addKeyTest, AddKeyTest);
@@ -44,7 +44,7 @@ InitObjectTests()
     ObjectTests = PawnUnit_CreateTestCollection("Object tests");
     
     new TestCase:createMutableObjectTest = PawnUnit_CreateTestCase("Create mutable object");
-    PawnUnit_AddTestPhase(createMutableObjectTest, CreateMmutableObjectTest);
+    PawnUnit_AddTestPhase(createMutableObjectTest, CreateMutableObjectTest);
     
     new TestCase:createImmutableObjectTest = PawnUnit_CreateTestCase("Create mutable object");
     PawnUnit_AddTestPhase(createImmutableObjectTest, CreateImmutableObjectTest);
@@ -76,7 +76,7 @@ InitObjectTests()
 public TestControlAction:CreateTypeTest(TestCase:testCase)
 {
     new ObjectType:type = ObjLib_CreateType();
-    AssertMsg(type != INVALID_OBJECT_TYPE, "failed to create object type");
+    AssertMsg(type != INVALID_OBJECT_TYPE, "failed to create object type")
     
     ObjLib_DeleteType(type);
     return Test_Continue;
@@ -85,10 +85,10 @@ public TestControlAction:CreateTypeTest(TestCase:testCase)
 public TestControlAction:CloneTypeTest(TestCase:testCase)
 {
     new ObjectType:type = ObjLib_CreateType();
-    AssertMsg(type != INVALID_OBJECT_TYPE, "failed to create object type");
+    AssertMsg(type != INVALID_OBJECT_TYPE, "failed to create object type")
     
-    new ObjectType:clonedType = ObjLib_CloneType();
-    AssertMsg(type != INVALID_OBJECT_TYPE, "failed to clone type");
+    new ObjectType:clonedType = ObjLib_CloneType(type);
+    AssertMsg(type != INVALID_OBJECT_TYPE, "failed to clone type")
     
     ObjLib_DeleteType(type);
     ObjLib_DeleteType(clonedType);
@@ -100,7 +100,7 @@ public TestControlAction:AddKeyTest(TestCase:testCase)
     new ObjectType:type = ObjLib_CreateType();
     
     ObjLib_AddKey(type, "newKey");
-    AssertMsg(ObjLib_KeyExist(type, "newKey"), "key not added");
+    AssertMsg(ObjLib_KeyExist(type, "newKey"), "key not added")
     
     ObjLib_DeleteType(type);
     return Test_Continue;
@@ -111,10 +111,10 @@ public TestControlAction:RemoveKeyTest(TestCase:testCase)
     new ObjectType:type = ObjLib_CreateType();
     
     ObjLib_AddKey(type, "newKey");
-    AssertMsg(ObjLib_KeyExist(type, "newKey"), "key not added");
+    AssertMsg(ObjLib_KeyExist(type, "newKey"), "key not added")
     
     ObjLib_RemoveKey(type, "newKey");
-    AssertMsg(!ObjLib_KeyExist(type, "newKey", "key not removed"));
+    AssertMsg(!ObjLib_KeyExist(type, "newKey"), "key not removed")
     
     ObjLib_DeleteType(type);
     return Test_Continue;
@@ -131,11 +131,11 @@ public TestControlAction:CreateMutableObjectTest(TestCase:testCase)
     
     // Create mutable object (default).
     new Object:object = ObjLib_CreateObject(type);
-    AssertMsg(object != INVALID_OBJECT, "failed to create object");
+    AssertMsg(object != INVALID_OBJECT, "failed to create object")
     
     // Mutable objects should clone their type and not refer the original type
     // directly.
-    AssertMsg(ObjLib_GetObjectType(object) != type, "type not cloned");
+    AssertMsg(ObjLib_GetObjectType(object) != type, "type not cloned")
     
     ObjLib_DeleteObject(object);
     ObjLib_DeleteType(type);
@@ -148,10 +148,10 @@ public TestControlAction:CreateImmutableObjectTest(TestCase:testCase)
     
     // Create immutable object.
     new Object:object = ObjLib_CreateObject(type, false);
-    AssertMsg(object != INVALID_OBJECT, "failed to create object");
+    AssertMsg(object != INVALID_OBJECT, "failed to create object")
     
     // Immutable should use the type directly.
-    AssertMsg(ObjLib_GetObjectType(object) == type, "type not same");
+    AssertMsg(ObjLib_GetObjectType(object) == type, "type not same")
     
     ObjLib_DeleteObject(object);
     ObjLib_DeleteType(type);
@@ -167,10 +167,10 @@ public TestControlAction:CloneImmutableToImmutable(TestCase:testCase)
     
     // Clone as immutable.
     new Object:clonedObject = ObjLib_CloneObject(object, false);
-    AssertMsg(clonedObject != INVALID_OBJECT, "failed to clone object");
+    AssertMsg(clonedObject != INVALID_OBJECT, "failed to clone object")
     
     // Immutable clone should use the same type.
-    AssertMsg(ObjLib_GetObjectType(clonedObject) == type, "type not same");
+    AssertMsg(ObjLib_GetObjectType(clonedObject) == type, "type not same")
     
     ObjLib_DeleteObject(object);
     ObjLib_DeleteType(type);
@@ -186,10 +186,10 @@ public TestControlAction:CloneImmutableToMutable(TestCase:testCase)
     
     // Clone as mutable.
     new Object:clonedObject = ObjLib_CloneObject(object, true);
-    AssertMsg(clonedObject != INVALID_OBJECT, "failed to clone object");
+    AssertMsg(clonedObject != INVALID_OBJECT, "failed to clone object")
     
     // Mutable clone should clone type.
-    AssertMsg(ObjLib_GetObjectType(clonedObject) != type, "type not cloned");
+    AssertMsg(ObjLib_GetObjectType(clonedObject) != type, "type not cloned")
     
     ObjLib_DeleteObject(object);
     ObjLib_DeleteObject(clonedObject);
@@ -206,10 +206,10 @@ public TestControlAction:CloneMutableToImmutable(TestCase:testCase)
     
     // Clone as immutable.
     new Object:clonedObject = ObjLib_CloneObject(object, false);
-    AssertMsg(clonedObject != INVALID_OBJECT, "failed to clone object");
+    AssertMsg(clonedObject != INVALID_OBJECT, "failed to clone object")
     
     // Immutable clone from mutable object should clone type.
-    AssertMsg(ObjLib_GetObjectType(clonedObject) != type, "type not cloned");
+    AssertMsg(ObjLib_GetObjectType(clonedObject) != type, "type not cloned")
     
     ObjLib_DeleteObject(object);
     ObjLib_DeleteObject(clonedObject);
@@ -226,10 +226,10 @@ public TestControlAction:CloneMutableToMutable(TestCase:testCase)
     
     // Clone as mutable.
     new Object:clonedObject = ObjLib_CloneObject(object, true);
-    AssertMsg(clonedObject != INVALID_OBJECT, "failed to clone object");
+    AssertMsg(clonedObject != INVALID_OBJECT, "failed to clone object")
     
     // Mutable clone from mutable object should clone type.
-    AssertMsg(ObjLib_GetObjectType(clonedObject) != type, "type not cloned");
+    AssertMsg(ObjLib_GetObjectType(clonedObject) != type, "type not cloned")
     
     ObjLib_DeleteObject(object);
     ObjLib_DeleteObject(clonedObject);
