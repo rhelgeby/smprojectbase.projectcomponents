@@ -49,7 +49,7 @@
  * @param 2     Message formatting rules string with parameters. (As in the 
  *              Format function)
  */
-#define AssertMsg(%1, %2)   if (!(%1)) {Format(MessageBuffer, sizeof(MessageBuffer), %2); return Test_Failed;}
+#define AssertMsg(%1,%2)    if (!(%1)) {Format(MessageBuffer, sizeof(MessageBuffer),(%2)); return Test_Failed;}
 
 /**
  * General macro that returns Test_Failed and stores an error message in the
