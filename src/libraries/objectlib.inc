@@ -1258,6 +1258,34 @@ stock bool:ObjLib_IsTypeMutable(ObjectType:typeDescriptor)
     return GetArrayCell(Handle:typeDescriptor, _:ObjectType_Locked) == 0;
 }
 
+/**
+ * Returns the name of a data type.
+ *
+ * @param dataType  Data type value.
+ * @param buffer    Name buffer.
+ * @param maxlen    Size of buffer.
+ *
+ * @return          Number of cells written.
+ */
+stock ObjLib_DataTypeToString(ObjectDataType:dataType, String:buffer[], maxlen)
+{
+    switch (dataType)
+    {
+        case ObjDataType_Any:           return strcopy(buffer, maxlen, "Any");
+        case ObjDataType_Cell:          return strcopy(buffer, maxlen, "Cell");
+        case ObjDataType_Bool:          return strcopy(buffer, maxlen, "Bool");
+        case ObjDataType_Float:         return strcopy(buffer, maxlen, "Handle");
+        case ObjDataType_Handle:        return strcopy(buffer, maxlen, "Float");
+        case ObjDataType_Function:      return strcopy(buffer, maxlen, "Function");
+        case ObjDataType_Array:         return strcopy(buffer, maxlen, "Array");
+        case ObjDataType_String:        return strcopy(buffer, maxlen, "String");
+        case ObjDataType_Object:        return strcopy(buffer, maxlen, "Object");
+        case ObjDataType_ObjectType:    return strcopy(buffer, maxlen, "ObjectType");
+    }
+    
+    return 0;
+}
+
 /** Internal use only! */
 static stock ObjLib_SetTypeLocked(ObjectType:typeDescriptor, bool:locked)
 {
@@ -1300,8 +1328,15 @@ static stock ObjLib_SetTypeBlockSize(ObjectType:typeDescriptor, blockSize)
     SetArrayCell(Handle:typeDescriptor, _:ObjectType_BlockSize, blockSize);
 }
 
-/** Internal use only! */
-static stock Handle:ObjLib_GetTypeKeys(ObjectType:typeDescriptor)
+/**
+ * Gets the list of key names in an object type descriptor.
+ *
+ * @param typeDescriptor    Object type to inspect.
+ *
+ * @return      Handle to ADT array with strings of key names. Do not close this
+ *              handle. Use ObjLib_DeleteType instead.
+ */
+stock Handle:ObjLib_GetTypeKeys(ObjectType:typeDescriptor)
 {
     return Handle:GetArrayCell(Handle:typeDescriptor, _:ObjectType_Keys);
 }
@@ -1324,8 +1359,14 @@ static stock ObjLib_SetTypeNameIndex(ObjectType:typeDescriptor, Handle:nameIndex
     SetArrayCell(Handle:typeDescriptor, _:ObjectType_NameIndex, nameIndex);
 }
 
-/** Internal use only! */
-static stock Handle:ObjLib_GetTypeDataTypes(ObjectType:typeDescriptor)
+/**
+ * Gets the list of data types for each key in an object type descriptor.
+ *
+ * @param typeDescriptor    Type descriptor to inspect.
+ *
+ * @return      Handle to ADT array of ObjectDataType entries.
+ */
+stock Handle:ObjLib_GetTypeDataTypes(ObjectType:typeDescriptor)
 {
     return Handle:GetArrayCell(Handle:typeDescriptor, _:ObjectType_DataTypes);
 }
@@ -1498,25 +1539,6 @@ static stock ObjLib_KeyTypeMismatchError(ObjectDataType:actual, ObjectDataType:e
     ObjLib_DataTypeToString(expected, expectedName, sizeof(expectedName));
     
     ThrowError("Key type mismatch. Expected \"%s\", but \"%s\" was used.", expectedName, actualName);
-}
-
-static stock ObjLib_DataTypeToString(ObjectDataType:dataType, String:buffer[], maxlen)
-{
-    switch (dataType)
-    {
-        case ObjDataType_Any:           return strcopy(buffer, maxlen, "Any");
-        case ObjDataType_Cell:          return strcopy(buffer, maxlen, "Cell");
-        case ObjDataType_Bool:          return strcopy(buffer, maxlen, "Bool");
-        case ObjDataType_Float:         return strcopy(buffer, maxlen, "Handle");
-        case ObjDataType_Handle:        return strcopy(buffer, maxlen, "Float");
-        case ObjDataType_Function:      return strcopy(buffer, maxlen, "Function");
-        case ObjDataType_Array:         return strcopy(buffer, maxlen, "Array");
-        case ObjDataType_String:        return strcopy(buffer, maxlen, "String");
-        case ObjDataType_Object:        return strcopy(buffer, maxlen, "Object");
-        case ObjDataType_ObjectType:    return strcopy(buffer, maxlen, "ObjectType");
-    }
-    
-    return 0;
 }
 
 static stock ObjLib_ValidateObject(Object:object)

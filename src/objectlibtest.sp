@@ -242,3 +242,71 @@ public TestControlAction:CloneMutableToMutable(TestCase:testCase)
     ObjLib_DeleteType(type);
     return Test_Continue;
 }
+
+/**
+ * Demonstrates usage of immutable objects.
+ */
+stock ImmutableObjectExample()
+{
+    new String:buffer[64];
+    new String:buffer2[64];
+    
+    // Declare a type.
+    new ObjectType:personType = ObjLib_CreateType();
+    ObjLib_AddKey(personType, "name", ObjDataType_String);
+    ObjLib_AddKey(personType, "skillPoints", ObjDataType_Cell);
+    ObjLib_AddKey(personType, "bestFriend", ObjDataType_Object);
+    
+    // Create an immutable person objects.
+    new Object:alice = ObjLib_CreateObject(personType, false);
+    new Object:bob = ObjLib_CreateObject(personType, false);
+    
+    // Initialize Alice. Note the use of data types. Trying to use
+    // ObjLib_SetCell on a key with another data type will cause a run time
+    // error. The get/set functions are also tagged so that the compiler can do
+    // tag checking (trying to set a cell in a float would trigger a warning).
+    ObjLib_SetString(alice, "name", "Alice");
+    ObjLib_SetCell(alice, "skillPoints", 100);
+    ObjLib_SetObject(alice, "bestFriend", bob);
+    
+    // Initialize Bob.
+    ObjLib_SetString(bob, "name", "Bob");
+    ObjLib_SetCell(bob, "skillPoints", 50);
+    ObjLib_SetObject(bob, "bestFriend", alice);
+    
+    // Print Alice.
+    PrintToServer("Alice");
+    ObjLib_GetString(alice, "name", buffer, sizeof(buffer));
+    PrintToServer("name: %s", buffer);
+    PrintToServer("skillPoints: %d", ObjLib_GetCell(alice, "skillPoints"));
+    ObjLib_GetString(ObjLib_GetObject(alice, "bestFriend"), "name", buffer, sizeof(buffer));    // Get name of best friend.
+    PrintToServer("bestFriend: %s", buffer);
+    
+    // Demonstrate that immutable objects share type descriptor.
+    // Note that this doesn't mean that ALL immutable objects use the exact same
+    // type, but that they share the type they're based on when they were
+    // created. This will save memory compared to mutable objects.
+    new ObjectType:aliceType = ObjLib_GetObjectType(alice);
+    new ObjectType:bobType = ObjLib_GetObjectType(bob);
+    if (aliceType == bobType)
+    {
+        PrintToServer("Alice and bob are immutable objects, and use the same type descriptor.");
+    }
+    
+    // Reflection. List data types for each key in personType.
+    new Handle:keys = ObjLib_GetTypeKeys(personType);
+    new Handle:dataTypes = ObjLib_GetTypeDataTypes(personType);
+    new len = GetArraySize(keys);
+    
+    PrintToServer("Keys in personType");
+    for (new i = 0; i < len; i ++)
+    {
+        // Get key name.
+        GetArrayString(keys, i, buffer, sizeof(buffer));
+        
+        // Get data type string.
+        ObjLib_DataTypeToString(ObjectDataType:GetArrayCell(dataTypes, i), buffer2, sizeof(buffer2));
+        
+        PrintToServer("%s: %s", buffer, buffer2);
+    }
+}
