@@ -687,6 +687,263 @@ stock ObjLib_SetCell(Object:object, const String:keyName[], any:value)
 }
 
 /**
+ * Gets a value of type "bool" from the specified key.
+ *
+ * @param object    Object to get value from.
+ * @param keyName   Name of key. Case sensitive.
+ *
+ * @return          Value in the specified key.
+ *
+ * @error           Invalid object, key name or key type mismatch.
+ */
+stock bool:ObjLib_GetBool(Object:object, const String:keyName[])
+{
+    new keyIndex = ObjLib_GetKeyIndexOrFail(object, keyName);
+    return ObjLib_GetBoolAt(object, keyIndex);
+}
+
+/**
+ * Sets a value of type "bool" in the specified key.
+ *
+ * @param object    Object to update.
+ * @param keyName   Name of key. Case sensitive.
+ * @param value     Value to set.
+ *
+ * @error           Invalid object, key name or key type mismatch.
+ */
+stock ObjLib_SetBool(Object:object, const String:keyName[], bool:value)
+{
+    new keyIndex = ObjLib_GetKeyIndexOrFail(object, keyName);
+    ObjLib_SetBoolAt(object, keyIndex, value);
+}
+
+/**
+ * Gets a value of type "float" from the specified key.
+ *
+ * @param object    Object to get value from.
+ * @param keyName   Name of key. Case sensitive.
+ *
+ * @return          Value in the specified key.
+ *
+ * @error           Invalid object, key name or key type mismatch.
+ */
+stock Float:ObjLib_GetFloat(Object:object, const String:keyName[])
+{
+    new keyIndex = ObjLib_GetKeyIndexOrFail(object, keyName);
+    return ObjLib_GetFloatAt(object, keyIndex);
+}
+
+/**
+ * Sets a value of type "float" in the specified key.
+ *
+ * @param object    Object to update.
+ * @param keyName   Name of key. Case sensitive.
+ * @param value     Value to set.
+ *
+ * @error           Invalid object, key name or key type mismatch.
+ */
+stock ObjLib_SetFloat(Object:object, const String:keyName[], Float:value)
+{
+    new keyIndex = ObjLib_GetKeyIndexOrFail(object, keyName);
+    ObjLib_SetFloatAt(object, keyIndex, value);
+}
+
+/**
+ * Gets a value of type "handle" from the specified key.
+ *
+ * @param object    Object to get value from.
+ * @param keyName   Name of key. Case sensitive.
+ *
+ * @return          Value in the specified key.
+ *
+ * @error           Invalid object, key name or key type mismatch.
+ */
+stock Handle:ObjLib_GetHandle(Object:object, const String:keyName[])
+{
+    new keyIndex = ObjLib_GetKeyIndexOrFail(object, keyName);
+    return ObjLib_GetHandleAt(object, keyIndex);
+}
+
+/**
+ * Sets a value of type "handle" in the specified key.
+ *
+ * @param object    Object to update.
+ * @param keyName   Name of key. Case sensitive.
+ * @param value     Value to set.
+ *
+ * @error           Invalid object, key name or key type mismatch.
+ */
+stock ObjLib_SetHandle(Object:object, const String:keyName[], Handle:value)
+{
+    new keyIndex = ObjLib_GetKeyIndexOrFail(object, keyName);
+    ObjLib_SetHandleAt(object, keyIndex, value);
+}
+
+/**
+ * Gets a value of type "function" from the specified key.
+ *
+ * @param object    Object to get value from.
+ * @param keyName   Name of key. Case sensitive.
+ *
+ * @return          Value in the specified key.
+ *
+ * @error           Invalid object, key name or key type mismatch.
+ */
+stock Function:ObjLib_GetFunction(Object:object, const String:keyName[])
+{
+    new keyIndex = ObjLib_GetKeyIndexOrFail(object, keyName);
+    return ObjLib_GetFunctionAt(object, keyIndex);
+}
+
+/**
+ * Sets a value of type "function" in the specified key.
+ *
+ * @param object    Object to update.
+ * @param keyName   Name of key. Case sensitive.
+ * @param value     Value to set.
+ *
+ * @error           Invalid object, key name or key type mismatch.
+ */
+stock ObjLib_SetFunction(Object:object, const String:keyName[], Function:value)
+{
+    new keyIndex = ObjLib_GetKeyIndexOrFail(object, keyName);
+    ObjLib_SetFunctionAt(object, keyIndex, value);
+}
+
+/**
+ * Gets a value of type "array" in the specified key.
+ *
+ * @param object    Object to get value from.
+ * @param keyName   Name of key. Case sensitive.
+ * @param buffer    Destination buffer.
+ * @param maxlen    Size of buffer.
+ *
+ * @return          Number of cells copied.
+ *
+ * @error           Invalid object, key name or key type mismatch.
+ */
+stock ObjLib_GetArray(Object:object, const String:keyName[], any:buffer[], maxlen)
+{
+    new keyIndex = ObjLib_GetKeyIndexOrFail(object, keyName);
+    return ObjLib_GetArrayAt(object, keyIndex, buffer, maxlen);
+}
+
+/**
+ * Sets a value of type "array" in the specified key.
+ *
+ * @param object    Object to update.
+ * @param keyName   Name of key. Case sensitive.
+ * @param values    Array to set.
+ * @param maxlen    Size of array.
+ *
+ * @return          Number of cells copied.
+ *
+ * @error           Invalid object, key name or key type mismatch.
+ */
+stock ObjLib_SetArray(Object:object, const String:keyName[], const any:values[], maxlen)
+{
+    new keyIndex = ObjLib_GetKeyIndexOrFail(object, keyName);
+    return ObjLib_SetArrayAt(object, keyIndex, values, maxlen);
+}
+
+/**
+ * Gets a value of type "string" in the specified key.
+ *
+ * @param object    Object to get value from.
+ * @param keyName   Name of key. Case sensitive.
+ * @param buffer    Destination buffer.
+ * @param maxlen    Size of buffer.
+ *
+ * @return          Number of characters copied.
+ *
+ * @error           Invalid object, key name or key type mismatch.
+ */
+stock ObjLib_GetString(Object:object, const String:keyName[], String:buffer[], maxlen)
+{
+    new keyIndex = ObjLib_GetKeyIndexOrFail(object, keyName);
+    return ObjLib_GetStringAt(object, keyIndex, buffer, maxlen);
+}
+
+/**
+ * Sets a value of type "string" in the specified key.
+ *
+ * @param object    Object to update.
+ * @param keyName   Name of key. Case sensitive.
+ * @param value     String to set.
+ *
+ * @return          Number of characters copied.
+ *
+ * @error           Invalid object, key name or key type mismatch.
+ */
+stock ObjLib_SetString(Object:object, const String:keyName[], const String:value[])
+{
+    new keyIndex = ObjLib_GetKeyIndexOrFail(object, keyName);
+    return ObjLib_SetStringAt(object, keyIndex, value);
+}
+
+/**
+ * Gets a value of type "object" from the specified key.
+ *
+ * @param object    Object to get value from.
+ * @param keyName   Name of key. Case sensitive.
+ *
+ * @return          Value in the specified key.
+ *
+ * @error           Invalid object, key name or key type mismatch.
+ */
+stock Object:ObjLib_GetObject(Object:object, const String:keyName[])
+{
+    new keyIndex = ObjLib_GetKeyIndexOrFail(object, keyName);
+    return ObjLib_GetObjectAt(object, keyIndex);
+}
+
+/**
+ * Sets a value of type "object" in the specified key.
+ *
+ * @param object    Object to update.
+ * @param keyName   Name of key. Case sensitive.
+ * @param value     Value to set.
+ *
+ * @error           Invalid object, key name or key type mismatch.
+ */
+stock ObjLib_SetObject(Object:object, const String:keyName[], Object:value)
+{
+    new keyIndex = ObjLib_GetKeyIndexOrFail(object, keyName);
+    ObjLib_SetObjectAt(object, keyIndex, value);
+}
+
+/**
+ * Gets a value of type "object type" from the specified key.
+ *
+ * @param object    Object to get value from.
+ * @param keyName   Name of key. Case sensitive.
+ *
+ * @return          Value in the specified key.
+ *
+ * @error           Invalid object, key name or key type mismatch.
+ */
+stock Object:ObjLib_GetObjectType(Object:object, const String:keyName[])
+{
+    new keyIndex = ObjLib_GetKeyIndexOrFail(object, keyName);
+    return ObjLib_GetObjectTypeAt(object, keyIndex);
+}
+
+/**
+ * Sets a value of type "object type" in the specified key.
+ *
+ * @param object    Object to update.
+ * @param keyName   Name of key. Case sensitive.
+ * @param value     Value to set.
+ *
+ * @error           Invalid object, key name or key type mismatch.
+ */
+stock ObjLib_SetObjectType(Object:object, const String:keyName[], ObjectType:value)
+{
+    new keyIndex = ObjLib_GetKeyIndexOrFail(object, keyName);
+    ObjLib_SetObjectTypeAt(object, keyIndex, value);
+}
+
+/**
  * Gets a value of type "any" at the specified key index.
  *
  * @param object    Object to get value from.
