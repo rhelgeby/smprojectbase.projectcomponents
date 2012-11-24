@@ -67,12 +67,55 @@ InitObjectTests()
     new TestCase:cloneMutableToMutableTest = PawnUnit_CreateTestCase("Clone mutable to mutable object");
     PawnUnit_AddTestPhase(cloneMutableToMutableTest, CloneMutableToMutable);
     
+    // Data type tests. These are basically testing type and tag verification
+    // since the internal data type is cell anyways.
+    new TestCase:anyTypeTest = PawnUnit_CreateTestCase("\"Any\" data type");
+    PawnUnit_AddTestPhase(anyTypeTest, AnyTypeTest);
+    
+    new TestCase:cellTypeTest = PawnUnit_CreateTestCase("Cell data type");
+    PawnUnit_AddTestPhase(cellTypeTest, CellTypeTest);
+    
+    new TestCase:boolTypeTest = PawnUnit_CreateTestCase("Boolean data type");
+    PawnUnit_AddTestPhase(boolTypeTest, BoolTypeTest);
+    
+    new TestCase:floatTypeTest = PawnUnit_CreateTestCase("Float data type");
+    PawnUnit_AddTestPhase(floatTypeTest, FloatTypeTest);
+    
+    new TestCase:handleTypeTest = PawnUnit_CreateTestCase("Handle data type");
+    PawnUnit_AddTestPhase(handleTypeTest, HandleTypeTest);
+    
+    new TestCase:functionTypeTest = PawnUnit_CreateTestCase("Function data type");
+    PawnUnit_AddTestPhase(functionTypeTest, FunctionTypeTest);
+    
+    new TestCase:arrayTypeTest = PawnUnit_CreateTestCase("Array data type");
+    PawnUnit_AddTestPhase(arrayTypeTest, ArrayTypeTest);
+    
+    new TestCase:stringTypeTest = PawnUnit_CreateTestCase("String data type");
+    PawnUnit_AddTestPhase(stringTypeTest, StringTypeTest);
+    
+    new TestCase:objectTypeTest = PawnUnit_CreateTestCase("Object data type");
+    PawnUnit_AddTestPhase(objectTypeTest, ObjectTypeTest);
+    
+    new TestCase:objectTypeTypeTest = PawnUnit_CreateTestCase("ObjectType data type");
+    PawnUnit_AddTestPhase(objectTypeTypeTest, ObjectTypeTypeTest);
+    
     PawnUnit_AddTestCase(ObjectTests, createMutableObjectTest);
     PawnUnit_AddTestCase(ObjectTests, createImmutableObjectTest);
     PawnUnit_AddTestCase(ObjectTests, cloneImmutableToImmutableTest);
     PawnUnit_AddTestCase(ObjectTests, cloneImmutableToMutableTest);
     PawnUnit_AddTestCase(ObjectTests, cloneMutableToImmutableTest);
     PawnUnit_AddTestCase(ObjectTests, cloneMutableToMutableTest);
+    
+    PawnUnit_AddTestCase(ObjectTests, anyTypeTest);
+    PawnUnit_AddTestCase(ObjectTests, cellTypeTest);
+    PawnUnit_AddTestCase(ObjectTests, boolTypeTest);
+    PawnUnit_AddTestCase(ObjectTests, floatTypeTest);
+    PawnUnit_AddTestCase(ObjectTests, handleTypeTest);
+    PawnUnit_AddTestCase(ObjectTests, functionTypeTest);
+    PawnUnit_AddTestCase(ObjectTests, arrayTypeTest);
+    PawnUnit_AddTestCase(ObjectTests, stringTypeTest);
+    PawnUnit_AddTestCase(ObjectTests, objectTypeTest);
+    PawnUnit_AddTestCase(ObjectTests, objectTypeTypeTest);
 }
 
 /******************
@@ -141,7 +184,7 @@ public TestControlAction:CreateMutableObjectTest(TestCase:testCase)
     
     // Mutable objects should clone their type and not refer the original type
     // directly.
-    AssertMsg(ObjLib_GetObjectType(object) != type, "type not cloned")
+    AssertMsg(ObjLib_GetTypeDescriptor(object) != type, "type not cloned")
     
     ObjLib_DeleteObject(object);
     ObjLib_DeleteType(type);
@@ -157,7 +200,7 @@ public TestControlAction:CreateImmutableObjectTest(TestCase:testCase)
     AssertMsg(object != INVALID_OBJECT, "failed to create object")
     
     // Immutable should use the type directly.
-    AssertMsg(ObjLib_GetObjectType(object) == type, "type not same")
+    AssertMsg(ObjLib_GetTypeDescriptor(object) == type, "type not same")
     
     ObjLib_DeleteObject(object);
     ObjLib_DeleteType(type);
@@ -176,7 +219,7 @@ public TestControlAction:CloneImmutableToImmutable(TestCase:testCase)
     AssertMsg(clonedObject != INVALID_OBJECT, "failed to clone object")
     
     // Immutable clone should use the same type.
-    AssertMsg(ObjLib_GetObjectType(clonedObject) == type, "type not same")
+    AssertMsg(ObjLib_GetTypeDescriptor(clonedObject) == type, "type not same")
     
     ObjLib_DeleteObject(object);
     ObjLib_DeleteType(type);
@@ -195,7 +238,7 @@ public TestControlAction:CloneImmutableToMutable(TestCase:testCase)
     AssertMsg(clonedObject != INVALID_OBJECT, "failed to clone object")
     
     // Mutable clone should clone type.
-    AssertMsg(ObjLib_GetObjectType(clonedObject) != type, "type not cloned")
+    AssertMsg(ObjLib_GetTypeDescriptor(clonedObject) != type, "type not cloned")
     
     ObjLib_DeleteObject(object);
     ObjLib_DeleteObject(clonedObject);
@@ -215,7 +258,7 @@ public TestControlAction:CloneMutableToImmutable(TestCase:testCase)
     AssertMsg(clonedObject != INVALID_OBJECT, "failed to clone object")
     
     // Immutable clone from mutable object should clone type.
-    AssertMsg(ObjLib_GetObjectType(clonedObject) != type, "type not cloned")
+    AssertMsg(ObjLib_GetTypeDescriptor(clonedObject) != type, "type not cloned")
     
     ObjLib_DeleteObject(object);
     ObjLib_DeleteObject(clonedObject);
@@ -235,13 +278,215 @@ public TestControlAction:CloneMutableToMutable(TestCase:testCase)
     AssertMsg(clonedObject != INVALID_OBJECT, "failed to clone object")
     
     // Mutable clone from mutable object should clone type.
-    AssertMsg(ObjLib_GetObjectType(clonedObject) != type, "type not cloned")
+    AssertMsg(ObjLib_GetTypeDescriptor(clonedObject) != type, "type not cloned")
     
     ObjLib_DeleteObject(object);
     ObjLib_DeleteObject(clonedObject);
     ObjLib_DeleteType(type);
     return Test_Continue;
 }
+
+public TestControlAction:AnyTypeTest(TestCase:testCase)
+{
+    new ObjectType:type = ObjLib_CreateType();
+    
+    // Create mutable object with dummy key of "any" type.
+    new Object:object = ObjLib_CreateObject(type, true);
+    ObjLib_AddObjectKey(object, "dummyKey", ObjDataType_Any);
+    
+    new Float:dummy1 = 2.5;
+    new dummy2 = 10;
+    
+    // Verify that it's possible to set and retrieve different data types on the
+    // same key. Keys with other data types would throw a type mismatch error,
+    // this should not happen when using "any" as data type.
+    
+    // Set and verify dummy 1.
+    ObjLib_SetAny(object, "dummyKey", dummy1);
+    AssertMsg(FloatEquals(dummy1, Float:ObjLib_GetAny(object, "dummyKey")), "dummy1 value not equal")
+    
+    // Set and verify dummy 2.
+    ObjLib_SetAny(object, "dummyKey", dummy2);
+    AssertMsg(dummy2 == ObjLib_GetAny(object, "dummyKey"), "dummy2 value not equal")
+    
+    ObjLib_DeleteObject(object);
+    ObjLib_DeleteType(type);
+    return Test_Continue;
+}
+
+public TestControlAction:CellTypeTest(TestCase:testCase)
+{
+    new ObjectType:type = ObjLib_CreateType();
+    
+    // Create mutable object with dummy key of cell type.
+    new Object:object = ObjLib_CreateObject(type, true);
+    ObjLib_AddObjectKey(object, "dummyKey", ObjDataType_Cell);
+    
+    // Set and verify a dummy value.
+    new dummy = 10;
+    ObjLib_SetCell(object, "dummyKey", dummy);
+    Assert(CellEquals(dummy, ObjLib_GetCell(object, "dummyKey")));
+    
+    ObjLib_DeleteObject(object);
+    ObjLib_DeleteType(type);
+    return Test_Continue;
+}
+
+public TestControlAction:BoolTypeTest(TestCase:testCase)
+{
+    new ObjectType:type = ObjLib_CreateType();
+    
+    // Create mutable object with dummy key of boolean type.
+    new Object:object = ObjLib_CreateObject(type, true);
+    ObjLib_AddObjectKey(object, "dummyKey", ObjDataType_Bool);
+    
+    // Set and verify a dummy value.
+    new bool:dummy = true;
+    ObjLib_SetBool(object, "dummyKey", dummy);
+    Assert(True(ObjLib_GetBool(object, "dummyKey")));
+    
+    ObjLib_DeleteObject(object);
+    ObjLib_DeleteType(type);
+    return Test_Continue;
+}
+
+public TestControlAction:FloatTypeTest(TestCase:testCase)
+{
+    new ObjectType:type = ObjLib_CreateType();
+    
+    // Create mutable object with dummy key of float type.
+    new Object:object = ObjLib_CreateObject(type, true);
+    ObjLib_AddObjectKey(object, "dummyKey", ObjDataType_Float);
+    
+    // Set and verify a dummy value.
+    new Float:dummy = 2.5;
+    ObjLib_SetFloat(object, "dummyKey", dummy);
+    AssertMsg(FloatEquals(dummy, ObjLib_GetFloat(object, "dummyKey")), "not equal")
+    
+    ObjLib_DeleteObject(object);
+    ObjLib_DeleteType(type);
+    return Test_Continue;
+}
+
+public TestControlAction:HandleTypeTest(TestCase:testCase)
+{
+    new ObjectType:type = ObjLib_CreateType();
+    
+    // Create mutable object with dummy key of handle type.
+    new Object:object = ObjLib_CreateObject(type, true);
+    ObjLib_AddObjectKey(object, "dummyKey", ObjDataType_Handle);
+    
+    // Set and verify a dummy value.
+    new Handle:dummy = Handle:10;
+    ObjLib_SetHandle(object, "dummyKey", dummy);
+    AssertMsg(dummy == ObjLib_GetHandle(object, "dummyKey"), "not equal")
+    
+    ObjLib_DeleteObject(object);
+    ObjLib_DeleteType(type);
+    return Test_Continue;
+}
+
+public TestControlAction:FunctionTypeTest(TestCase:testCase)
+{
+    new ObjectType:type = ObjLib_CreateType();
+    
+    // Create mutable object with dummy key of function reference type.
+    new Object:object = ObjLib_CreateObject(type, true);
+    ObjLib_AddObjectKey(object, "dummyKey", ObjDataType_Function);
+    
+    // Set and verify a dummy value.
+    new Function:dummy = Function:10;
+    ObjLib_SetFunction(object, "dummyKey", dummy);
+    AssertMsg(dummy == ObjLib_GetFunction(object, "dummyKey"), "not equal")
+    
+    ObjLib_DeleteObject(object);
+    ObjLib_DeleteType(type);
+    return Test_Continue;
+}
+
+public TestControlAction:ArrayTypeTest(TestCase:testCase)
+{
+    new ObjectType:type = ObjLib_CreateType(3);
+    
+    // Create mutable object with dummy key of array type.
+    new Object:object = ObjLib_CreateObject(type, true);
+    ObjLib_AddObjectKey(object, "dummyKey", ObjDataType_Array);
+    
+    // Set dummy values.
+    new dummy[] = {1, 2, 3};
+    ObjLib_SetArray(object, "dummyKey", dummy, sizeof(dummy));
+    
+    // Verify values.
+    new result[3];
+    ObjLib_GetArray(object, "dummyKey", result, sizeof(result));
+    for (new i = 0; i < 3; i++)
+    {
+        AssertMsg(CellEquals(dummy[i], result[i]), "not equal at index %d", i)
+    }
+    
+    ObjLib_DeleteObject(object);
+    ObjLib_DeleteType(type);
+    return Test_Continue;
+}
+
+public TestControlAction:StringTypeTest(TestCase:testCase)
+{
+    new ObjectType:type = ObjLib_CreateType(16);
+    
+    // Create mutable object with dummy key of array type.
+    new Object:object = ObjLib_CreateObject(type, true);
+    ObjLib_AddObjectKey(object, "dummyKey", ObjDataType_String);
+    
+    // Set dummy string.
+    new String:dummy[] = "A Dummy String";
+    ObjLib_SetString(object, "dummyKey", dummy);
+    
+    // Verify string.
+    new String:result[16];
+    ObjLib_GetString(object, "dummyKey", result, sizeof(result));
+    Assert(StringEquals(dummy, result));
+    
+    ObjLib_DeleteObject(object);
+    ObjLib_DeleteType(type);
+    return Test_Continue;
+}
+
+public TestControlAction:ObjectTypeTest(TestCase:testCase)
+{
+    new ObjectType:type = ObjLib_CreateType();
+    
+    // Create mutable object with dummy key of object reference type.
+    new Object:object = ObjLib_CreateObject(type, true);
+    ObjLib_AddObjectKey(object, "dummyKey", ObjDataType_Object);
+    
+    // Set and verify a dummy value.
+    new Object:dummy = Object:10;
+    ObjLib_SetObject(object, "dummyKey", dummy);
+    AssertMsg(dummy == ObjLib_GetObject(object, "dummyKey"), "not equal")
+    
+    ObjLib_DeleteObject(object);
+    ObjLib_DeleteType(type);
+    return Test_Continue;
+}
+
+public TestControlAction:ObjectTypeTypeTest(TestCase:testCase)
+{
+    new ObjectType:type = ObjLib_CreateType();
+    
+    // Create mutable object with dummy key of type descriptor type.
+    new Object:object = ObjLib_CreateObject(type, true);
+    ObjLib_AddObjectKey(object, "dummyKey", ObjDataType_ObjectType);
+    
+    // Set and verify a dummy value.
+    new ObjectType:dummy = ObjectType:10;
+    ObjLib_SetObjectType(object, "dummyKey", dummy);
+    AssertMsg(dummy == ObjLib_GetObjectType(object, "dummyKey"), "not equal")
+    
+    ObjLib_DeleteObject(object);
+    ObjLib_DeleteType(type);
+    return Test_Continue;
+}
+
 
 /**
  * Demonstrates usage of immutable objects.
