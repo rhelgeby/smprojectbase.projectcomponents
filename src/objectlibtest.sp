@@ -493,16 +493,18 @@ public TestControlAction:ObjectTypeTypeTest(TestCase:testCase)
  */
 stock ImmutableObjectExample()
 {
+    // Note: This code is not tested yet.
+    
     new String:buffer[64];
     new String:buffer2[64];
     
-    // Declare a type.
+    // Declare a "person" type.
     new ObjectType:personType = ObjLib_CreateType();
     ObjLib_AddKey(personType, "name", ObjDataType_String);
     ObjLib_AddKey(personType, "skillPoints", ObjDataType_Cell);
     ObjLib_AddKey(personType, "bestFriend", ObjDataType_Object);
     
-    // Create an immutable person objects.
+    // Create immutable person objects.
     new Object:alice = ObjLib_CreateObject(personType, false);
     new Object:bob = ObjLib_CreateObject(personType, false);
     
@@ -531,8 +533,8 @@ stock ImmutableObjectExample()
     // Note that this doesn't mean that ALL immutable objects use the exact same
     // type, but that they share the type they're based on when they were
     // created. This will save memory compared to mutable objects.
-    new ObjectType:aliceType = ObjLib_GetObjectType(alice);
-    new ObjectType:bobType = ObjLib_GetObjectType(bob);
+    new ObjectType:aliceType = ObjLib_GetTypeDescriptor(alice);
+    new ObjectType:bobType = ObjLib_GetTypeDescriptor(bob);
     if (aliceType == bobType)
     {
         PrintToServer("Alice and bob are immutable objects, and use the same type descriptor.");
@@ -554,4 +556,9 @@ stock ImmutableObjectExample()
         
         PrintToServer("%s: %s", buffer, buffer2);
     }
+    
+    // Delete objects and their type when no longer in use.
+    ObjLib_DeleteObject(alice);
+    ObjLib_DeleteObject(bob);
+    ObjLib_DeleteType(personType);
 }

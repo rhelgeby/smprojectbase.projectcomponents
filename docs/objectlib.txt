@@ -22,6 +22,8 @@ MAIN FEATURES
 * Supports built-in and custom data validation
   The library supports basic validation constraints such as min/max limits in
   addition to a forward where the user can do custom validation of the object.
+  
+  TO BE IMPLEMENTED.
 
 * Type safe (as far as it's possible in SourcePawn)
   Each key is assigned a type. This structure requires you to use appropriate
@@ -31,10 +33,30 @@ MAIN FEATURES
 * Import (and validate) data from Valve's KeyValue file format
   Creates objects based on the contents of a KeyValue file, and a user defined
   object type descriptor with optional validation constraints.
+  
+  TO BE IMPLEMENTED. (Probably as a separate library that depend on this one.)
 
 * Reflection
   Objects or types can be inspected at run time. Loop through keys, get data
   types or validation constraints.
+
+
+WHY USE THIS
+------------
+
+This is an alternative to enumerated arrays. If you use various types of data
+sets, such as player profiles or weapon profiles, you don't have to create
+specific storage implementation of each data set when using this library. You
+just need to define types and create objects.
+
+If you have many data sets, a "hard coded" manual solution for each set will
+result in somewhat repeated code.
+
+If you also have validation constraints, that code will be repeated too.
+
+This library will help you with everything from reading keyvalue files to
+storage and validation. You just need to declare types and validation
+constraints and the library will enforce it.
 
 
 WHAT IT DOESN'T DO
@@ -80,10 +102,172 @@ RESOURCE USAGE
 
   However, immutable objects are more memory efficient than mutable objects,
   since immutable objects share their type descriptor between objects of the
-  same type. Mutable objects have each their own type descriptor.
+  same type. Mutable objects have their own private type descriptor.
   
   Use immutable objects when you can to reduce memory overhead, especially on
   object types that aren't modified after creation.
 
 * A little memory and CPU overhead is a trade off for writing more code
   yourself. It can still be efficient if used correctly.
+
+
+How to Create and Use Objects
+=============================
+
+Also see the complete example in ImmutableObjectExample in objectlibtest.sp.
+
+
+DECLARING TYPES
+---------------
+
+Types are a composite of key names and their data types, which is stored in a
+type descriptor.
+
+Create a type descriptor by using the ObjLib_CreateType function. Then use
+ObjLib_AddKey to add keys to the type:
+
+    // Declare a "person" type.
+    new ObjectType:personType = ObjLib_CreateType();
+    ObjLib_AddKey(personType, "name", ObjDataType_String);
+    ObjLib_AddKey(personType, "skillPoints", ObjDataType_Cell);
+    ObjLib_AddKey(personType, "bestFriend", ObjDataType_Object);
+
+This type descriptor can be used as a template to create "person" objects.
+Immutable objects will use this type descriptor directly, while mutable objects
+will clone and use a private one.
+
+When you create an immutable object with this type, the type descriptor will be
+locked. You can still create more objects based on it, but keys cannot be added
+or removed unless you create mutable object or clone the type into a separate
+unlocked type.
+
+
+CREATING OBJECTS
+----------------
+
+There are two types of objects: Mutable and immutable. Mutable objects allow you
+to add or remove keys after they were created, while immutable objects only
+allow the data in existing keys to be modified.
+
+The most optimal solution is to use immutable objects when you can because to
+reduce memory overhead.
+
+Create objects using the ObjLib_CreateObject function and specify which type of
+object you're creating. Also set mutableObject to false if you're creating an
+immutable object:
+
+    // Create immutable person objects.
+    new Object:alice = ObjLib_CreateObject(personType, false);
+    new Object:bob = ObjLib_CreateObject(personType, false);
+
+Now there's two person objects with the keys described in the person type
+descriptor. Simply use the set functions to initialize object data:
+
+    // Setting values.
+    ObjLib_SetString(alice, "name", "Alice");
+    ObjLib_SetCell(alice, "skillPoints", 100);
+    ObjLib_SetObject(alice, "bestFriend", bob);
+    
+    // Retrieving values.
+    new skillPoints = ObjLib_GetCell(alice, "skillPoints");
+
+Note the use of functions that match the data type for each key. If there's a
+mismatch the compiler will probably first warn about a tag mismatch, and if not,
+the object library will detect a type mismatch at runtime and throw an error.
+This pattern is chosen to enforce type safety as far as SourcePawn can do.
+
+There are also functions for refering keys by index instead of names (like
+ObjLib_SetCellAt) so that it's possible to do optimizations in busy code such as
+loops. You retreive key indexes by using ObjLib_GetKeyIndex and cache them.
+Otherwise the object library is using ADT tries to map key names to indexes for
+fast lookup.
+
+
+CLONING TYPES AND OBJECTS
+-------------------------
+
+When a type is used to create an immutable objects, it's locked. But it can be
+cloned to a separate type so you can continue modifying it.
+
+Cloning objects need special treatment about the type descriptor (which is
+handled internally by the object library). It's important to know about this so
+that memory management can be done properly. There's one special case.
+
+
+AVOID MEMORY LEAK WHEN CLONING FROM MUTABLE TO IMMUTABLE OBJECT
+
+Cloning a mutable object into an immutable object will create a clone of the
+type descriptor. The cloned object is using it, but the cloned type is not
+attached to anything since it's locked and can be shared between multiple
+objects.
+
+Delete this cloned type when it's no longer in use by any object. It can be
+retrieved from the cloned object by using ObjLib_GetTypeDescriptor. If you
+delete the cloned immutable object without deleting the cloned type, there will
+be a memory leak.
+
+Example with leak:
+
+    new Object:mutableObject = ...      // some mutable object.
+    new Object:immutableObject = ObjLib_CloneObject(mutableObject, false);
+    
+    ObjLib_DeleteObject(immutableObject);
+    
+    // INVISIBLE LEAK!
+    // There was a type descriptor cloned behind the scenes and we've lost the
+    // reference to it.
+
+How to properly handle this:
+
+    new Object:mutableObject = ...      // some mutable object.
+    new Object:immutableObject = ObjLib_CloneObject(mutableObject, false);
+    
+    new ObjectType:typeFromImmutableObject = ObjLib_GetTypeDescriptor(immutableObject);
+    ObjLib_DeleteObject(immutableObject);
+    ObjLib_DeleteObjectType(typeFromImmutableObject);   // Deleting hidden cloned type.
+
+
+MEMORY MANAGEMENT
+-----------------
+
+When objects or types are no longer used, they must be deleted or there will be
+memory leaks.
+
+    ObjLib_DeleteObject(alice);
+    ObjLib_DeleteObject(bob);
+    ObjLib_DeleteType(personType);
+
+These functions will by default also reset the references to INVALID_OBJECT or
+INVALID_OBJECT_TYPE.
+
+Make sure that you don't delete a type that's still used by other objects. If
+those objects try to access their type descriptor there will be an error.
+
+Mutable objects that have their own private type descriptors will delete them
+itself. Trying to delete their type descriptor will trigger an error because
+they're attatched to an object.
+
+
+REFLECTION
+----------
+
+Since everything is declared at run time, it's also possible to inspect object
+meta data. Here's an example that will get the list of keys and their data
+types:
+
+    // Reflection. List data types for each key in personType.
+    new Handle:keys = ObjLib_GetTypeKeys(personType);
+    new Handle:dataTypes = ObjLib_GetTypeDataTypes(personType);
+    new len = GetArraySize(keys);
+    
+    PrintToServer("Keys in personType");
+    for (new i = 0; i < len; i ++)
+    {
+        // Get key name.
+        GetArrayString(keys, i, buffer, sizeof(buffer));
+        
+        // Get data type string.
+        ObjLib_DataTypeToString(ObjectDataType:GetArrayCell(dataTypes, i), buffer2, sizeof(buffer2));
+        
+        PrintToServer("%s: %s", buffer, buffer2);
+    }
