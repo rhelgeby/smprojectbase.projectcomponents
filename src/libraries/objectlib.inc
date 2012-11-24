@@ -104,6 +104,8 @@ enum ObjectTypeData
     ObjectType_Constraints,     /** Handle to validation constraints info for each key. */
 }
 
+/*____________________________________________________________________________*/
+
 /**
  * Creates an empty object type descriptor.
  *
@@ -153,6 +155,8 @@ stock ObjectType:ObjLib_CreateType(blockSize = 1, keySzie = 8)
     return ObjectType:typeDescriptor;
 }
 
+/*____________________________________________________________________________*/
+
 /**
  * Deletes an object type descriptor.
  *
@@ -195,6 +199,8 @@ stock ObjLib_DeleteType(&ObjectType:typeDescriptor, bool:resetReference = true)
         typeDescriptor = INVALID_OBJECT_TYPE;
     }
 }
+
+/*____________________________________________________________________________*/
 
 /**
  * Creates a new object type based on the specified type descriptor.
@@ -244,6 +250,8 @@ stock ObjectType:ObjLib_CloneType(ObjectType:typeDescriptor, bool:locked = false
     return ObjectType:newType;
 }
 
+/*____________________________________________________________________________*/
+
 /**
  * Returns whether the object type descriptor is valid.
  *
@@ -255,6 +263,8 @@ stock bool:ObjLib_IsValidObjectType(ObjectType:typeDescriptor)
 {
     return typeDescriptor != INVALID_OBJECT_TYPE;
 }
+
+/*____________________________________________________________________________*/
 
 /**
  * Adds a new key to an object type descriptor.
@@ -297,6 +307,8 @@ stock ObjLib_AddKey(ObjectType:typeDescriptor, const String:keyName[], ObjectDat
         ObjLib_InitializeNewValue(parent, dataType);
     }
 }
+
+/*____________________________________________________________________________*/
 
 /**
  * Removes a key from an object type descriptor, if not locked.
@@ -343,6 +355,8 @@ stock bool:ObjLib_RemoveKey(ObjectType:typeDescriptor, const String:keyName[])
     }
 }
 
+/*____________________________________________________________________________*/
+
 /**
  * Returns whether a key exist in an object type descriptor.
  *
@@ -363,6 +377,8 @@ stock bool:ObjLib_KeyExist(ObjectType:typeDescriptor, const String:keyName[])
     return false;
 }
 
+/*____________________________________________________________________________*/
+
 /**
  * Adds a new key to an object, if not locked.
  *
@@ -375,6 +391,8 @@ stock bool:ObjLib_AddObjectKey(Object:object, const String:keyName[], ObjectData
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     ObjLib_AddKey(typeDescriptor, keyName, dataType);
 }
+
+/*____________________________________________________________________________*/
 
 /**
  * Removes a key from an object, if not locked.
@@ -389,6 +407,8 @@ stock ObjLib_RemoveObjectKey(Object:object, const String:keyName[])
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     ObjLib_RemoveKey(typeDescriptor, keyName);
 }
+
+/*____________________________________________________________________________*/
 
 /**
  * Creates an empty object based on the type template.
@@ -454,6 +474,8 @@ stock Object:ObjLib_CreateObject(ObjectType:typeTemplate, bool:mutableObject = t
     return Object:object;
 }
 
+/*____________________________________________________________________________*/
+
 /**
  * Deletes an object and its data.
  *
@@ -496,6 +518,8 @@ stock ObjLib_DeleteObject(&Object:object, resetReference = true)
     }
 }
 
+/*____________________________________________________________________________*/
+
 /**
  * Creates a clone of an object and its data.
  *
@@ -505,7 +529,7 @@ stock ObjLib_DeleteObject(&Object:object, resetReference = true)
  *
  * Warning: Creating an immutable object from a mutable object will also create
  *          a clone of the source type descriptor. Delete this type descriptor 
- *          when it's no longer in use. This can be retrieved from the cloned
+ *          when it's no longer in use. It can be retrieved from the cloned
  *          object with ObjLib_GetTypeDescriptor.
  *
  * @param objectTemplate    Source object.
@@ -601,6 +625,8 @@ stock Object:ObjLib_CloneObject(Object:objectTemplate, bool:mutableObject = true
     return Object:object;
 }
 
+/*____________________________________________________________________________*/
+
 /**
  * Returns whether the object reference is valid.
  *
@@ -613,6 +639,8 @@ stock bool:ObjLib_IsValidObject(Object:object)
     return object != INVALID_OBJECT;
 }
 
+/*____________________________________________________________________________*/
+
 /**
  * Returns whether the specified object is mutable.
  *
@@ -622,6 +650,8 @@ stock bool:ObjLib_IsMutable(Object:object)
 {
     return ObjLib_IsTypeMutable(ObjLib_GetTypeDescriptor(object));
 }
+
+/*____________________________________________________________________________*/
 
 /**************************************
  *   Object data accessor functions   *
@@ -643,6 +673,8 @@ stock any:ObjLib_GetAny(Object:object, const String:keyName[])
     return ObjLib_GetAnyAt(object, keyIndex);
 }
 
+/*____________________________________________________________________________*/
+
 /**
  * Sets a value of type "any" in the specified key.
  *
@@ -657,6 +689,8 @@ stock ObjLib_SetAny(Object:object, const String:keyName[], any:value)
     new keyIndex = ObjLib_GetKeyIndexOrFail(object, keyName);
     ObjLib_SetAnyAt(object, keyIndex, value);
 }
+
+/*____________________________________________________________________________*/
 
 /**
  * Gets a value of type "cell" from the specified key.
@@ -674,6 +708,8 @@ stock ObjLib_GetCell(Object:object, const String:keyName[])
     return ObjLib_GetCellAt(object, keyIndex);
 }
 
+/*____________________________________________________________________________*/
+
 /**
  * Sets a value of type "cell" in the specified key.
  *
@@ -688,6 +724,8 @@ stock ObjLib_SetCell(Object:object, const String:keyName[], any:value)
     new keyIndex = ObjLib_GetKeyIndexOrFail(object, keyName);
     ObjLib_SetCellAt(object, keyIndex, value);
 }
+
+/*____________________________________________________________________________*/
 
 /**
  * Gets a value of type "bool" from the specified key.
@@ -705,6 +743,8 @@ stock bool:ObjLib_GetBool(Object:object, const String:keyName[])
     return ObjLib_GetBoolAt(object, keyIndex);
 }
 
+/*____________________________________________________________________________*/
+
 /**
  * Sets a value of type "bool" in the specified key.
  *
@@ -719,6 +759,8 @@ stock ObjLib_SetBool(Object:object, const String:keyName[], bool:value)
     new keyIndex = ObjLib_GetKeyIndexOrFail(object, keyName);
     ObjLib_SetBoolAt(object, keyIndex, value);
 }
+
+/*____________________________________________________________________________*/
 
 /**
  * Gets a value of type "float" from the specified key.
@@ -736,6 +778,8 @@ stock Float:ObjLib_GetFloat(Object:object, const String:keyName[])
     return ObjLib_GetFloatAt(object, keyIndex);
 }
 
+/*____________________________________________________________________________*/
+
 /**
  * Sets a value of type "float" in the specified key.
  *
@@ -750,6 +794,8 @@ stock ObjLib_SetFloat(Object:object, const String:keyName[], Float:value)
     new keyIndex = ObjLib_GetKeyIndexOrFail(object, keyName);
     ObjLib_SetFloatAt(object, keyIndex, value);
 }
+
+/*____________________________________________________________________________*/
 
 /**
  * Gets a value of type "handle" from the specified key.
@@ -767,6 +813,8 @@ stock Handle:ObjLib_GetHandle(Object:object, const String:keyName[])
     return ObjLib_GetHandleAt(object, keyIndex);
 }
 
+/*____________________________________________________________________________*/
+
 /**
  * Sets a value of type "handle" in the specified key.
  *
@@ -781,6 +829,8 @@ stock ObjLib_SetHandle(Object:object, const String:keyName[], Handle:value)
     new keyIndex = ObjLib_GetKeyIndexOrFail(object, keyName);
     ObjLib_SetHandleAt(object, keyIndex, value);
 }
+
+/*____________________________________________________________________________*/
 
 /**
  * Gets a value of type "function" from the specified key.
@@ -798,6 +848,8 @@ stock Function:ObjLib_GetFunction(Object:object, const String:keyName[])
     return ObjLib_GetFunctionAt(object, keyIndex);
 }
 
+/*____________________________________________________________________________*/
+
 /**
  * Sets a value of type "function" in the specified key.
  *
@@ -812,6 +864,8 @@ stock ObjLib_SetFunction(Object:object, const String:keyName[], Function:value)
     new keyIndex = ObjLib_GetKeyIndexOrFail(object, keyName);
     ObjLib_SetFunctionAt(object, keyIndex, value);
 }
+
+/*____________________________________________________________________________*/
 
 /**
  * Gets a value of type "array" in the specified key.
@@ -831,6 +885,8 @@ stock ObjLib_GetArray(Object:object, const String:keyName[], any:buffer[], maxle
     return ObjLib_GetArrayAt(object, keyIndex, buffer, maxlen);
 }
 
+/*____________________________________________________________________________*/
+
 /**
  * Sets a value of type "array" in the specified key.
  *
@@ -848,6 +904,8 @@ stock ObjLib_SetArray(Object:object, const String:keyName[], const any:values[],
     new keyIndex = ObjLib_GetKeyIndexOrFail(object, keyName);
     return ObjLib_SetArrayAt(object, keyIndex, values, maxlen);
 }
+
+/*____________________________________________________________________________*/
 
 /**
  * Gets a value of type "string" in the specified key.
@@ -867,6 +925,8 @@ stock ObjLib_GetString(Object:object, const String:keyName[], String:buffer[], m
     return ObjLib_GetStringAt(object, keyIndex, buffer, maxlen);
 }
 
+/*____________________________________________________________________________*/
+
 /**
  * Sets a value of type "string" in the specified key.
  *
@@ -884,6 +944,8 @@ stock ObjLib_SetString(Object:object, const String:keyName[], const String:value
     return ObjLib_SetStringAt(object, keyIndex, value);
 }
 
+/*____________________________________________________________________________*/
+
 /**
  * Gets a value of type "object" from the specified key.
  *
@@ -900,6 +962,8 @@ stock Object:ObjLib_GetObject(Object:object, const String:keyName[])
     return ObjLib_GetObjectAt(object, keyIndex);
 }
 
+/*____________________________________________________________________________*/
+
 /**
  * Sets a value of type "object" in the specified key.
  *
@@ -914,6 +978,8 @@ stock ObjLib_SetObject(Object:object, const String:keyName[], Object:value)
     new keyIndex = ObjLib_GetKeyIndexOrFail(object, keyName);
     ObjLib_SetObjectAt(object, keyIndex, value);
 }
+
+/*____________________________________________________________________________*/
 
 /**
  * Gets a value of type "object type" from the specified key.
@@ -931,6 +997,8 @@ stock ObjectType:ObjLib_GetObjectType(Object:object, const String:keyName[])
     return ObjLib_GetObjectTypeAt(object, keyIndex);
 }
 
+/*____________________________________________________________________________*/
+
 /**
  * Sets a value of type "object type" in the specified key.
  *
@@ -945,6 +1013,8 @@ stock ObjLib_SetObjectType(Object:object, const String:keyName[], ObjectType:val
     new keyIndex = ObjLib_GetKeyIndexOrFail(object, keyName);
     ObjLib_SetObjectTypeAt(object, keyIndex, value);
 }
+
+/*____________________________________________________________________________*/
 
 /**
  * Gets a value of type "any" at the specified key index.
@@ -971,6 +1041,8 @@ stock any:ObjLib_GetAnyAt(Object:object, index)
     return any:GetArrayCell(data, index);
 }
 
+/*____________________________________________________________________________*/
+
 /**
  * Sets a value of type "any" at the specified key index.
  *
@@ -992,6 +1064,8 @@ stock ObjLib_SetAnyAt(Object:object, index, any:value)
     new Handle:data = ObjLib_GetObjectData(object);
     SetArrayCell(data, index, value);
 }
+
+/*____________________________________________________________________________*/
 
 /**
  * Gets a value of type "cell" at the specified key index.
@@ -1018,6 +1092,8 @@ stock ObjLib_GetCellAt(Object:object, index)
     return GetArrayCell(data, index);
 }
 
+/*____________________________________________________________________________*/
+
 /**
  * Sets a value of type "cell" at the specified key index.
  *
@@ -1039,6 +1115,8 @@ stock ObjLib_SetCellAt(Object:object, index, value)
     new Handle:data = ObjLib_GetObjectData(object);
     SetArrayCell(data, index, value);
 }
+
+/*____________________________________________________________________________*/
 
 /**
  * Gets a value of type "bool" at the specified key index.
@@ -1065,6 +1143,8 @@ stock bool:ObjLib_GetBoolAt(Object:object, index)
     return bool:GetArrayCell(data, index);
 }
 
+/*____________________________________________________________________________*/
+
 /**
  * Sets a value of type "bool" at the specified key index.
  *
@@ -1086,6 +1166,8 @@ stock ObjLib_SetBoolAt(Object:object, index, bool:value)
     new Handle:data = ObjLib_GetObjectData(object);
     SetArrayCell(data, index, value);
 }
+
+/*____________________________________________________________________________*/
 
 /**
  * Gets a value of type "float" at the specified key index.
@@ -1112,6 +1194,8 @@ stock Float:ObjLib_GetFloatAt(Object:object, index)
     return Float:GetArrayCell(data, index);
 }
 
+/*____________________________________________________________________________*/
+
 /**
  * Sets a value of type "float" at the specified key index.
  *
@@ -1133,6 +1217,8 @@ stock ObjLib_SetFloatAt(Object:object, index, Float:value)
     new Handle:data = ObjLib_GetObjectData(object);
     SetArrayCell(data, index, value);
 }
+
+/*____________________________________________________________________________*/
 
 /**
  * Gets a value of type "handle" at the specified key index.
@@ -1159,6 +1245,8 @@ stock Handle:ObjLib_GetHandleAt(Object:object, index)
     return Handle:GetArrayCell(data, index);
 }
 
+/*____________________________________________________________________________*/
+
 /**
  * Sets a value of type "handle" at the specified key index.
  *
@@ -1180,6 +1268,8 @@ stock ObjLib_SetHandleAt(Object:object, index, Handle:value)
     new Handle:data = ObjLib_GetObjectData(object);
     SetArrayCell(data, index, value);
 }
+
+/*____________________________________________________________________________*/
 
 /**
  * Gets a value of type "function" at the specified key index.
@@ -1206,6 +1296,8 @@ stock Function:ObjLib_GetFunctionAt(Object:object, index)
     return Function:GetArrayCell(data, index);
 }
 
+/*____________________________________________________________________________*/
+
 /**
  * Sets a value of type "function" at the specified key index.
  *
@@ -1227,6 +1319,8 @@ stock ObjLib_SetFunctionAt(Object:object, index, Function:value)
     new Handle:data = ObjLib_GetObjectData(object);
     SetArrayCell(data, index, value);
 }
+
+/*____________________________________________________________________________*/
 
 /**
  * Gets a value of type "array" at the specified key index.
@@ -1255,6 +1349,8 @@ stock ObjLib_GetArrayAt(Object:object, index, any:buffer[], maxlen)
     return GetArrayArray(data, index, buffer, maxlen);
 }
 
+/*____________________________________________________________________________*/
+
 /**
  * Sets a value of type "array" at the specified key index.
  *
@@ -1279,6 +1375,8 @@ stock ObjLib_SetArrayAt(Object:object, index, const any:values[], maxlen)
     new Handle:data = ObjLib_GetObjectData(object);
     return SetArrayArray(data, index, values, maxlen);
 }
+
+/*____________________________________________________________________________*/
 
 /**
  * Gets a value of type "string" at the specified key index.
@@ -1307,6 +1405,8 @@ stock ObjLib_GetStringAt(Object:object, index, String:buffer[], maxlen)
     return GetArrayString(data, index, buffer, maxlen);
 }
 
+/*____________________________________________________________________________*/
+
 /**
  * Sets a value of type "string" at the specified key index.
  *
@@ -1330,6 +1430,8 @@ stock ObjLib_SetStringAt(Object:object, index, const String:value[])
     new Handle:data = ObjLib_GetObjectData(object);
     return SetArrayString(data, index, value);
 }
+
+/*____________________________________________________________________________*/
 
 /**
  * Gets a value of type "object" at the specified key index.
@@ -1356,6 +1458,8 @@ stock Object:ObjLib_GetObjectAt(Object:object, index)
     return Object:GetArrayCell(data, index);
 }
 
+/*____________________________________________________________________________*/
+
 /**
  * Sets a value of type "object" at the specified key index.
  *
@@ -1377,6 +1481,8 @@ stock ObjLib_SetObjectAt(Object:object, index, Object:value)
     new Handle:data = ObjLib_GetObjectData(object);
     SetArrayCell(data, index, value);
 }
+
+/*____________________________________________________________________________*/
 
 /**
  * Gets a value of type "object type" at the specified key index.
@@ -1403,6 +1509,8 @@ stock ObjectType:ObjLib_GetObjectTypeAt(Object:object, index)
     return ObjectType:GetArrayCell(data, index);
 }
 
+/*____________________________________________________________________________*/
+
 /**
  * Sets a value of type "object type" at the specified key index.
  *
@@ -1425,6 +1533,8 @@ stock ObjLib_SetObjectTypeAt(Object:object, index, ObjectType:value)
     SetArrayCell(data, index, value);
 }
 
+/*____________________________________________________________________________*/
+
 
 /********************************
  *   Object get/set functions   *
@@ -1444,6 +1554,8 @@ stock ObjectType:ObjLib_GetTypeDescriptor(Object:object)
     
     return ObjectType:GetArrayCell(Handle:object, _:Object_MetaData);
 }
+
+/*____________________________________________________________________________*/
 
 /**
  * Gets the index for the specified key in an object.
@@ -1472,6 +1584,8 @@ stock ObjLib_GetKeyIndex(Object:object, const String:keyName[])
     return -1;
 }
 
+/*____________________________________________________________________________*/
+
 /** Internal use only! */
 static stock ObjLib_GetKeyIndexOrFail(Object:object, const String:keyName[])
 {
@@ -1485,11 +1599,15 @@ static stock ObjLib_GetKeyIndexOrFail(Object:object, const String:keyName[])
     return keyIndex;
 }
 
+/*____________________________________________________________________________*/
+
 /** Internal use only! */
 static stock Handle:ObjLib_SetTypeDescriptor(Object:object, ObjectType:typeDescriptor)
 {
     SetArrayCell(Handle:object, _:Object_MetaData, typeDescriptor);
 }
+
+/*____________________________________________________________________________*/
 
 /** Internal use only! */
 static stock Handle:ObjLib_GetObjectData(Object:object)
@@ -1497,11 +1615,15 @@ static stock Handle:ObjLib_GetObjectData(Object:object)
     return Handle:GetArrayCell(Handle:object, _:Object_Data);
 }
 
+/*____________________________________________________________________________*/
+
 /** Internal use only! */
 static stock Handle:ObjLib_SetObjectData(Object:object, Handle:data)
 {
     SetArrayCell(Handle:object, _:Object_Data, data);
 }
+
+/*____________________________________________________________________________*/
 
 
 /*************************************
@@ -1517,6 +1639,8 @@ stock bool:ObjLib_IsTypeMutable(ObjectType:typeDescriptor)
 {
     return GetArrayCell(Handle:typeDescriptor, _:ObjectType_Locked) == 0;
 }
+
+/*____________________________________________________________________________*/
 
 /**
  * Returns the name of a data type.
@@ -1546,11 +1670,15 @@ stock ObjLib_DataTypeToString(ObjectDataType:dataType, String:buffer[], maxlen)
     return 0;
 }
 
+/*____________________________________________________________________________*/
+
 /** Internal use only! */
 static stock ObjLib_SetTypeLocked(ObjectType:typeDescriptor, bool:locked)
 {
     SetArrayCell(Handle:typeDescriptor, _:ObjectType_Locked, locked);
 }
+
+/*____________________________________________________________________________*/
 
 /** Internal use only! */
 static stock Object:ObjLib_GetTypeParentObject(ObjectType:typeDescriptor)
@@ -1558,11 +1686,15 @@ static stock Object:ObjLib_GetTypeParentObject(ObjectType:typeDescriptor)
     return Object:GetArrayCell(Handle:typeDescriptor, _:ObjectType_ParentObject);
 }
 
+/*____________________________________________________________________________*/
+
 /** Internal use only! */
 static stock ObjLib_SetTypeParentObject(ObjectType:typeDescriptor, Object:parent)
 {
     SetArrayCell(Handle:typeDescriptor, _:ObjectType_ParentObject, parent);
 }
+
+/*____________________________________________________________________________*/
 
 /** Internal use only! */
 static stock ObjLib_GetTypeKeySize(ObjectType:typeDescriptor)
@@ -1570,11 +1702,15 @@ static stock ObjLib_GetTypeKeySize(ObjectType:typeDescriptor)
     return GetArrayCell(Handle:typeDescriptor, _:ObjectType_KeySize);
 }
 
+/*____________________________________________________________________________*/
+
 /** Internal use only! */
 static stock ObjLib_SetTypeKeySize(ObjectType:typeDescriptor, keySize)
 {
     SetArrayCell(Handle:typeDescriptor, _:ObjectType_KeySize, keySize);
 }
+
+/*____________________________________________________________________________*/
 
 /** Internal use only! */
 static stock ObjLib_GetTypeBlockSize(ObjectType:typeDescriptor)
@@ -1582,11 +1718,15 @@ static stock ObjLib_GetTypeBlockSize(ObjectType:typeDescriptor)
     return GetArrayCell(Handle:typeDescriptor, _:ObjectType_BlockSize);
 }
 
+/*____________________________________________________________________________*/
+
 /** Internal use only! */
 static stock ObjLib_SetTypeBlockSize(ObjectType:typeDescriptor, blockSize)
 {
     SetArrayCell(Handle:typeDescriptor, _:ObjectType_BlockSize, blockSize);
 }
+
+/*____________________________________________________________________________*/
 
 /**
  * Gets the list of key names in an object type descriptor.
@@ -1601,11 +1741,15 @@ stock Handle:ObjLib_GetTypeKeys(ObjectType:typeDescriptor)
     return Handle:GetArrayCell(Handle:typeDescriptor, _:ObjectType_Keys);
 }
 
+/*____________________________________________________________________________*/
+
 /** Internal use only! */
 static stock ObjLib_SetTypeKeys(ObjectType:typeDescriptor, Handle:keys)
 {
     SetArrayCell(Handle:typeDescriptor, _:ObjectType_Keys, keys);
 }
+
+/*____________________________________________________________________________*/
 
 /** Internal use only! */
 static stock Handle:ObjLib_GetTypeNameIndex(ObjectType:typeDescriptor)
@@ -1613,11 +1757,15 @@ static stock Handle:ObjLib_GetTypeNameIndex(ObjectType:typeDescriptor)
     return Handle:GetArrayCell(Handle:typeDescriptor, _:ObjectType_NameIndex);
 }
 
+/*____________________________________________________________________________*/
+
 /** Internal use only! */
 static stock ObjLib_SetTypeNameIndex(ObjectType:typeDescriptor, Handle:nameIndex)
 {
     SetArrayCell(Handle:typeDescriptor, _:ObjectType_NameIndex, nameIndex);
 }
+
+/*____________________________________________________________________________*/
 
 /**
  * Gets the list of data types for each key in an object type descriptor.
@@ -1631,11 +1779,15 @@ stock Handle:ObjLib_GetTypeDataTypes(ObjectType:typeDescriptor)
     return Handle:GetArrayCell(Handle:typeDescriptor, _:ObjectType_DataTypes);
 }
 
+/*____________________________________________________________________________*/
+
 /** Internal use only! */
 static stock ObjLib_SetTypeDataTypes(ObjectType:typeDescriptor, Handle:dataTypes)
 {
     SetArrayCell(Handle:typeDescriptor, _:ObjectType_DataTypes, dataTypes);
 }
+
+/*____________________________________________________________________________*/
 
 /** Internal use only! */
 static stock Handle:ObjLib_GetTypeConstraints(ObjectType:typeDescriptor)
@@ -1643,11 +1795,15 @@ static stock Handle:ObjLib_GetTypeConstraints(ObjectType:typeDescriptor)
     ThrowError("Not implemented");
 }
 
+/*____________________________________________________________________________*/
+
 /** Internal use only! */
 static stock ObjLib_SetTypeConstraints(ObjectType:typeDescriptor, Handle:constraints)
 {
     ThrowError("Not implemented");
 }
+
+/*____________________________________________________________________________*/
 
 
 /*********************************
@@ -1717,6 +1873,8 @@ static stock ObjLib_InitializeNewValue(Object:object, ObjectDataType:dataType)
     }
 }
 
+/*____________________________________________________________________________*/
+
 /**
  * Removes a value entry from an object.
  *
@@ -1730,6 +1888,8 @@ static stock ObjLib_RemoveEntry(Object:object, entryIndex)
     new Handle:data = ObjLib_GetObjectData(object);
     RemoveFromArray(data, entryIndex);
 }
+
+/*____________________________________________________________________________*/
 
 /**
  * Creates a clone of a trie with the specified keys.
@@ -1763,6 +1923,8 @@ static stock Handle:ObjLib_CloneTrie(Handle:trie, Handle:keys, keySize)
     return newTrie;
 }
 
+/*____________________________________________________________________________*/
+
 /**
  * Validates a key type against an object's key type at the specified index.
  *
@@ -1790,6 +1952,8 @@ static stock ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, keyIndex, ObjectData
     }
 }
 
+/*____________________________________________________________________________*/
+
 static stock ObjLib_KeyTypeMismatchError(ObjectDataType:actual, ObjectDataType:expected)
 {
     new String:actualName[16];
@@ -1801,6 +1965,8 @@ static stock ObjLib_KeyTypeMismatchError(ObjectDataType:actual, ObjectDataType:e
     ThrowError("Key type mismatch. Expected \"%s\", but \"%s\" was used.", expectedName, actualName);
 }
 
+/*____________________________________________________________________________*/
+
 static stock ObjLib_ValidateObject(Object:object)
 {
     if (!ObjLib_IsValidObject(object))
@@ -1808,6 +1974,8 @@ static stock ObjLib_ValidateObject(Object:object)
         ThrowError("Invalid object (%x).", object);
     }
 }
+
+/*____________________________________________________________________________*/
 
 static stock ObjLib_ValidateObjectType(ObjectType:typeDescriptor)
 {
