@@ -49,7 +49,7 @@
  * @param 2     Message formatting rules string with parameters. (As in the 
  *              Format function)
  */
-#define AssertMsg(%1,%2)    if (!(%1)) {Format(MessageBuffer, sizeof(MessageBuffer),(%2)); return Test_Failed;}
+#define AssertMsg(%1,%2)    if (!(%1)) {Format(MessageBuffer, sizeof(MessageBuffer),%2); return Test_Failed;}
 
 /**
  * General macro that returns Test_Failed and stores an error message in the
@@ -177,7 +177,7 @@ stock bool:FloatEquals(Float:expected, Float:actual, Float:delta = 0.0001, const
  *
  * @return                  True if equal, false otherwise.
  */
-stock bool:StringEquals(const String:expected[], const String:actual, bool:caseSensitive = true, const String:msg[] = STRING_EXPECTED_BUT_WAS)
+stock bool:StringEquals(const String:expected[], const String:actual[], bool:caseSensitive = true, const String:msg[] = STRING_EXPECTED_BUT_WAS)
 {
     if (!StrEqual(expected, actual, caseSensitive))
     {

@@ -60,7 +60,7 @@ enum ObjectType
  */
 enum ObjectDataType
 {
-    ObjDataType_Any,
+    ObjDataType_Any,            /** Does not include arrays. */
     ObjDataType_Cell,
     ObjDataType_Bool,
     ObjDataType_Float,
@@ -372,7 +372,7 @@ stock bool:ObjLib_KeyExist(ObjectType:typeDescriptor, const String:keyName[])
  */
 stock bool:ObjLib_AddObjectKey(Object:object, const String:keyName[], ObjectDataType:dataType = ObjDataType_Any)
 {
-    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     ObjLib_AddKey(typeDescriptor, keyName, dataType);
 }
 
@@ -386,7 +386,7 @@ stock bool:ObjLib_AddObjectKey(Object:object, const String:keyName[], ObjectData
  */
 stock ObjLib_RemoveObjectKey(Object:object, const String:keyName[])
 {
-    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     ObjLib_RemoveKey(typeDescriptor, keyName);
 }
 
@@ -430,6 +430,9 @@ stock Object:ObjLib_CreateObject(ObjectType:typeTemplate, bool:mutableObject = t
     {
         // Clone type descriptor and make it mutable.
         type = ObjLib_CloneType(typeTemplate, false);
+        
+        // Attach type to cloned object.
+        ObjLib_SetTypeParentObject(type, Object:object);
     }
     else
     {
@@ -441,7 +444,7 @@ stock Object:ObjLib_CreateObject(ObjectType:typeTemplate, bool:mutableObject = t
     }
     
     ObjLib_SetObjectData(Object:object, data);
-    ObjLib_SetObjectType(Object:object, type);
+    ObjLib_SetTypeDescriptor(Object:object, type);
     
     /*
     PushArrayCell(object, data);        // Object_Data
@@ -463,7 +466,7 @@ stock ObjLib_DeleteObject(&Object:object, resetReference = true)
     // Validate.
     ObjLib_ValidateObject(object);
     
-    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     new Object:parent = ObjLib_GetTypeParentObject(typeDescriptor);
     if (parent != INVALID_OBJECT)
     {
@@ -527,7 +530,7 @@ stock Object:ObjLib_CloneObject(Object:objectTemplate, bool:mutableObject = true
     ObjLib_SetObjectData(Object:object, data);
     
     // Clone type.
-    new ObjectType:typeTemplate = ObjLib_GetObjectType(objectTemplate);
+    new ObjectType:typeTemplate = ObjLib_GetTypeDescriptor(objectTemplate);
     new bool:mutableSource = ObjLib_IsMutable(objectTemplate);
     
     /*
@@ -550,7 +553,7 @@ stock Object:ObjLib_CloneObject(Object:objectTemplate, bool:mutableObject = true
     {
         // Template and destination object is immutable. Use the same type
         // descriptor.
-        ObjLib_SetObjectType(Object:object, typeTemplate);
+        ObjLib_SetTypeDescriptor(Object:object, typeTemplate);
     }
     else
     {
@@ -561,12 +564,12 @@ stock Object:ObjLib_CloneObject(Object:objectTemplate, bool:mutableObject = true
         {
             // Destination is mutable. Attatch cloned type.
             ObjLib_SetTypeParentObject(type, Object:object);
-            ObjLib_SetObjectType(Object:object, type);
+            ObjLib_SetTypeDescriptor(Object:object, type);
         }
         else
         {
             // Destination is immutable. Link cloned type.
-            ObjLib_SetObjectType(Object:object, type);
+            ObjLib_SetTypeDescriptor(Object:object, type);
 
             // Lock type.
             ObjLib_SetTypeLocked(type, true);
@@ -577,7 +580,7 @@ stock Object:ObjLib_CloneObject(Object:objectTemplate, bool:mutableObject = true
     if (cloneHandles)
     {
         new len = GetArraySize(data);
-        new Handle:dataTypes = ObjLib_GetTypeDataTypes(ObjLib_GetObjectType(Object:object));
+        new Handle:dataTypes = ObjLib_GetTypeDataTypes(ObjLib_GetTypeDescriptor(Object:object));
         
         // Loop through data values.
         for (new i = 0; i < len; i++)
@@ -617,7 +620,7 @@ stock bool:ObjLib_IsValidObject(Object:object)
  */
 stock bool:ObjLib_IsMutable(Object:object)
 {
-    return ObjLib_IsTypeMutable(ObjLib_GetObjectType(object));
+    return ObjLib_IsTypeMutable(ObjLib_GetTypeDescriptor(object));
 }
 
 /**************************************
@@ -922,7 +925,7 @@ stock ObjLib_SetObject(Object:object, const String:keyName[], Object:value)
  *
  * @error           Invalid object, key name or key type mismatch.
  */
-stock Object:ObjLib_GetObjectType(Object:object, const String:keyName[])
+stock ObjectType:ObjLib_GetObjectType(Object:object, const String:keyName[])
 {
     new keyIndex = ObjLib_GetKeyIndexOrFail(object, keyName);
     return ObjLib_GetObjectTypeAt(object, keyIndex);
@@ -958,7 +961,7 @@ stock any:ObjLib_GetAnyAt(Object:object, index)
     // Validate object.
     ObjLib_ValidateObject(object);
     
-    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Any);
@@ -980,7 +983,7 @@ stock ObjLib_SetAnyAt(Object:object, index, any:value)
     // Validate object.
     ObjLib_ValidateObject(object);
     
-    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Any);
@@ -1005,7 +1008,7 @@ stock ObjLib_GetCellAt(Object:object, index)
     // Validate object.
     ObjLib_ValidateObject(object);
     
-    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Cell);
@@ -1027,7 +1030,7 @@ stock ObjLib_SetCellAt(Object:object, index, value)
     // Validate object.
     ObjLib_ValidateObject(object);
     
-    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Cell);
@@ -1052,7 +1055,7 @@ stock bool:ObjLib_GetBoolAt(Object:object, index)
     // Validate object.
     ObjLib_ValidateObject(object);
     
-    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Bool);
@@ -1074,7 +1077,7 @@ stock ObjLib_SetBoolAt(Object:object, index, bool:value)
     // Validate object.
     ObjLib_ValidateObject(object);
     
-    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Bool);
@@ -1099,7 +1102,7 @@ stock Float:ObjLib_GetFloatAt(Object:object, index)
     // Validate object.
     ObjLib_ValidateObject(object);
     
-    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Float);
@@ -1121,7 +1124,7 @@ stock ObjLib_SetFloatAt(Object:object, index, Float:value)
     // Validate object.
     ObjLib_ValidateObject(object);
     
-    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Float);
@@ -1146,7 +1149,7 @@ stock Handle:ObjLib_GetHandleAt(Object:object, index)
     // Validate object.
     ObjLib_ValidateObject(object);
     
-    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Handle);
@@ -1168,7 +1171,7 @@ stock ObjLib_SetHandleAt(Object:object, index, Handle:value)
     // Validate object.
     ObjLib_ValidateObject(object);
     
-    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Handle);
@@ -1193,7 +1196,7 @@ stock Function:ObjLib_GetFunctionAt(Object:object, index)
     // Validate object.
     ObjLib_ValidateObject(object);
     
-    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Function);
@@ -1215,7 +1218,7 @@ stock ObjLib_SetFunctionAt(Object:object, index, Function:value)
     // Validate object.
     ObjLib_ValidateObject(object);
     
-    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Function);
@@ -1242,7 +1245,7 @@ stock ObjLib_GetArrayAt(Object:object, index, any:buffer[], maxlen)
     // Validate object.
     ObjLib_ValidateObject(object);
     
-    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Array);
@@ -1267,7 +1270,7 @@ stock ObjLib_SetArrayAt(Object:object, index, const any:values[], maxlen)
     // Validate object.
     ObjLib_ValidateObject(object);
     
-    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Array);
@@ -1294,7 +1297,7 @@ stock ObjLib_GetStringAt(Object:object, index, String:buffer[], maxlen)
     // Validate object.
     ObjLib_ValidateObject(object);
     
-    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_String);
@@ -1318,7 +1321,7 @@ stock ObjLib_SetStringAt(Object:object, index, const String:value[])
     // Validate object.
     ObjLib_ValidateObject(object);
     
-    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_String);
@@ -1343,7 +1346,7 @@ stock Object:ObjLib_GetObjectAt(Object:object, index)
     // Validate object.
     ObjLib_ValidateObject(object);
     
-    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Object);
@@ -1365,7 +1368,7 @@ stock ObjLib_SetObjectAt(Object:object, index, Object:value)
     // Validate object.
     ObjLib_ValidateObject(object);
     
-    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Object);
@@ -1390,7 +1393,7 @@ stock ObjectType:ObjLib_GetObjectTypeAt(Object:object, index)
     // Validate object.
     ObjLib_ValidateObject(object);
     
-    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_ObjectType);
@@ -1412,7 +1415,7 @@ stock ObjLib_SetObjectTypeAt(Object:object, index, ObjectType:value)
     // Validate object.
     ObjLib_ValidateObject(object);
     
-    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_ObjectType);
@@ -1434,7 +1437,7 @@ stock ObjLib_SetObjectTypeAt(Object:object, index, ObjectType:value)
  *
  * @return          Object type descriptor reference.
  */
-stock ObjectType:ObjLib_GetObjectType(Object:object)
+stock ObjectType:ObjLib_GetTypeDescriptor(Object:object)
 {
     // Validate object.
     ObjLib_ValidateObject(object);
@@ -1455,7 +1458,7 @@ stock ObjLib_GetKeyIndex(Object:object, const String:keyName[])
     // Validate object.
     ObjLib_ValidateObject(object);
     
-    new ObjectType:typeDescriptor = ObjLib_GetObjectType(object);
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     new Handle:nameIndex = ObjLib_GetTypeNameIndex(typeDescriptor);
     
     new index = -1;
@@ -1483,7 +1486,7 @@ static stock ObjLib_GetKeyIndexOrFail(Object:object, const String:keyName[])
 }
 
 /** Internal use only! */
-static stock Handle:ObjLib_SetObjectType(Object:object, ObjectType:typeDescriptor)
+static stock Handle:ObjLib_SetTypeDescriptor(Object:object, ObjectType:typeDescriptor)
 {
     SetArrayCell(Handle:object, _:Object_MetaData, typeDescriptor);
 }
