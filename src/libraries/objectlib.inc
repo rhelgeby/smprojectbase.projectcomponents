@@ -506,7 +506,7 @@ stock ObjLib_DeleteObject(&Object:object, resetReference = true)
  * Warning: Creating an immutable object from a mutable object will also create
  *          a clone of the source type descriptor. Delete this type descriptor 
  *          when it's no longer in use. This can be retrieved from the cloned
- *          object with ObjLib_GetObjectType.
+ *          object with ObjLib_GetTypeDescriptor.
  *
  * @param objectTemplate    Source object.
  * @param mutableObject     (Optional) Make new object mutable. Default is true.
