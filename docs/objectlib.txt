@@ -17,11 +17,11 @@ MAIN FEATURES
   
   Both use a type descriptor as a template. Mutable objects store a bundled
   descriptor so they can be modified independently, while immutable objects
-  store a reference to a shared read-only type descriptor.
+  store a reference to a shared read-only type descriptor to save memory.
 
 * Supports built-in and custom data validation
   The library supports basic validation constraints such as min/max limits in
-  addition to a forward where the user can do custom validation of the object.
+  addition to a callback where the user can do custom validation of the object.
   
   TO BE IMPLEMENTED.
 
@@ -227,6 +227,30 @@ How to properly handle this:
     ObjLib_DeleteObject(immutableObject);
     ObjLib_DeleteObjectType(typeFromImmutableObject);   // Deleting hidden cloned type.
 
+VALIDATION
+----------
+
+(TODO: Rewrite notes into full text.)
+
+Stuff that can be validated:
+* Function      - Whether they exist or is just nonzero.
+* Path          - File/folder path. Include support for game cache files, etc.
+* Numbers       - Min/max, nonzero
+* String        - Nonempty, blacklist or whitelist characters, min/max length.
+* Handle        - Just nonzero, SM doesn't provide a way to tell if it's valid or not anymore.
+* Object        - Match a certain type, nonzero.
+* ObjectType    - Nonzero. Require keys with certain data types.
+* Custom        - Callback to user defined validation.
+
+Validation callback:
+functag ObjLib_ValidateKey(Object:object, const String:keyName[], ObjectDataType:dataType, ObjectType:typeDescriptor)
+
+Figure out a validator pattern where different validator types are stored in
+ObjectType_Constraints. Examples: CellValidator, FloatValidator,
+StringValidator, etc. Need a common interface to work with these: Use objects.
+
+Create ObjLib_Get<Type>Constraints that will build and return a validation
+constraint object. ObjLib_AddKey may use this object.
 
 MEMORY MANAGEMENT
 -----------------

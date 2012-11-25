@@ -82,6 +82,7 @@ enum ObjectDataType
 enum ObjectData
 {
     Object_Data = 0,    /** Data entry. Handle to raw data array. */
+    Object_NullKey,     /** Handle to array that tell which key that is null (not initialized). */
     Object_MetaData     /** Object meta data entry. Handle to object type descriptor. */
 }
 
@@ -101,7 +102,7 @@ enum ObjectTypeData
     ObjectType_Keys,            /** Handle to array of key names (case sensitive). */
     ObjectType_NameIndex,       /** Handle to trie index of key names. */
     ObjectType_DataTypes,       /** Handle to array of data type for each value entry. */
-    ObjectType_Constraints,     /** Handle to validation constraints info for each key. */
+    ObjectType_Constraints      /** Handle to validation constraints info for each key. */
 }
 
 /*____________________________________________________________________________*/
@@ -305,6 +306,9 @@ stock ObjLib_AddKey(ObjectType:typeDescriptor, const String:keyName[], ObjectDat
         // Add initialized data entry. This will push a new empty value at the
         // same index as the key.
         ObjLib_InitializeNewValue(parent, dataType);
+        
+        // The key doesn't have a valid value yet. Mark key as null.
+        ObjLib_SetKeyNull(parent, entryIndex, true);
     }
 }
 
@@ -440,9 +444,17 @@ stock Object:ObjLib_CreateObject(ObjectType:typeTemplate, bool:mutableObject = t
 {
     new Handle:object = CreateArray(_, OBJECT_DATA_LEN);
     new blockSize = ObjLib_GetTypeBlockSize(typeTemplate);
+    new keyCount = ObjLib_GetNumKeys(typeTemplate);
     
     // Create array for storing object data.
     new Handle:data = CreateArray(blockSize);
+    new Handle:nullKey = CreateArray(_, keyCount);
+    
+    // Initialize null key flags. All keys are null.
+    for (new i = 0; i < keyCount; i++)
+    {
+        PushArrayCell(nullKey, 1);
+    }
     
     // Get type descriptor. Mutable objects use their own clone.
     new ObjectType:type;
@@ -464,6 +476,7 @@ stock Object:ObjLib_CreateObject(ObjectType:typeTemplate, bool:mutableObject = t
     }
     
     ObjLib_SetObjectData(Object:object, data);
+    ObjLib_SetObjectNullKey(Object:object, nullKey);
     ObjLib_SetTypeDescriptor(Object:object, type);
     
     /*
@@ -552,6 +565,10 @@ stock Object:ObjLib_CloneObject(Object:objectTemplate, bool:mutableObject = true
     // Clone data array.
     new Handle:data = CloneArray(ObjLib_GetObjectData(objectTemplate));
     ObjLib_SetObjectData(Object:object, data);
+    
+    // Clone null key array.
+    new Handle:nullKey = CloneArray(ObjLib_GetObjectNullKey(Object:object));
+    ObjLib_SetObjectNullKey(Object:object, nullKey);
     
     // Clone type.
     new ObjectType:typeTemplate = ObjLib_GetTypeDescriptor(objectTemplate);
@@ -1036,6 +1053,9 @@ stock any:ObjLib_GetAnyAt(Object:object, index)
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Any);
     
+    // Null check.
+    ObjLib_NullCheck(object, index);
+    
     // Get value.
     new Handle:data = ObjLib_GetObjectData(object);
     return any:GetArrayCell(data, index);
@@ -1060,9 +1080,10 @@ stock ObjLib_SetAnyAt(Object:object, index, any:value)
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Any);
     
-    // Get value.
+    // Set value.
     new Handle:data = ObjLib_GetObjectData(object);
     SetArrayCell(data, index, value);
+    ObjLib_SetKeyNull(object, index, false);
 }
 
 /*____________________________________________________________________________*/
@@ -1086,6 +1107,9 @@ stock ObjLib_GetCellAt(Object:object, index)
     
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Cell);
+    
+    // Null check.
+    ObjLib_NullCheck(object, index);
     
     // Get value.
     new Handle:data = ObjLib_GetObjectData(object);
@@ -1111,9 +1135,10 @@ stock ObjLib_SetCellAt(Object:object, index, value)
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Cell);
     
-    // Get value.
+    // Set value.
     new Handle:data = ObjLib_GetObjectData(object);
     SetArrayCell(data, index, value);
+    ObjLib_SetKeyNull(object, index, false);
 }
 
 /*____________________________________________________________________________*/
@@ -1137,6 +1162,9 @@ stock bool:ObjLib_GetBoolAt(Object:object, index)
     
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Bool);
+    
+    // Null check.
+    ObjLib_NullCheck(object, index);
     
     // Get value.
     new Handle:data = ObjLib_GetObjectData(object);
@@ -1162,9 +1190,10 @@ stock ObjLib_SetBoolAt(Object:object, index, bool:value)
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Bool);
     
-    // Get value.
+    // Set value.
     new Handle:data = ObjLib_GetObjectData(object);
     SetArrayCell(data, index, value);
+    ObjLib_SetKeyNull(object, index, false);
 }
 
 /*____________________________________________________________________________*/
@@ -1188,6 +1217,9 @@ stock Float:ObjLib_GetFloatAt(Object:object, index)
     
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Float);
+    
+    // Null check.
+    ObjLib_NullCheck(object, index);
     
     // Get value.
     new Handle:data = ObjLib_GetObjectData(object);
@@ -1213,9 +1245,10 @@ stock ObjLib_SetFloatAt(Object:object, index, Float:value)
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Float);
     
-    // Get value.
+    // Set value.
     new Handle:data = ObjLib_GetObjectData(object);
     SetArrayCell(data, index, value);
+    ObjLib_SetKeyNull(object, index, false);
 }
 
 /*____________________________________________________________________________*/
@@ -1239,6 +1272,9 @@ stock Handle:ObjLib_GetHandleAt(Object:object, index)
     
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Handle);
+    
+    // Null check.
+    ObjLib_NullCheck(object, index);
     
     // Get value.
     new Handle:data = ObjLib_GetObjectData(object);
@@ -1264,9 +1300,10 @@ stock ObjLib_SetHandleAt(Object:object, index, Handle:value)
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Handle);
     
-    // Get value.
+    // Set value.
     new Handle:data = ObjLib_GetObjectData(object);
     SetArrayCell(data, index, value);
+    ObjLib_SetKeyNull(object, index, false);
 }
 
 /*____________________________________________________________________________*/
@@ -1290,6 +1327,9 @@ stock Function:ObjLib_GetFunctionAt(Object:object, index)
     
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Function);
+    
+    // Null check.
+    ObjLib_NullCheck(object, index);
     
     // Get value.
     new Handle:data = ObjLib_GetObjectData(object);
@@ -1315,9 +1355,10 @@ stock ObjLib_SetFunctionAt(Object:object, index, Function:value)
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Function);
     
-    // Get value.
+    // Set value.
     new Handle:data = ObjLib_GetObjectData(object);
     SetArrayCell(data, index, value);
+    ObjLib_SetKeyNull(object, index, false);
 }
 
 /*____________________________________________________________________________*/
@@ -1343,6 +1384,9 @@ stock ObjLib_GetArrayAt(Object:object, index, any:buffer[], maxlen)
     
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Array);
+    
+    // Null check.
+    ObjLib_NullCheck(object, index);
     
     // Get value.
     new Handle:data = ObjLib_GetObjectData(object);
@@ -1371,8 +1415,9 @@ stock ObjLib_SetArrayAt(Object:object, index, const any:values[], maxlen)
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Array);
     
-    // Get value.
+    // Set value.
     new Handle:data = ObjLib_GetObjectData(object);
+    ObjLib_SetKeyNull(object, index, false);
     return SetArrayArray(data, index, values, maxlen);
 }
 
@@ -1400,6 +1445,9 @@ stock ObjLib_GetStringAt(Object:object, index, String:buffer[], maxlen)
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_String);
     
+    // Null check.
+    ObjLib_NullCheck(object, index);
+    
     // Get value.
     new Handle:data = ObjLib_GetObjectData(object);
     return GetArrayString(data, index, buffer, maxlen);
@@ -1426,8 +1474,9 @@ stock ObjLib_SetStringAt(Object:object, index, const String:value[])
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_String);
     
-    // Get value.
+    // Set value.
     new Handle:data = ObjLib_GetObjectData(object);
+    ObjLib_SetKeyNull(object, index, false);
     return SetArrayString(data, index, value);
 }
 
@@ -1453,6 +1502,9 @@ stock Object:ObjLib_GetObjectAt(Object:object, index)
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Object);
     
+    // Null check.
+    ObjLib_NullCheck(object, index);
+    
     // Get value.
     new Handle:data = ObjLib_GetObjectData(object);
     return Object:GetArrayCell(data, index);
@@ -1477,9 +1529,10 @@ stock ObjLib_SetObjectAt(Object:object, index, Object:value)
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Object);
     
-    // Get value.
+    // Set value.
     new Handle:data = ObjLib_GetObjectData(object);
     SetArrayCell(data, index, value);
+    ObjLib_SetKeyNull(object, index, false);
 }
 
 /*____________________________________________________________________________*/
@@ -1503,6 +1556,9 @@ stock ObjectType:ObjLib_GetObjectTypeAt(Object:object, index)
     
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_ObjectType);
+    
+    // Null check.
+    ObjLib_NullCheck(object, index);
     
     // Get value.
     new Handle:data = ObjLib_GetObjectData(object);
@@ -1528,9 +1584,10 @@ stock ObjLib_SetObjectTypeAt(Object:object, index, ObjectType:value)
     // Validate type.
     ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_ObjectType);
     
-    // Get value.
+    // Set value.
     new Handle:data = ObjLib_GetObjectData(object);
     SetArrayCell(data, index, value);
+    ObjLib_SetKeyNull(object, index, false);
 }
 
 /*____________________________________________________________________________*/
@@ -1586,6 +1643,74 @@ stock ObjLib_GetKeyIndex(Object:object, const String:keyName[])
 
 /*____________________________________________________________________________*/
 
+/**
+ * Returns whether a key is null at the specified key index.
+ *
+ * @param object    Object to inspect.
+ * @param keyIndex  Key index.
+ *
+ * @return          True if null, false otherwise.
+ */
+stock bool:ObjLib_IsKeyNullAt(Object:object, keyIndex)
+{
+    new Handle:nullKey = ObjLib_GetObjectNullKey(object);
+    return bool:GetArrayCell(nullKey, keyIndex);
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Returns whether a key is null at the specified key index.
+ *
+ * @param object    Object to inspect.
+ * @param keyName   Key name.
+ *
+ * @return          True if null, false otherwise.
+ */
+stock bool:ObjLib_IsKeyNull(Object:object, const String:keyName[])
+{
+    new keyIndex = ObjLib_GetKeyIndexOrFail(object, keyName);
+    return ObjLib_IsKeyNullAt(object, keyIndex);
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Resets the value in the specified key (marked as null).
+ *
+ * @param object    Object to update.
+ * @param keyIndex  Key index.
+ */
+stock ObjLib_ClearKeyAt(Object:object, keyIndex)
+{
+    ObjLib_SetKeyNull(object, keyIndex, true);
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Resets the value in the specified key (marked as null).
+ *
+ * @param object    Object to update.
+ * @param keyName   Key name.
+ */
+stock ObjLib_ClearKey(Object:object, const String:keyName[])
+{
+    new keyIndex = ObjLib_GetKeyIndexOrFail(object, keyName);
+    ObjLib_ClearKeyAt(object, keyIndex);
+}
+
+/*____________________________________________________________________________*/
+
+/** Internal use only! */
+static stock ObjLib_SetKeyNull(Object:object, keyIndex, bool:null)
+{
+    new Handle:nullKey = ObjLib_GetObjectNullKey(object);
+    SetArrayCell(nullKey, keyIndex, null);
+}
+
+/*____________________________________________________________________________*/
+
 /** Internal use only! */
 static stock ObjLib_GetKeyIndexOrFail(Object:object, const String:keyName[])
 {
@@ -1597,6 +1722,24 @@ static stock ObjLib_GetKeyIndexOrFail(Object:object, const String:keyName[])
     }
     
     return keyIndex;
+}
+
+/*____________________________________________________________________________*/
+
+/** Internal use only! */
+static stock ObjLib_NullCheck(Object:object, keyIndex)
+{
+    if (ObjLib_IsKeyNullAt(object, keyIndex))
+    {
+        // Key is null. Throw error.
+        
+        // Get Key name.
+        new String:keyName[OBJECT_KEY_NAME_LEN];
+        new Handle:keys = ObjLib_GetTypeKeys(ObjLib_GetTypeDescriptor(object));
+        GetArrayString(keys, keyIndex, keyName, sizeof(keyName));
+        
+        ThrowError("Key at index %d is null: %s", keyIndex, keyName);
+    }
 }
 
 /*____________________________________________________________________________*/
@@ -1625,6 +1768,22 @@ static stock Handle:ObjLib_SetObjectData(Object:object, Handle:data)
 
 /*____________________________________________________________________________*/
 
+/** Internal use only! */
+static stock Handle:ObjLib_GetObjectNullKey(Object:object)
+{
+    return Handle:GetArrayCell(Handle:object, _:Object_NullKey);
+}
+
+/*____________________________________________________________________________*/
+
+/** Internal use only! */
+static stock Handle:ObjLib_SetObjectNullKey(Object:object, Handle:data)
+{
+    SetArrayCell(Handle:object, _:Object_NullKey, data);
+}
+
+/*____________________________________________________________________________*/
+
 
 /*************************************
  *   Object type get/set functions   *
@@ -1633,7 +1792,9 @@ static stock Handle:ObjLib_SetObjectData(Object:object, Handle:data)
 /**
  * Returns whether the specified object type descriptor is mutable (not locked).
  *
- * @return      True if mutable, false otherwise.
+ * @param typeDescriptor    Object type to inspect.
+ *
+ * @return                  True if mutable, false otherwise.
  */
 stock bool:ObjLib_IsTypeMutable(ObjectType:typeDescriptor)
 {
@@ -1668,6 +1829,21 @@ stock ObjLib_DataTypeToString(ObjectDataType:dataType, String:buffer[], maxlen)
     }
     
     return 0;
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Returns the number of keys declared in the specified type descriptor.
+ *
+ * @param typeDescriptor    Object type to inspect.
+ *
+ * @return                  Number of keys.
+ */
+stock ObjLib_GetNumKeys(ObjectType:typeDescriptor)
+{
+    new Handle:keys = ObjLib_GetTypeKeys(typeDescriptor);
+    return GetArraySize(keys);
 }
 
 /*____________________________________________________________________________*/
