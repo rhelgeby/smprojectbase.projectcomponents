@@ -25,7 +25,6 @@
  * ============================================================================
  */
 
-
 /**
  * Creates an empty object type descriptor.
  *
@@ -60,17 +59,6 @@ stock ObjectType:ObjLib_CreateType(blockSize = 1, keySzie = 8)
     ObjLib_SetTypeNameIndex(typeDescriptor,     nameIndex);
     ObjLib_SetTypeDataTypes(typeDescriptor,     dataTypes);
     //ObjLib_SetTypeConstraints(typeDescriptor,   INVALID_HANDLE);     // Not implemented yet.
-    
-    /*
-    PushArrayCell(typeDescriptor, 0);                   // ObjectType_Locked
-    PushArrayCell(typeDescriptor, _:INVALID_OBJECT);    // ObjectType_ParentObject
-    PushArrayCell(typeDescriptor, keySzie);             // ObjectType_KeySize
-    PushArrayCell(typeDescriptor, blockSize);           // ObjectType_BlockSize
-    PushArrayCell(typeDescriptor, keys);                // ObjectType_Keys
-    PushArrayCell(typeDescriptor, nameIndex);           // ObjectType_NameIndex
-    PushArrayCell(typeDescriptor, dataTypes);           // ObjectType_DataTypes
-    PushArrayCell(typeDescriptor, INVALID_HANDLE);      // ObjectType_Constraints - not implemented yet.
-    */
     
     return typeDescriptor;
 }
@@ -196,7 +184,7 @@ stock ObjLib_AddKey(ObjectType:typeDescriptor, const String:keyName[], ObjectDat
     // Check if key exist.
     if (ObjLib_KeyExist(typeDescriptor, keyName))
     {
-        ThrowError("Key already exist (\"%s\").", keyName);
+        ThrowError("Key name already exist (\"%s\").", keyName);
     }
     
     new Handle:keys = ObjLib_GetTypeKeys(typeDescriptor);

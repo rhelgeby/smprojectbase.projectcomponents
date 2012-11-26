@@ -68,7 +68,7 @@ enum ObjectType
  */
 enum ObjectDataType
 {
-    ObjDataType_Any,            /** Does not include arrays. */
+    ObjDataType_Any,            /** Does not include arrays/strings. */
     ObjDataType_Cell,
     ObjDataType_Bool,
     ObjDataType_Float,
@@ -83,6 +83,7 @@ enum ObjectDataType
 /*____________________________________________________________________________*/
 
 /**
+ * Internal use only!
  * Object entries. Used internally to name array indexes.
  */
 #define OBJECT_DATA_LEN         3   /** Number of elements below. */
@@ -96,6 +97,7 @@ enum ObjectData
 /*____________________________________________________________________________*/
 
 /**
+ * Internal use only!
  * Object type entries. Used internally to name array indexes.
  */
 #define OBJECT_TYPE_DATA_LEN    8   /** Number of elements below. */
