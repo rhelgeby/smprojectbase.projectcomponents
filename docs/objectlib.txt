@@ -46,7 +46,7 @@ WHY USE THIS
 
 This is an alternative to enumerated arrays. If you use various types of data
 sets, such as player profiles or weapon profiles, you don't have to create
-specific storage implementation of each data set when using this library. You
+specific storage implementation for each data set when using this library. You
 just need to define types and create objects.
 
 If you have many data sets, a "hard coded" manual solution for each set will
