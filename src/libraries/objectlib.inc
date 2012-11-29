@@ -117,13 +117,14 @@ enum ObjectTypeData
 /*____________________________________________________________________________*/
 
 /**
- * Internal use only!
- * Error types. Used in custom error handler callback.
+ * Error types. Used in error handler callbacks.
  */
 enum ObjLibError
 {
     ObjLibError_InvalidKey,         /** Key name or index is invalid. */
-    ObjLibError_InvalidType,        /** Type mismatch. */
+    ObjLibError_InvalidKeyType,     /** Key type mismatch. */
+    ObjLibError_NullDataKey,        /** Attempted to read from uninitialized key. */
+    ObjLibError_KeyExist,           /** Attempted to create a key with an existing name. */
     ObjLibError_Immutable,          /** Object or Object type is immutable. */
     ObjLibError_ValidationError     /** Data constraint violation. */
 }
@@ -140,10 +141,11 @@ enum ObjLibError
 /**
  * General error callback.
  *
- * @param errorType     Type of error.
- * @param message       Error message.
+ * @param typeDescriptor    Related type descriptor.
+ * @param errorType         Type of error.
+ * @param message           Error message.
  */
-functag public ObjLib_Error(ObjLibError:errorType, const String:message[]);
+functag public ObjLib_ErrorHandler(ObjectType:typeDescriptor, ObjLibError:errorType, const String:message[]);
 
 /*____________________________________________________________________________*/
 
@@ -202,3 +204,4 @@ stock Handle:ObjLib_CloneTrie(Handle:trie, Handle:keys, keySize)
 #include "libraries/objectlib/object"
 #include "libraries/objectlib/accessors"
 #include "libraries/objectlib/constraints"
+#include "libraries/objectlib/errorhandler"

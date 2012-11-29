@@ -35,6 +35,8 @@
  *                      value entry. Default is 1 cell.
  * @param keySize       (Optional) Maximum number of cells reserved for each
  *                      key name. Default is 8 cells (32 bytes/characters).
+ * @param errorHandler  (Optional) Callback for general error handler. Called
+ *                      when a recoverable error occured.
  *
  * @return              Reference to type descriptor. Must be deleted with
  *                      ObjLib_DeleteType when no longer in use.
@@ -42,7 +44,7 @@
  *                      Note: Don't delete type descriptors if there are objects
  *                      using it. Delete objects first.
  */
-stock ObjectType:ObjLib_CreateType(blockSize = 1, keySzie = 8)
+stock ObjectType:ObjLib_CreateType(blockSize = 1, keySzie = 8, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
 {
     // Create array to store type descriptor data. Reserve space required.
     new ObjectType:typeDescriptor = ObjectType:CreateArray(_, OBJECT_TYPE_DATA_LEN);
@@ -60,6 +62,7 @@ stock ObjectType:ObjLib_CreateType(blockSize = 1, keySzie = 8)
     ObjLib_SetTypeNameIndex(typeDescriptor,     nameIndex);
     ObjLib_SetTypeDataTypes(typeDescriptor,     dataTypes);
     ObjLib_SetTypeConstraints(typeDescriptor,   constraintList);
+    ObjLib_SetTypeErrorHandler(typeDescriptor,  errorHandler);
     
     return typeDescriptor;
 }
@@ -218,15 +221,17 @@ stock ObjLib_AddKey(ObjectType:typeDescriptor, const String:keyName[], ObjectDat
     ObjLib_ValidateObjectType(typeDescriptor);
     
     // Check if not mutable.
-    if (!ObjLib_IsTypeMutable(typeDescriptor))
+    if (!ObjLib_IsTypeMutable(typeDescriptor)
+        && ObjLib_HandleError(typeDescriptor, ObjLibError_Immutable, _, "This object type descriptor is immutable (%x).", typeDescriptor))
     {
-        ThrowError("This object type descriptor is immutable (%x).", typeDescriptor);
+        return;
     }
     
     // Check if key exist.
-    if (ObjLib_KeyExist(typeDescriptor, keyName))
+    if (ObjLib_KeyExist(typeDescriptor, keyName)
+        && ObjLib_HandleError(typeDescriptor, ObjLibError_KeyExist, _, "Key name already exist (\"%s\").", keyName))
     {
-        ThrowError("Key name already exist (\"%s\").", keyName);
+        return;
     }
     
     // Validate constraints.
@@ -273,15 +278,17 @@ stock bool:ObjLib_RemoveKey(ObjectType:typeDescriptor, const String:keyName[])
     ObjLib_ValidateObjectType(typeDescriptor);
     
     // Check if not mutable.
-    if (!ObjLib_IsTypeMutable(typeDescriptor))
+    if (!ObjLib_IsTypeMutable(typeDescriptor)
+        && ObjLib_HandleError(typeDescriptor, ObjLibError_Immutable, _, "This object type descriptor is immutable (%x).", typeDescriptor))
     {
-        ThrowError("This object type descriptor is immutable (%x).", typeDescriptor);
+        return;
     }
     
     // Check if key doesn't exist.
-    if (!ObjLib_KeyExist(typeDescriptor, keyName))
+    if (!ObjLib_KeyExist(typeDescriptor, keyName)
+        && ObjLib_HandleError(typeDescriptor, ObjLibError_InvalidKey, _, "Key doesn't exist (\"%s\").", keyName))
     {
-        ThrowError("Key doesn't exist (\"%s\").", keyName);
+        return;
     }
     
     new Handle:keys = ObjLib_GetTypeKeys(typeDescriptor);
@@ -346,8 +353,13 @@ stock ObjLib_ValidateObjectType(ObjectType:typeDescriptor)
 
 /*____________________________________________________________________________*/
 
-/** Internal use only! */
-stock ObjLib_KeyTypeMismatchError(ObjectDataType:actual, ObjectDataType:expected)
+/**
+ * Internal use only!
+ *
+ * @return      True if error was handled. If not handled this function does not
+ *              return.
+ */
+stock bool:ObjLib_KeyTypeMismatchError(ObjectType:typeDescriptor, ObjectDataType:actual, ObjectDataType:expected, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
 {
     new String:actualName[16];
     new String:expectedName[16];
@@ -355,7 +367,7 @@ stock ObjLib_KeyTypeMismatchError(ObjectDataType:actual, ObjectDataType:expected
     ObjLib_DataTypeToString(actual, actualName, sizeof(actualName));
     ObjLib_DataTypeToString(expected, expectedName, sizeof(expectedName));
     
-    ThrowError("Key type mismatch. Expected \"%s\", but \"%s\" was used.", expectedName, actualName);
+    return ObjLib_HandleError(typeDescriptor, ObjLibError_InvalidKeyType, errorHandler, "Key type mismatch. Expected \"%s\", but \"%s\" was used.", expectedName, actualName);
 }
 
 /*____________________________________________________________________________*/
@@ -369,13 +381,18 @@ stock ObjLib_KeyTypeMismatchError(ObjectDataType:actual, ObjectDataType:expected
  * @param typeDescriptor    Object type descriptor.
  * @param keyIndex          Index of key to validate against.
  * @param keyType           Type of key to validate.
+ * @param errorHandler      Custom error handler. Overrides error handler in
+ *                          type descriptor if specified.
+ *
+ * @return                  True if passed, false otherwise.
  */
-stock ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, keyIndex, ObjectDataType:keyType)
+stock bool:ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, keyIndex, ObjectDataType:keyType, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
 {
     // Validate key index.
-    if (keyIndex < 0)
+    if (keyIndex < 0
+        && ObjLib_HandleError(typeDescriptor, ObjLibError_InvalidKey, errorHandler, "Invalid key index (%d).", keyIndex))
     {
-        ThrowError("Invalid key index (%d).", keyIndex);
+        return false;
     }
     
     new Handle:dataTypes = ObjLib_GetTypeDataTypes(typeDescriptor);
@@ -384,6 +401,9 @@ stock ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, keyIndex, ObjectDataType:ke
     if (keyType != destType)
     {
         // Key mismatch. Throw error.
-        ObjLib_KeyTypeMismatchError(keyType, destType);
+        ObjLib_KeyTypeMismatchError(typeDescriptor, keyType, destType);
+        return false;
     }
+    
+    return true;
 }
