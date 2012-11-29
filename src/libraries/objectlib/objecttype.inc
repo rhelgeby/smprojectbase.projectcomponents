@@ -142,7 +142,7 @@ stock ObjectType:ObjLib_CloneType(ObjectType:typeDescriptor, bool:locked = false
         // Constraints are objects that must be cloned too. They are immutable
         // and shouldn't need to clone their type. If they do, it's a bug and
         // will cause an infinite loop or eventually stack overflow.
-        ThrowError("[BUG] Constraint types should never need to be cloned. This is a bug!");
+        ThrowError("[BUG] Constraint types should never need to be cloned. This is a bug in objectlib.");
     }
     
     new keySize = ObjLib_GetTypeKeySize(typeDescriptor);
