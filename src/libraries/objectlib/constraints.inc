@@ -108,8 +108,8 @@ stock Object:ObjLib_GetCellConstraints(bool:nonzero = false,
 stock Object:ObjLib_GetFloatConstraints(bool:nonzero = false,
                                         bool:lowerLimit = false,
                                         bool:upperLimit = false,
-                                        Float:min = 0,
-                                        Float:max = 0,
+                                        Float:min = 0.0,
+                                        Float:max = 0.0,
                                         Float:zeroDelta = 0.0001)
 {
     // Make sure constraint types exist.
@@ -377,7 +377,7 @@ stock Object:ObjLib_GetCustomConstraints(ObjLib_KeyValidator:callback)
     // Validate callback.
     if (callback == INVALID_FUNCTION)
     {
-        ThrowError("Invalid callback function.");
+        ThrowError("Invalid callback function (%x).", callback);
     }
     
     new Object:constraint = ObjLib_CreateObject(ObjLib_CustomConstraints, false);
@@ -385,6 +385,48 @@ stock Object:ObjLib_GetCustomConstraints(ObjLib_KeyValidator:callback)
     ObjLib_SetFunction(constraint, "callback", callback);
     
     return constraint;
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Returns whether the specified object is a constraints object.
+ *
+ * @param constraints   Object to check.
+ *
+ * @return              True if a constraints object, false otherwise.
+ */
+stock bool:ObjLib_IsConstraintObject(Object:constraints)
+{
+    ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(constraints);
+    return ObjLib_IsConstraintType(typeDescriptor);
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Returns whether the specified type is a constraint type.
+ *
+ * @param typeDescriptor    Object type to check.
+ *
+ * @return                  True if a constraint type, false otherwise.
+ */
+stock bool:ObjLib_IsConstraintType(ObjectType:typeDescriptor)
+{
+    if (typeDescriptor == ObjLib_CellConstraints
+        || typeDescriptor == ObjLib_FloatConstraints
+        || typeDescriptor == ObjLib_HandleConstraints
+        || typeDescriptor == ObjLib_FunctionConstraints
+        || typeDescriptor == ObjLib_StringConstraints
+        || typeDescriptor == ObjLib_ArrayConstraints
+        || typeDescriptor == ObjLib_ObjectConstraints
+        || typeDescriptor == ObjLib_ObjectTypeConstraints
+        || typeDescriptor == ObjLib_CustomConstraints)
+    {
+        return true;
+    }
+    
+    return false;
 }
 
 
@@ -550,4 +592,55 @@ stock ObjectType:ObjLib_GetCustomConstraintType()
     ObjLib_AddKey(constraints, "callback", ObjDataType_Function);
     
     return constraints;
+}
+
+/*____________________________________________________________________________*/
+
+/* Internal use only! */
+stock ObjLib_ValidateConstraintOrFail(Object:constraints, ObjectDataType:dataType = ObjDataType_Any)
+{
+    if (constraints != INVALID_OBJECT)
+    {
+        // INVALID_OBJECT is considered valid (no constraints enabled).
+        return;
+    }
+    
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(constraints);
+    new ObjectType:constraintType = ObjLib_DataTypeToConstraintType(dataType);
+    
+    // Check constraint type against data type.
+    if (typeDescriptor != ObjLib_CustomConstraints      // Custom constraints allowed on all data types.
+        && constraintType == INVALID_OBJECT_TYPE)
+    {
+        new String:dataTypeName[32];
+        ObjLib_DataTypeToString(dataType, dataTypeName, sizeof(dataTypeName));
+        ThrowError("Invalid constraints object (%x). Not a constraint type or constraints not matching data type (%s).", constraints, dataTypeName);
+    }
+}
+
+/*____________________________________________________________________________*/
+
+/* Internal use only! */
+stock ObjectType:ObjLib_DataTypeToConstraintType(ObjectDataType:dataType)
+{
+    switch (dataType)
+    {
+        case ObjDataType_Any:           return ObjLib_CustomConstraints;    // Only custom constraints allowed.
+        case ObjDataType_Cell:          return ObjLib_CellConstraints;
+        case ObjDataType_Bool:          return ObjLib_CustomConstraints;    // Only custom constraints allowed.
+        case ObjDataType_Float:         return ObjLib_FloatConstraints;
+        case ObjDataType_Handle:        return ObjLib_HandleConstraints;
+        case ObjDataType_Function:      return ObjLib_FunctionConstraints;
+        case ObjDataType_Array:         return ObjLib_ArrayConstraints;
+        case ObjDataType_String:        return ObjLib_StringConstraints;
+        case ObjDataType_Object:        return ObjLib_ObjectConstraints;
+        case ObjDataType_ObjectType:    return ObjLib_ObjectTypeConstraints;
+        
+        default:
+        {
+            return INVALID_OBJECT_TYPE;
+        }
+    }
+    
+    return INVALID_OBJECT_TYPE;
 }

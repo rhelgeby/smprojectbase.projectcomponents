@@ -77,7 +77,7 @@ enum ObjectDataType
     ObjDataType_Array,
     ObjDataType_String,
     ObjDataType_Object,
-    ObjDataType_ObjectType,
+    ObjDataType_ObjectType
 }
 
 /*____________________________________________________________________________*/
@@ -100,7 +100,7 @@ enum ObjectData
  * Internal use only!
  * Object type entries. Used internally to name array indexes.
  */
-#define OBJECT_TYPE_DATA_LEN    8   /** Number of elements below. */
+#define OBJECT_TYPE_DATA_LEN    9   /** Number of elements below. */
 enum ObjectTypeData
 {
     ObjectType_Locked = 0,      /** Whether type descriptor is read only. */
@@ -110,8 +110,8 @@ enum ObjectTypeData
     ObjectType_Keys,            /** Handle to array of key names (case sensitive). */
     ObjectType_NameIndex,       /** Handle to trie index of key names. */
     ObjectType_DataTypes,       /** Handle to array of data type for each value entry. */
-    ObjectType_Constraints      /** Handle to validation constraints info for each key. */
-    // TODO: Custom error handler.
+    ObjectType_Constraints,     /** Handle to validation constraints info for each key. */
+    ObjectType_ErrorHandler     /** General error handler. Optional. */
 }
 
 /*____________________________________________________________________________*/
@@ -124,6 +124,7 @@ enum ObjLibError
 {
     ObjLibError_InvalidKey,         /** Key name or index is invalid. */
     ObjLibError_InvalidType,        /** Type mismatch. */
+    ObjLibError_Immutable,          /** Object or Object type is immutable. */
     ObjLibError_ValidationError     /** Data constraint violation. */
 }
 
@@ -137,12 +138,12 @@ enum ObjLibError
 /*____________________________________________________________________________*/
 
 /**
- * Called when there's an error.
+ * General error callback.
  *
  * @param errorType     Type of error.
  * @param message       Error message.
  */
-functag ObjLib_Error(ObjLibError:errorType, const String:message[]);
+functag public ObjLib_Error(ObjLibError:errorType, const String:message[]);
 
 /*____________________________________________________________________________*/
 
@@ -154,7 +155,7 @@ functag ObjLib_Error(ObjLibError:errorType, const String:message[]);
  * @param dataType          Type of key.
  * @param typeDescriptor    Object type (meta data).
  */
-functag bool:ObjLib_KeyValidator(Object:object, const String:keyName[], ObjectDataType:dataType, ObjectType:typeDescriptor);
+functag public bool:ObjLib_KeyValidator(Object:object, const String:keyName[], ObjectDataType:dataType, ObjectType:typeDescriptor);
 
 /*____________________________________________________________________________*/
 
