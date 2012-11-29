@@ -265,11 +265,31 @@ stock bool:ObjLib_IsValidObject(Object:object)
 /*____________________________________________________________________________*/
 
 /**
+ * Returns whether the object is the specitifed type.
+ *
+ * Note: This is simple type checking. It compares the objects type descriptor
+ *       reference against the specified reference.
+ *
+ * @param object            Object reference to validate.
+ * @param typeDescriptor    Type to match against.
+ *
+ * @return                  True if types match, false otherwise.
+ */
+stock bool:ObjLib_TypeOf(Object:object, ObjectType:typeDescriptor)
+{
+    return typeDescriptor == ObjLib_GetTypeDescriptor(object);
+}
+
+/*____________________________________________________________________________*/
+
+/**
  * Adds a new key to an object, if not locked.
  *
  * @param object    Object to remove key from.
  * @param keyName   Name of key to remove. Case sensitive.
  * @param dataType  Data type of key.
+ *
+ * @error           Immutable object.
  */
 stock bool:ObjLib_AddObjectKey(Object:object, const String:keyName[], ObjectDataType:dataType = ObjDataType_Any)
 {
@@ -286,6 +306,8 @@ stock bool:ObjLib_AddObjectKey(Object:object, const String:keyName[], ObjectData
  *
  * @param object    Object to remove key from.
  * @param keyName   Name of key to remove. Case sensitive.
+ *
+ * @error           Immutable object.
  */
 stock ObjLib_RemoveObjectKey(Object:object, const String:keyName[])
 {

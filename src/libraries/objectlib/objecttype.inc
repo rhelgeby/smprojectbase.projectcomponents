@@ -133,6 +133,11 @@ stock ObjectType:ObjLib_CloneType(ObjectType:typeDescriptor, bool:locked = false
     new Handle:dataTypes = CloneArray(ObjLib_GetTypeDataTypes(typeDescriptor));
     // TODO: clone constraints when implemented
     
+    // Note: Possible recursive reentry when cloning constraints. Constraints
+    // are objects that must be cloned too. They are immutable and shouldn't
+    // have a need to clone their type. If they do, it's a bug and will cause
+    // an infinite loop or eventually stack overflow.
+    
     new ObjectType:newType = ObjectType:CreateArray(_, OBJECT_TYPE_DATA_LEN);
     
     ObjLib_SetTypeLocked(newType,       locked);
