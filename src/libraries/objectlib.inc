@@ -111,7 +111,50 @@ enum ObjectTypeData
     ObjectType_NameIndex,       /** Handle to trie index of key names. */
     ObjectType_DataTypes,       /** Handle to array of data type for each value entry. */
     ObjectType_Constraints      /** Handle to validation constraints info for each key. */
+    // TODO: Custom error handler.
 }
+
+/*____________________________________________________________________________*/
+
+/**
+ * Internal use only!
+ * Error types. Used in custom error handler callback.
+ */
+enum ObjLibError
+{
+    ObjLibError_InvalidKey,         /** Key name or index is invalid. */
+    ObjLibError_InvalidType,        /** Type mismatch. */
+    ObjLibError_ValidationError     /** Data constraint violation. */
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Number of bytes reserved for various strings.
+ */
+#define OBJECTLIB_WHITELIST_LEN 64      /** Space reserved in whitelist/blacklist for string constraints. */
+
+/*____________________________________________________________________________*/
+
+/**
+ * Called when there's an error.
+ *
+ * @param errorType     Type of error.
+ * @param message       Error message.
+ */
+functag ObjLib_Error(ObjLibError:errorType, const String:message[]);
+
+/*____________________________________________________________________________*/
+
+/**
+ * Custom key validation callback.
+ *
+ * @param object            Object being validated.
+ * @param keyName           Key being validated.
+ * @param dataType          Type of key.
+ * @param typeDescriptor    Object type (meta data).
+ */
+functag bool:ObjLib_KeyValidator(Object:object, const String:keyName[], ObjectDataType:dataType, ObjectType:typeDescriptor);
 
 /*____________________________________________________________________________*/
 
@@ -157,3 +200,4 @@ stock Handle:ObjLib_CloneTrie(Handle:trie, Handle:keys, keySize)
 #include "libraries/objectlib/objecttype"
 #include "libraries/objectlib/object"
 #include "libraries/objectlib/accessors"
+#include "libraries/objectlib/constraints"

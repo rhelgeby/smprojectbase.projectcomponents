@@ -227,35 +227,54 @@ How to properly handle this:
     ObjLib_DeleteObject(immutableObject);
     ObjLib_DeleteObjectType(typeFromImmutableObject);   // Deleting hidden cloned type.
 
+
 VALIDATION
 ----------
 
 (TODO: Rewrite notes into full text.)
 
-Stuff that can be validated:
-* Function      - Whether they exist or is just nonzero.
-* Path          - File/folder path. Include support for game cache files, etc.
-* Numbers       - Min/max, nonzero
-* String        - Nonempty, blacklist or whitelist characters, min/max length.
-* Handle        - Just nonzero, SM doesn't provide a way to tell if it's valid or not anymore.
-* Object        - Match a certain type, nonzero.
-* ObjectType    - Nonzero. Require keys with certain data types.
-* Custom        - Callback to user defined validation.
+ObjectType_Constraints attribute:
+An array of validation constraints objects of certain types. INVALID_OBJECT may
+be used to disable constraints on keys.
 
-Validation callback:
-functag ObjLib_ValidateKey(Object:object, const String:keyName[], ObjectDataType:dataType, ObjectType:typeDescriptor)
+Constraint object types (created once globally by the object library):
+* CellConstraints           - nonzero, min/max
+* FloatConstraints          - nonzero, min/max
+* StringConstraints         - length, file/folder path (includinc game cache files), whitelist/blacklist characters
+* HandleConstraints         - nonzero
+* FunctionConstraints       - nonzero
+* ArrayConstraints          - length
+* ObjectConstraints         - nonzero, object type
+* ObjectTypeConstraints     - nonzero, require keys with certain data types
+* CustomConstraints         - callback to user defined validation
 
-Figure out a validator pattern where different validator types are stored in
-ObjectType_Constraints. Examples: CellValidator, FloatValidator,
-StringValidator, etc. Need a common interface to work with these: Use objects.
+Custom validation callback:
+functag bool:ObjLib_KeyValidator(Object:object, const String:keyName[], ObjectDataType:dataType, ObjectType:typeDescriptor)
 
-Create ObjLib_Get<Type>Constraints that will build and return a validation
-constraint object. ObjLib_AddKey may use this object.
+Validation error callback (optional in set functions):
+functag ObjLib_Error(ObjLibError:errorType, const String:message[]);
+
+Constraint builder:
+Functions for building constraint objects of certain types, like
+ObjLib_Get<Type>Constraints. The object returned may be passed as constraints in
+ObjLib_AddKey.
+
+Memory management:
+When deleting an object it will need to check for constraint object and delete
+them too. This will cause a recursive reentry to the delete function. Because of
+this constraint objects can't have their own constraints attached to them. The
+object library will make sure it's valid.
+
+Hrror handlers:
+* Optional callback stored in type descriptor.
+* Callback in set functions (overrides general handler).
+* No handler - ThrowError.
+
 
 MEMORY MANAGEMENT
 -----------------
 
-When objects or types are no longer used, they must be deleted or there will be
+When objects or types are no longer used they must be deleted, or there will be
 memory leaks.
 
     ObjLib_DeleteObject(alice);
