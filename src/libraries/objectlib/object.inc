@@ -361,31 +361,38 @@ stock ObjLib_ValidateObject(Object:object)
 /*____________________________________________________________________________*/
 
 /** Internal use only! */
-stock ObjLib_NullCheck(Object:object, keyIndex)
+stock bool:ObjLib_NullCheck(Object:object, keyIndex, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
 {
     if (ObjLib_IsKeyNullAt(object, keyIndex))
     {
         // Key is null. Throw error.
         
+        new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
+        
         // Get Key name.
         new String:keyName[OBJECT_KEY_NAME_LEN];
-        new Handle:keys = ObjLib_GetTypeKeys(ObjLib_GetTypeDescriptor(object));
+        new Handle:keys = ObjLib_GetTypeKeys(typeDescriptor);
         GetArrayString(keys, keyIndex, keyName, sizeof(keyName));
         
-        ThrowError("Key at index %d is null: %s", keyIndex, keyName);
+        ObjLib_HandleError(typeDescriptor, ObjLibError_NullDataKey, errorHandler, "Key at index %d is null: %s", keyIndex, keyName);
+        return false;
     }
+    
+    return true;
 }
 
 /*____________________________________________________________________________*/
 
 /** Internal use only! */
-stock ObjLib_GetKeyIndexOrFail(Object:object, const String:keyName[])
+stock ObjLib_GetKeyIndexOrFail(Object:object, const String:keyName[], ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
 {
     new keyIndex = ObjLib_GetKeyIndex(object, keyName);
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
-    if (keyIndex < 0)
+    if (keyIndex < 0
+        && ObjLib_HandleError(typeDescriptor, ObjLibError_InvalidKey, errorHandler, "Invalid key name (%s).", keyName))
     {
-        ThrowError("Invalid key name (%s).", keyName);
+        return -1;
     }
     
     return keyIndex;
