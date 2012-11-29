@@ -22,8 +22,6 @@ MAIN FEATURES
 * Supports built-in and custom data validation
   The library supports basic validation constraints such as min/max limits in
   addition to a callback where the user can do custom validation of the object.
-  
-  TO BE IMPLEMENTED.
 
 * Type safe (as far as it's possible in SourcePawn)
   Each key is assigned a type. This structure requires you to use appropriate
@@ -249,10 +247,10 @@ Constraint object types (created once globally by the object library):
 * CustomConstraints         - callback to user defined validation
 
 Custom validation callback:
-functag bool:ObjLib_KeyValidator(Object:object, const String:keyName[], ObjectDataType:dataType, ObjectType:typeDescriptor)
+functag public bool:ObjLib_KeyValidator(Object:object, const String:keyName[], ObjectDataType:dataType, const any:values[], size, ObjectType:typeDescriptor);
 
-Validation error callback (optional in set functions):
-functag ObjLib_Error(ObjLibError:errorType, const String:message[]);
+General error handler callback:
+functag public ObjLib_ErrorHandler(ObjectType:typeDescriptor, ObjLibError:errorType, const String:message[], Object:object);
 
 Constraint builder:
 Functions for building constraint objects of certain types, like
@@ -265,10 +263,11 @@ them too. This will cause a recursive reentry to the delete function. Because of
 this constraint objects can't have their own constraints attached to them. The
 object library will make sure it's valid.
 
-Hrror handlers:
+Error handlers (only applies to recoverable errors, other errors will always use
+ThrowError):
 * Optional callback stored in type descriptor.
-* Callback in set functions (overrides general handler).
-* No handler - ThrowError.
+* Callback passed to set functions (overrides general handler).
+* No handler - Using ThrowError.
 
 
 MEMORY MANAGEMENT
