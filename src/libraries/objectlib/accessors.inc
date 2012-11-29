@@ -568,7 +568,7 @@ stock any:ObjLib_GetAnyAt(Object:object, index, ObjLib_ErrorHandler:errorHandler
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    if (!ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_Any, errorHandler))
+    if (!ObjLib_KeyTypeCheck(typeDescriptor, object, index, ObjDataType_Any, errorHandler))
     {
         return 0;
     }
@@ -605,7 +605,13 @@ stock ObjLib_SetAnyAt(Object:object, index, any:value, ObjLib_ErrorHandler:error
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    if (!ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_Any, errorHandler))
+    if (!ObjLib_KeyTypeCheck(typeDescriptor, object, index, ObjDataType_Any, errorHandler))
+    {
+        return;
+    }
+    
+    // Handle constraints.
+    if (!ObjLib_HandleValueConstraints(object, typeDescriptor, index, value, errorHandler))
     {
         return;
     }
@@ -638,7 +644,7 @@ stock ObjLib_GetCellAt(Object:object, index, ObjLib_ErrorHandler:errorHandler = 
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    if (!ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_Cell, errorHandler))
+    if (!ObjLib_KeyTypeCheck(typeDescriptor, object, index, ObjDataType_Cell, errorHandler))
     {
         return 0;
     }
@@ -675,7 +681,13 @@ stock ObjLib_SetCellAt(Object:object, index, value, ObjLib_ErrorHandler:errorHan
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    if (!ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_Any, errorHandler))
+    if (!ObjLib_KeyTypeCheck(typeDescriptor, object, index, ObjDataType_Any, errorHandler))
+    {
+        return;
+    }
+    
+    // Handle constraints.
+    if (!ObjLib_HandleValueConstraints(object, typeDescriptor, index, value, errorHandler))
     {
         return;
     }
@@ -708,7 +720,7 @@ stock bool:ObjLib_GetBoolAt(Object:object, index, ObjLib_ErrorHandler:errorHandl
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    if (!ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_Bool, errorHandler))
+    if (!ObjLib_KeyTypeCheck(typeDescriptor, object, index, ObjDataType_Bool, errorHandler))
     {
         return false;
     }
@@ -745,7 +757,13 @@ stock ObjLib_SetBoolAt(Object:object, index, bool:value, ObjLib_ErrorHandler:err
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    if (!ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_Bool, errorHandler))
+    if (!ObjLib_KeyTypeCheck(typeDescriptor, object, index, ObjDataType_Bool, errorHandler))
+    {
+        return;
+    }
+    
+    // Handle constraints.
+    if (!ObjLib_HandleValueConstraints(object, typeDescriptor, index, value, errorHandler))
     {
         return;
     }
@@ -778,7 +796,7 @@ stock Float:ObjLib_GetFloatAt(Object:object, index, ObjLib_ErrorHandler:errorHan
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    if (!ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_Float, errorHandler))
+    if (!ObjLib_KeyTypeCheck(typeDescriptor, object, index, ObjDataType_Float, errorHandler))
     {
         return 0.0;
     }
@@ -815,7 +833,13 @@ stock ObjLib_SetFloatAt(Object:object, index, Float:value, ObjLib_ErrorHandler:e
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    if (!ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_Float, errorHandler))
+    if (!ObjLib_KeyTypeCheck(typeDescriptor, object, index, ObjDataType_Float, errorHandler))
+    {
+        return;
+    }
+    
+    // Handle constraints.
+    if (!ObjLib_HandleValueConstraints(object, typeDescriptor, index, value, errorHandler))
     {
         return;
     }
@@ -848,7 +872,7 @@ stock Handle:ObjLib_GetHandleAt(Object:object, index, ObjLib_ErrorHandler:errorH
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    if (!ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_Handle, errorHandler))
+    if (!ObjLib_KeyTypeCheck(typeDescriptor, object, index, ObjDataType_Handle, errorHandler))
     {
         return INVALID_HANDLE;
     }
@@ -885,7 +909,13 @@ stock ObjLib_SetHandleAt(Object:object, index, Handle:value, ObjLib_ErrorHandler
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    if (!ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_Handle, errorHandler))
+    if (!ObjLib_KeyTypeCheck(typeDescriptor, object, index, ObjDataType_Handle, errorHandler))
+    {
+        return;
+    }
+    
+    // Handle constraints.
+    if (!ObjLib_HandleValueConstraints(object, typeDescriptor, index, value, errorHandler))
     {
         return;
     }
@@ -918,7 +948,7 @@ stock Function:ObjLib_GetFunctionAt(Object:object, index, ObjLib_ErrorHandler:er
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    if (!ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_Function, errorHandler))
+    if (!ObjLib_KeyTypeCheck(typeDescriptor, object, index, ObjDataType_Function, errorHandler))
     {
         return INVALID_FUNCTION;
     }
@@ -955,7 +985,13 @@ stock ObjLib_SetFunctionAt(Object:object, index, Function:value, ObjLib_ErrorHan
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    if (!ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_Function, errorHandler))
+    if (!ObjLib_KeyTypeCheck(typeDescriptor, object, index, ObjDataType_Function, errorHandler))
+    {
+        return;
+    }
+    
+    // Handle constraints.
+    if (!ObjLib_HandleValueConstraints(object, typeDescriptor, index, value, errorHandler))
     {
         return;
     }
@@ -990,7 +1026,7 @@ stock ObjLib_GetArrayAt(Object:object, index, any:buffer[], maxlen, ObjLib_Error
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    if (!ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_Array, errorHandler))
+    if (!ObjLib_KeyTypeCheck(typeDescriptor, object, index, ObjDataType_Array, errorHandler))
     {
         return 0;
     }
@@ -1014,7 +1050,7 @@ stock ObjLib_GetArrayAt(Object:object, index, any:buffer[], maxlen, ObjLib_Error
  * @param object        Object to update.
  * @param index         Index of key.
  * @param values        Array to set.
- * @param maxlen        Size of array.
+ * @param size          Size of array.
  * @param errorHandler  Custom error handler. Overrides any other error handler
  *                      if specified.
  *
@@ -1022,7 +1058,7 @@ stock ObjLib_GetArrayAt(Object:object, index, any:buffer[], maxlen, ObjLib_Error
  *
  * @error               Invalid object, key index or key type mismatch.
  */
-stock ObjLib_SetArrayAt(Object:object, index, const any:values[], maxlen, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+stock ObjLib_SetArrayAt(Object:object, index, const any:values[], size, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
 {
     // Validate object.
     ObjLib_ValidateObject(object);
@@ -1030,7 +1066,13 @@ stock ObjLib_SetArrayAt(Object:object, index, const any:values[], maxlen, ObjLib
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    if (!ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_Array, errorHandler))
+    if (!ObjLib_KeyTypeCheck(typeDescriptor, object, index, ObjDataType_Array, errorHandler))
+    {
+        return 0;
+    }
+    
+    // Handle constraints.
+    if (!ObjLib_HandleArrayConstraints(object, typeDescriptor, index, values, size, errorHandler))
     {
         return 0;
     }
@@ -1038,7 +1080,7 @@ stock ObjLib_SetArrayAt(Object:object, index, const any:values[], maxlen, ObjLib
     // Set value.
     new Handle:data = ObjLib_GetObjectData(object);
     ObjLib_SetKeyNull(object, index, false);
-    return SetArrayArray(data, index, values, maxlen);
+    return SetArrayArray(data, index, values, size);
 }
 
 /*____________________________________________________________________________*/
@@ -1065,7 +1107,7 @@ stock ObjLib_GetStringAt(Object:object, index, String:buffer[], maxlen, ObjLib_E
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    if (!ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_String, errorHandler))
+    if (!ObjLib_KeyTypeCheck(typeDescriptor, object, index, ObjDataType_String, errorHandler))
     {
         return 0;
     }
@@ -1104,7 +1146,13 @@ stock ObjLib_SetStringAt(Object:object, index, const String:value[], ObjLib_Erro
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    if (!ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_String, errorHandler))
+    if (!ObjLib_KeyTypeCheck(typeDescriptor, object, index, ObjDataType_String, errorHandler))
+    {
+        return 0;
+    }
+    
+    // Handle constraints.
+    if (!ObjLib_HandleArrayConstraints(object, typeDescriptor, index, value, -1, errorHandler))
     {
         return 0;
     }
@@ -1137,7 +1185,7 @@ stock Object:ObjLib_GetObjectAt(Object:object, index, ObjLib_ErrorHandler:errorH
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    if (!ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_Object, errorHandler))
+    if (!ObjLib_KeyTypeCheck(typeDescriptor, object, index, ObjDataType_Object, errorHandler))
     {
         return INVALID_OBJECT;
     }
@@ -1174,7 +1222,13 @@ stock ObjLib_SetObjectAt(Object:object, index, Object:value, ObjLib_ErrorHandler
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    if (!ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_Object, errorHandler))
+    if (!ObjLib_KeyTypeCheck(typeDescriptor, object, index, ObjDataType_Object, errorHandler))
+    {
+        return;
+    }
+    
+    // Handle constraints.
+    if (!ObjLib_HandleValueConstraints(object, typeDescriptor, index, value, errorHandler))
     {
         return;
     }
@@ -1207,7 +1261,7 @@ stock ObjectType:ObjLib_GetObjectTypeAt(Object:object, index, ObjLib_ErrorHandle
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    if (!ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_ObjectType, errorHandler))
+    if (!ObjLib_KeyTypeCheck(typeDescriptor, object, index, ObjDataType_ObjectType, errorHandler))
     {
         return INVALID_OBJECT_TYPE;
     }
@@ -1244,7 +1298,13 @@ stock ObjLib_SetObjectTypeAt(Object:object, index, ObjectType:value, ObjLib_Erro
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    if (!ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_ObjectType, errorHandler))
+    if (!ObjLib_KeyTypeCheck(typeDescriptor, object, index, ObjDataType_ObjectType, errorHandler))
+    {
+        return;
+    }
+    
+    // Handle constraints.
+    if (!ObjLib_HandleValueConstraints(object, typeDescriptor, index, value, errorHandler))
     {
         return;
     }
@@ -1304,6 +1364,25 @@ stock ObjLib_GetKeyIndex(Object:object, const String:keyName[])
     ObjLib_ValidateObject(object);
     
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
+    
+    return ObjLib_GetKeyIndexFromType(typeDescriptor, keyName);
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Gets the index for the specified key in an object.
+ *
+ * @param object    Object to get index from.
+ * @param keyName   Name of key. Case sensitive.
+ *
+ * @return          Key index if successful, or -1 if it doesn't exist.
+ */
+stock ObjLib_GetKeyIndexFromType(ObjectType:typeDescriptor, const String:keyName[])
+{
+    // Validate type.
+    ObjLib_ValidateObjectType(typeDescriptor);
+    
     new Handle:nameIndex = ObjLib_GetTypeNameIndex(typeDescriptor);
     
     new index = -1;
@@ -1377,6 +1456,70 @@ stock Handle:ObjLib_GetTypeDataTypes(ObjectType:typeDescriptor)
 {
     return Handle:GetArrayCell(Handle:typeDescriptor, _:ObjectType_DataTypes);
 }
+
+/*____________________________________________________________________________*/
+
+/**
+ * Gets the constraints object for the specified key.
+ *
+ * @param typeDescriptor    Type descriptor.
+ * @param keyIndex          Index of key to get constraints from.
+ *
+ * @return                  Constraints object or INVALID_OBJECT if no
+ *                          constraints.
+ */
+stock Object:ObjLib_GetTypeConstraintsAt(ObjectType:typeDescriptor, keyIndex)
+{
+    // Get constraints object list.
+    new Handle:constraintList = ObjLib_GetTypeConstraints(typeDescriptor);
+    return Object:GetArrayCell(constraintList, keyIndex);
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Sets the constraints object for the specified key.
+ *
+ * Warning: Do not set a new constraint object before deleting any existing
+ *          constraint object at this index first. Otherwise there will be
+ *          a memory leak.
+ *          
+ *          Existing constraint object is automatically deleted if
+ *          deleteOldConstraints is true.
+ *
+ * @param typeDescriptor        Type descriptor.
+ * @param keyIndex              Index of key to get constraints from.
+ * @param constraints           Constraints object to set.
+ * @param deleteOldConstraints  Whether to delete existing constraints object,
+ *                              if any. Default is true.
+ */
+stock Object:ObjLib_SetTypeConstraintsAt(ObjectType:typeDescriptor, keyIndex, Object:constraints, bool:deleteOldConstraints = true)
+{
+    // Get key data type.
+    new Handle:dataTypes = ObjLib_GetTypeDataTypes(typeDescriptor);
+    new ObjectDataType:dataType = ObjectDataType:GetArrayCell(dataTypes, keyIndex);
+    
+    // Validate.
+    ObjLib_ValidateConstraintOrFail(constraints, dataType);
+    
+    // Get constraints object list.
+    new Handle:constraintList = ObjLib_GetTypeConstraints(typeDescriptor);
+    
+    // Delete old constraints if enabled.
+    if (deleteOldConstraints)
+    {
+        new Object:oldConstraints = Object:GetArrayCell(constraintList, keyIndex);
+        if (oldConstraints != INVALID_OBJECT)
+        {
+            ObjLib_DeleteObject(oldConstraints);
+        }
+    }
+    
+    // Set new constraints.
+    SetArrayCell(constraintList, keyIndex, constraints);
+}
+
+/*____________________________________________________________________________*/
 
 /**
  * Returns whether the specified object type descriptor is mutable (not locked).

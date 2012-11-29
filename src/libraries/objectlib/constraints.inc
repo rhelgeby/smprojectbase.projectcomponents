@@ -123,8 +123,8 @@ stock Object:ObjLib_GetFloatConstraints(bool:nonzero = false,
     
     new Object:constraint = ObjLib_CreateObject(ObjLib_FloatConstraints, false);
     
-    ObjLib_SetCell(constraint, "min", min);
-    ObjLib_SetCell(constraint, "max", max);
+    ObjLib_SetFloat(constraint, "min", min);
+    ObjLib_SetFloat(constraint, "max", max);
     ObjLib_SetBool(constraint, "lowerLimit", lowerLimit);
     ObjLib_SetBool(constraint, "upperLimit", upperLimit);
     ObjLib_SetFloat(constraint, "zeroDelta", zeroDelta);

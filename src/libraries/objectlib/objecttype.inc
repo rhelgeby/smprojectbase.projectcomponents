@@ -220,16 +220,18 @@ stock ObjLib_AddKey(ObjectType:typeDescriptor, const String:keyName[], ObjectDat
     // Validate.
     ObjLib_ValidateObjectType(typeDescriptor);
     
+    new Object:parent = ObjLib_GetTypeParentObject(typeDescriptor);
+    
     // Check if not mutable.
     if (!ObjLib_IsTypeMutable(typeDescriptor)
-        && ObjLib_HandleError(typeDescriptor, ObjLibError_Immutable, _, "This object type descriptor is immutable (%x).", typeDescriptor))
+        && ObjLib_HandleError(typeDescriptor, parent, ObjLibError_Immutable, _, "This object type descriptor is immutable (%x).", typeDescriptor))
     {
         return;
     }
     
     // Check if key exist.
     if (ObjLib_KeyExist(typeDescriptor, keyName)
-        && ObjLib_HandleError(typeDescriptor, ObjLibError_KeyExist, _, "Key name already exist (\"%s\").", keyName))
+        && ObjLib_HandleError(typeDescriptor, parent, ObjLibError_KeyExist, _, "Key name already exist (\"%s\").", keyName))
     {
         return;
     }
@@ -249,7 +251,6 @@ stock ObjLib_AddKey(ObjectType:typeDescriptor, const String:keyName[], ObjectDat
     PushArrayCell(constraintList, constraints);         // Add constraints.
     
     // Update parent object if available.
-    new Object:parent = ObjLib_GetTypeParentObject(typeDescriptor);
     if (parent != INVALID_OBJECT)
     {
         // Add initialized data entry. This will push a new empty value at the
@@ -277,16 +278,18 @@ stock bool:ObjLib_RemoveKey(ObjectType:typeDescriptor, const String:keyName[])
     // Validate.
     ObjLib_ValidateObjectType(typeDescriptor);
     
+    new Object:parent = ObjLib_GetTypeParentObject(typeDescriptor);
+    
     // Check if not mutable.
     if (!ObjLib_IsTypeMutable(typeDescriptor)
-        && ObjLib_HandleError(typeDescriptor, ObjLibError_Immutable, _, "This object type descriptor is immutable (%x).", typeDescriptor))
+        && ObjLib_HandleError(typeDescriptor, parent, ObjLibError_Immutable, _, "This object type descriptor is immutable (%x).", typeDescriptor))
     {
         return;
     }
     
     // Check if key doesn't exist.
     if (!ObjLib_KeyExist(typeDescriptor, keyName)
-        && ObjLib_HandleError(typeDescriptor, ObjLibError_InvalidKey, _, "Key doesn't exist (\"%s\").", keyName))
+        && ObjLib_HandleError(typeDescriptor, parent, ObjLibError_InvalidKey, _, "Key doesn't exist (\"%s\").", keyName))
     {
         return;
     }
@@ -307,7 +310,6 @@ stock bool:ObjLib_RemoveKey(ObjectType:typeDescriptor, const String:keyName[])
     RemoveFromArray(constraintList, entryIndex);        // Remove constraint.
     
     // Update parent object if available.
-    new Object:parent = ObjLib_GetTypeParentObject(typeDescriptor);
     if (parent != INVALID_OBJECT)
     {
         // Remove entry.
@@ -359,7 +361,7 @@ stock ObjLib_ValidateObjectType(ObjectType:typeDescriptor)
  * @return      True if error was handled. If not handled this function does not
  *              return.
  */
-stock bool:ObjLib_KeyTypeMismatchError(ObjectType:typeDescriptor, ObjectDataType:actual, ObjectDataType:expected, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+stock bool:ObjLib_KeyTypeMismatchError(ObjectType:typeDescriptor, Object:object, ObjectDataType:actual, ObjectDataType:expected, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
 {
     new String:actualName[16];
     new String:expectedName[16];
@@ -367,7 +369,7 @@ stock bool:ObjLib_KeyTypeMismatchError(ObjectType:typeDescriptor, ObjectDataType
     ObjLib_DataTypeToString(actual, actualName, sizeof(actualName));
     ObjLib_DataTypeToString(expected, expectedName, sizeof(expectedName));
     
-    return ObjLib_HandleError(typeDescriptor, ObjLibError_InvalidKeyType, errorHandler, "Key type mismatch. Expected \"%s\", but \"%s\" was used.", expectedName, actualName);
+    return ObjLib_HandleError(typeDescriptor, object, ObjLibError_InvalidKeyType, errorHandler, "Key type mismatch. Expected \"%s\", but \"%s\" was used.", expectedName, actualName);
 }
 
 /*____________________________________________________________________________*/
@@ -379,6 +381,7 @@ stock bool:ObjLib_KeyTypeMismatchError(ObjectType:typeDescriptor, ObjectDataType
  * This function will throw an validation error on key type mismatch.
  *
  * @param typeDescriptor    Object type descriptor.
+ * @param object            Related object.
  * @param keyIndex          Index of key to validate against.
  * @param keyType           Type of key to validate.
  * @param errorHandler      Custom error handler. Overrides error handler in
@@ -386,11 +389,11 @@ stock bool:ObjLib_KeyTypeMismatchError(ObjectType:typeDescriptor, ObjectDataType
  *
  * @return                  True if passed, false otherwise.
  */
-stock bool:ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, keyIndex, ObjectDataType:keyType, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+stock bool:ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, Object:object, keyIndex, ObjectDataType:keyType, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
 {
     // Validate key index.
     if (keyIndex < 0
-        && ObjLib_HandleError(typeDescriptor, ObjLibError_InvalidKey, errorHandler, "Invalid key index (%d).", keyIndex))
+        && ObjLib_HandleError(typeDescriptor, object, ObjLibError_InvalidKey, errorHandler, "Invalid key index (%d).", keyIndex))
     {
         return false;
     }
@@ -401,7 +404,7 @@ stock bool:ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, keyIndex, ObjectDataTy
     if (keyType != destType)
     {
         // Key mismatch. Throw error.
-        ObjLib_KeyTypeMismatchError(typeDescriptor, keyType, destType);
+        ObjLib_KeyTypeMismatchError(typeDescriptor, object, keyType, destType);
         return false;
     }
     

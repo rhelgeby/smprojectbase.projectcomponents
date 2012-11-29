@@ -31,6 +31,7 @@
  * regular error.
  *
  * @param typeDescriptor    Related type descriptor.
+ * @param object            Related object, if available.
  * @param errorType         Type of error.
  * @param customHandler     Custom error handler. Overrides handler in type
  *                          descriptor if specified.
@@ -41,6 +42,7 @@
  *              doesn't return at all.
  */
 stock bool:ObjLib_HandleError(ObjectType:typeDescriptor,
+                              Object:object = INVALID_OBJECT,
                               ObjLibError:errorType,
                               ObjLib_ErrorHandler:customHandler = INVALID_FUNCTION,
                               const String:format[],
@@ -79,7 +81,21 @@ stock bool:ObjLib_HandleError(ObjectType:typeDescriptor,
         Call_PushCell(typeDescriptor);
         Call_PushCell(errorType);
         Call_PushString(message);
+        Call_PushCell(object);
         Call_Finish();
         return true;
     }
+}
+
+/*____________________________________________________________________________*/
+
+/** Internal use only! */
+stock ObjLib_ErrorHandler:ObjLib_GetErrorHandler(ObjectType:typeDescriptor, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+{
+    if (errorHandler != INVALID_FUNCTION)
+    {
+        return errorHandler;
+    }
+    
+    return ObjLib_GetTypeErrorHandler(typeDescriptor);
 }

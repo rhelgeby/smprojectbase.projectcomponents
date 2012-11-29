@@ -144,8 +144,9 @@ enum ObjLibError
  * @param typeDescriptor    Related type descriptor.
  * @param errorType         Type of error.
  * @param message           Error message.
+ * @param object            Related object, if available.
  */
-functag public ObjLib_ErrorHandler(ObjectType:typeDescriptor, ObjLibError:errorType, const String:message[]);
+functag public ObjLib_ErrorHandler(ObjectType:typeDescriptor, ObjLibError:errorType, const String:message[], Object:object);
 
 /*____________________________________________________________________________*/
 
@@ -155,9 +156,12 @@ functag public ObjLib_ErrorHandler(ObjectType:typeDescriptor, ObjLibError:errorT
  * @param object            Object being validated.
  * @param keyName           Key being validated.
  * @param dataType          Type of key.
+ * @param values            Value(s) to validate. If the value is a single value
+ *                          it's stored at index 0.
+ * @param size              Number of elements in values parameter.
  * @param typeDescriptor    Object type (meta data).
  */
-functag public bool:ObjLib_KeyValidator(Object:object, const String:keyName[], ObjectDataType:dataType, ObjectType:typeDescriptor);
+functag public bool:ObjLib_KeyValidator(Object:object, const String:keyName[], ObjectDataType:dataType, const any:values[], size, ObjectType:typeDescriptor);
 
 /*____________________________________________________________________________*/
 
@@ -204,4 +208,5 @@ stock Handle:ObjLib_CloneTrie(Handle:trie, Handle:keys, keySize)
 #include "libraries/objectlib/object"
 #include "libraries/objectlib/accessors"
 #include "libraries/objectlib/constraints"
+#include "libraries/objectlib/constrainthandler"
 #include "libraries/objectlib/errorhandler"
