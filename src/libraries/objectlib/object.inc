@@ -452,7 +452,7 @@ stock ObjLib_InitializeNewValue(Object:object, ObjectDataType:dataType)
         }
         default:
         {
-            ThrowError("Unexpected data type. This is a bug in objectlib.");
+            ThrowError("[BUG] Unexpected data type. This is a bug in objectlib.");
         }
     }
 }
