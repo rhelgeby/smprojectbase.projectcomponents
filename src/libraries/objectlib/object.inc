@@ -374,7 +374,7 @@ stock bool:ObjLib_NullCheck(Object:object, keyIndex, ObjLib_ErrorHandler:errorHa
         new Handle:keys = ObjLib_GetTypeKeys(typeDescriptor);
         GetArrayString(keys, keyIndex, keyName, sizeof(keyName));
         
-        ObjLib_HandleError(typeDescriptor, ObjLibError_NullDataKey, errorHandler, "Key at index %d is null: %s", keyIndex, keyName);
+        ObjLib_HandleError(typeDescriptor, object, ObjLibError_NullDataKey, errorHandler, "Key at index %d is null: %s", keyIndex, keyName);
         return false;
     }
     
@@ -390,7 +390,7 @@ stock ObjLib_GetKeyIndexOrFail(Object:object, const String:keyName[], ObjLib_Err
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     if (keyIndex < 0
-        && ObjLib_HandleError(typeDescriptor, ObjLibError_InvalidKey, errorHandler, "Invalid key name (%s).", keyName))
+        && ObjLib_HandleError(typeDescriptor, object, ObjLibError_InvalidKey, errorHandler, "Invalid key name (%s).", keyName))
     {
         return -1;
     }
