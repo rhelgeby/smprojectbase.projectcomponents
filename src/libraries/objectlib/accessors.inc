@@ -406,7 +406,7 @@ stock any:ObjLib_GetAnyAt(Object:object, index)
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Any);
+    ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_Any);
     
     // Null check.
     ObjLib_NullCheck(object, index);
@@ -433,7 +433,7 @@ stock ObjLib_SetAnyAt(Object:object, index, any:value)
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Any);
+    ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_Any);
     
     // Set value.
     new Handle:data = ObjLib_GetObjectData(object);
@@ -461,7 +461,7 @@ stock ObjLib_GetCellAt(Object:object, index)
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Cell);
+    ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_Cell);
     
     // Null check.
     ObjLib_NullCheck(object, index);
@@ -488,7 +488,7 @@ stock ObjLib_SetCellAt(Object:object, index, value)
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Cell);
+    ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_Cell);
     
     // Set value.
     new Handle:data = ObjLib_GetObjectData(object);
@@ -516,7 +516,7 @@ stock bool:ObjLib_GetBoolAt(Object:object, index)
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Bool);
+    ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_Bool);
     
     // Null check.
     ObjLib_NullCheck(object, index);
@@ -543,7 +543,7 @@ stock ObjLib_SetBoolAt(Object:object, index, bool:value)
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Bool);
+    ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_Bool);
     
     // Set value.
     new Handle:data = ObjLib_GetObjectData(object);
@@ -571,7 +571,7 @@ stock Float:ObjLib_GetFloatAt(Object:object, index)
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Float);
+    ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_Float);
     
     // Null check.
     ObjLib_NullCheck(object, index);
@@ -598,7 +598,7 @@ stock ObjLib_SetFloatAt(Object:object, index, Float:value)
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Float);
+    ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_Float);
     
     // Set value.
     new Handle:data = ObjLib_GetObjectData(object);
@@ -626,7 +626,7 @@ stock Handle:ObjLib_GetHandleAt(Object:object, index)
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Handle);
+    ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_Handle);
     
     // Null check.
     ObjLib_NullCheck(object, index);
@@ -653,7 +653,7 @@ stock ObjLib_SetHandleAt(Object:object, index, Handle:value)
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Handle);
+    ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_Handle);
     
     // Set value.
     new Handle:data = ObjLib_GetObjectData(object);
@@ -681,7 +681,7 @@ stock Function:ObjLib_GetFunctionAt(Object:object, index)
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Function);
+    ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_Function);
     
     // Null check.
     ObjLib_NullCheck(object, index);
@@ -708,7 +708,7 @@ stock ObjLib_SetFunctionAt(Object:object, index, Function:value)
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Function);
+    ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_Function);
     
     // Set value.
     new Handle:data = ObjLib_GetObjectData(object);
@@ -738,7 +738,7 @@ stock ObjLib_GetArrayAt(Object:object, index, any:buffer[], maxlen)
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Array);
+    ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_Array);
     
     // Null check.
     ObjLib_NullCheck(object, index);
@@ -768,7 +768,7 @@ stock ObjLib_SetArrayAt(Object:object, index, const any:values[], maxlen)
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Array);
+    ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_Array);
     
     // Set value.
     new Handle:data = ObjLib_GetObjectData(object);
@@ -798,7 +798,7 @@ stock ObjLib_GetStringAt(Object:object, index, String:buffer[], maxlen)
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_String);
+    ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_String);
     
     // Null check.
     ObjLib_NullCheck(object, index);
@@ -827,7 +827,7 @@ stock ObjLib_SetStringAt(Object:object, index, const String:value[])
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_String);
+    ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_String);
     
     // Set value.
     new Handle:data = ObjLib_GetObjectData(object);
@@ -855,7 +855,7 @@ stock Object:ObjLib_GetObjectAt(Object:object, index)
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Object);
+    ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_Object);
     
     // Null check.
     ObjLib_NullCheck(object, index);
@@ -882,7 +882,7 @@ stock ObjLib_SetObjectAt(Object:object, index, Object:value)
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_Object);
+    ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_Object);
     
     // Set value.
     new Handle:data = ObjLib_GetObjectData(object);
@@ -910,7 +910,7 @@ stock ObjectType:ObjLib_GetObjectTypeAt(Object:object, index)
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_ObjectType);
+    ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_ObjectType);
     
     // Null check.
     ObjLib_NullCheck(object, index);
@@ -937,7 +937,7 @@ stock ObjLib_SetObjectTypeAt(Object:object, index, ObjectType:value)
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, index, ObjDataType_ObjectType);
+    ObjLib_KeyTypeCheck(typeDescriptor, index, ObjDataType_ObjectType);
     
     // Set value.
     new Handle:data = ObjLib_GetObjectData(object);
@@ -1221,7 +1221,7 @@ stock ObjLib_SetTypeDataTypes(ObjectType:typeDescriptor, Handle:dataTypes)
 /** Internal use only! */
 stock Handle:ObjLib_GetTypeConstraints(ObjectType:typeDescriptor)
 {
-    ThrowError("Not implemented");
+    return Handle:GetArrayCell(Handle:typeDescriptor, _:ObjectType_Constraints);
 }
 
 /*____________________________________________________________________________*/
@@ -1229,7 +1229,7 @@ stock Handle:ObjLib_GetTypeConstraints(ObjectType:typeDescriptor)
 /** Internal use only! */
 stock ObjLib_SetTypeConstraints(ObjectType:typeDescriptor, Handle:constraints)
 {
-    ThrowError("Not implemented");
+    SetArrayCell(Handle:typeDescriptor, _:ObjectType_Constraints, constraints);
 }
 
 /*____________________________________________________________________________*/

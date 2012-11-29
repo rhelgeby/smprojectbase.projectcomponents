@@ -50,6 +50,7 @@ stock ObjectType:ObjLib_CreateType(blockSize = 1, keySzie = 8)
     new Handle:keys = CreateArray(keySzie);         // List of key names (for enumeration or reflection).
     new Handle:nameIndex = CreateTrie();            // ADT Trie with key names mapped to indexes.
     new Handle:dataTypes = CreateArray();           // List of data types of each value entry.
+    new Handle:constraintList = CreateArray();      // List of constraint objects for each value entry.
     
     ObjLib_SetTypeLocked(typeDescriptor,        false);
     ObjLib_SetTypeParentObject(typeDescriptor,  INVALID_OBJECT);
@@ -58,7 +59,7 @@ stock ObjectType:ObjLib_CreateType(blockSize = 1, keySzie = 8)
     ObjLib_SetTypeKeys(typeDescriptor,          keys);
     ObjLib_SetTypeNameIndex(typeDescriptor,     nameIndex);
     ObjLib_SetTypeDataTypes(typeDescriptor,     dataTypes);
-    //ObjLib_SetTypeConstraints(typeDescriptor,   INVALID_HANDLE);     // Not implemented yet.
+    ObjLib_SetTypeConstraints(typeDescriptor,   constraintList);
     
     return typeDescriptor;
 }
@@ -91,12 +92,21 @@ stock ObjLib_DeleteType(&ObjectType:typeDescriptor, bool:resetReference = true)
     CloseHandle(ObjLib_GetTypeNameIndex(typeDescriptor));
     CloseHandle(ObjLib_GetTypeDataTypes(typeDescriptor));
     
-    // TODO: Delete constraints. These are optional.
-    /*new Handle:constraints = ObjLib_GetTypeConstraints(typeDescriptor);
-    if (constraints != INVALID_HANDLE)
+    new Handle:constraintList = ObjLib_GetTypeConstraints(typeDescriptor);
+    new len = GetArraySize(constraintList);
+    
+    // Delete constraint objects, if any.
+    for (new i = 0; i < len; i++)
     {
-        // Delete constraints.
-    }*/
+        new Object:constraintObject = Object:GetArrayCell(constraintList, i);
+        if (constraintObject != INVALID_OBJECT)
+        {
+            ObjLib_DeleteObject(constraintObject);
+        }
+    }
+    
+    // Delete constraints array.
+    CloseHandle(constraintList);
     
     // Delete type descriptor container.
     CloseHandle(Handle:typeDescriptor);
@@ -125,18 +135,43 @@ stock ObjLib_DeleteType(&ObjectType:typeDescriptor, bool:resetReference = true)
  */
 stock ObjectType:ObjLib_CloneType(ObjectType:typeDescriptor, bool:locked = false)
 {
+    // Stop possible infinite recursion.
+    if (ObjLib_IsConstraintType(typeDescriptor))
+    {
+        // Note: Possible recursive reentry when cloning constraints.
+        // Constraints are objects that must be cloned too. They are immutable
+        // and shouldn't need to clone their type. If they do, it's a bug and
+        // will cause an infinite loop or eventually stack overflow.
+        ThrowError("[BUG] Constraint types should never need to be cloned. This is a bug!");
+    }
+    
     new keySize = ObjLib_GetTypeKeySize(typeDescriptor);
     new blockSize = ObjLib_GetTypeBlockSize(typeDescriptor);
     
     new Handle:keys = CloneArray(ObjLib_GetTypeKeys(typeDescriptor));
     new Handle:nameIndex = ObjLib_CloneTrie(ObjLib_GetTypeNameIndex(typeDescriptor), keys, keySize);
     new Handle:dataTypes = CloneArray(ObjLib_GetTypeDataTypes(typeDescriptor));
-    // TODO: clone constraints when implemented
+    new Handle:sourceConstraints = ObjLib_GetTypeConstraints(typeDescriptor);
     
-    // Note: Possible recursive reentry when cloning constraints. Constraints
-    // are objects that must be cloned too. They are immutable and shouldn't
-    // have a need to clone their type. If they do, it's a bug and will cause
-    // an infinite loop or eventually stack overflow.
+    new numKeys = GetArraySize(keys);
+    new Handle:constraintList = CreateArray(_, numKeys);
+    
+    // Clone constraint objects, if any.
+    for (new i = 0; i < numKeys; i++)
+    {
+        new Object:constraintObject = Object:GetArrayCell(sourceConstraints, i);
+        if (constraintObject == INVALID_OBJECT)
+        {
+            // Reserve space for constraint.
+            PushArrayCell(constraintList, INVALID_OBJECT);
+        }
+        else
+        {
+            // Create an immutable clone.
+            new Object:cloned = ObjLib_CloneObject(constraintObject, false);
+            PushArrayCell(constraintList, cloned);
+        }
+    }
     
     new ObjectType:newType = ObjectType:CreateArray(_, OBJECT_TYPE_DATA_LEN);
     
@@ -147,7 +182,7 @@ stock ObjectType:ObjLib_CloneType(ObjectType:typeDescriptor, bool:locked = false
     ObjLib_SetTypeKeys(newType,         keys);
     ObjLib_SetTypeNameIndex(newType,    nameIndex);
     ObjLib_SetTypeDataTypes(newType,    dataTypes);
-    //ObjLib_SetTypeConstraints(newType,  INVALID_HANDLE);     // Not implemented yet.
+    ObjLib_SetTypeConstraints(newType,  constraintList);
     
     return newType;
 }
@@ -174,8 +209,10 @@ stock bool:ObjLib_IsValidObjectType(ObjectType:typeDescriptor)
  * @param typeDescriptor    Handle to type descriptor.
  * @param keyName           Name of the new key. Case sensitive.
  * @param dataType          Data type of key.
+ * @param constraints       Key constraints. Constraint type must match data
+ *                          type. Use INVALID_OBJECT to disable constraints.
  */
-stock ObjLib_AddKey(ObjectType:typeDescriptor, const String:keyName[], ObjectDataType:dataType = ObjDataType_Any)
+stock ObjLib_AddKey(ObjectType:typeDescriptor, const String:keyName[], ObjectDataType:dataType = ObjDataType_Any, Object:constraints = INVALID_OBJECT)
 {
     // Validate.
     ObjLib_ValidateObjectType(typeDescriptor);
@@ -192,13 +229,19 @@ stock ObjLib_AddKey(ObjectType:typeDescriptor, const String:keyName[], ObjectDat
         ThrowError("Key name already exist (\"%s\").", keyName);
     }
     
+    // Validate constraints.
+    ObjLib_ValidateConstraintOrFail(constraints, dataType);
+    
     new Handle:keys = ObjLib_GetTypeKeys(typeDescriptor);
     new Handle:nameIndex = ObjLib_GetTypeNameIndex(typeDescriptor);
     new Handle:dataTypes = ObjLib_GetTypeDataTypes(typeDescriptor);
+    new Handle:constraintList = ObjLib_GetTypeConstraints(typeDescriptor);
     
-    new entryIndex = PushArrayString(keys, keyName);    // Keys
-    SetTrieValue(nameIndex, keyName, entryIndex);       // Name index
-    PushArrayCell(dataTypes, dataType);                 // Data types
+    // Update type descriptor entries.
+    new entryIndex = PushArrayString(keys, keyName);    // Add key name.
+    SetTrieValue(nameIndex, keyName, entryIndex);       // Add to name index.
+    PushArrayCell(dataTypes, dataType);                 // Set data type.
+    PushArrayCell(constraintList, constraints);         // Add constraints.
     
     // Update parent object if available.
     new Object:parent = ObjLib_GetTypeParentObject(typeDescriptor);
@@ -244,12 +287,17 @@ stock bool:ObjLib_RemoveKey(ObjectType:typeDescriptor, const String:keyName[])
     new Handle:keys = ObjLib_GetTypeKeys(typeDescriptor);
     new Handle:nameIndex = ObjLib_GetTypeNameIndex(typeDescriptor);
     new Handle:dataTypes = ObjLib_GetTypeDataTypes(typeDescriptor);
+    new Handle:constraintList = ObjLib_GetTypeConstraints(typeDescriptor);
     
+    // Get entry index.
     new entryIndex = -1;
     GetTrieValue(nameIndex, keyName, entryIndex);
-    RemoveFromArray(keys, entryIndex);                  // Keys
-    RemoveFromArray(dataTypes, entryIndex);             // Data types
-    RemoveFromTrie(nameIndex, keyName);                 // Name index
+    
+    // Remove type descriptor entries.
+    RemoveFromArray(keys, entryIndex);                  // Remove key.
+    RemoveFromArray(dataTypes, entryIndex);             // Remove data type.
+    RemoveFromTrie(nameIndex, keyName);                 // Remove from name index.
+    RemoveFromArray(constraintList, entryIndex);        // Remove constraint.
     
     // Update parent object if available.
     new Object:parent = ObjLib_GetTypeParentObject(typeDescriptor);

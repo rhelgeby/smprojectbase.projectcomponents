@@ -285,16 +285,18 @@ stock bool:ObjLib_TypeOf(Object:object, ObjectType:typeDescriptor)
 /**
  * Adds a new key to an object, if not locked.
  *
- * @param object    Object to remove key from.
- * @param keyName   Name of key to remove. Case sensitive.
- * @param dataType  Data type of key.
+ * @param object        Object to remove key from.
+ * @param keyName       Name of key to remove. Case sensitive.
+ * @param dataType      Data type of key.
+ * @param constraints   Key constraints. Constraint type must match data type.
+ *                      Use INVALID_OBJECT to disable constraints.
  *
- * @error           Immutable object.
+ * @error               Immutable object.
  */
-stock bool:ObjLib_AddObjectKey(Object:object, const String:keyName[], ObjectDataType:dataType = ObjDataType_Any)
+stock bool:ObjLib_AddObjectKey(Object:object, const String:keyName[], ObjectDataType:dataType = ObjDataType_Any, Object:constraints = INVALID_OBJECT)
 {
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
-    ObjLib_AddKey(typeDescriptor, keyName, dataType);
+    ObjLib_AddKey(typeDescriptor, keyName, dataType, constraints);
 }
 
 /*____________________________________________________________________________*/

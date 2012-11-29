@@ -14,7 +14,7 @@ MAIN FEATURES
   Objects can be either mutable or immutable. Immutable objects can't modify
   their type (add/remove keys) when created, but data in existing keys can be
   modified.
-  
+
   Both use a type descriptor as a template. Mutable objects store a bundled
   descriptor so they can be modified independently, while immutable objects
   store a reference to a shared read-only type descriptor to save memory.
@@ -319,6 +319,8 @@ types:
 
 API
 ---
+
+TODO: This is getting outdated. Reorganize and update signatures and comments.
 
 List of public functions in the object library:
 
