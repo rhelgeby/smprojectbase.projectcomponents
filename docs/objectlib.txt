@@ -226,48 +226,88 @@ How to properly handle this:
     ObjLib_DeleteObjectType(typeFromImmutableObject);   // Deleting hidden cloned type.
 
 
+ERROR HANDLERS
+--------------
+
+Type descriptors may store a custom error handler for handling recoverable
+errors. Unrecoverable errors are always handled by such as invalid object
+references. Recoverable errors are invalid key names, type mismatch and
+constraint violation.
+
+The error handler use the ObjLib_ErrorHandler callback and may be used when
+creating type descriptors.
+
+It's also possible to override an error handler in data accessor functions such
+as ObjLib_SetCell. Then it's possible to use custom error handlers in various
+situations.
+
+Possible future improvements:
+Custom error handler for individual keys or constraints. Need to consider
+whether this is actually useful and how to implement this.
+
+
 VALIDATION
 ----------
 
-(TODO: Rewrite notes into full text.)
+Validation can be applied to keys by assigning a constraint object to it when
+adding keys. These objects can be created by using the constraint object
+builders. The following builders are available:
 
-ObjectType_Constraints attribute:
-An array of validation constraints objects of certain types. INVALID_OBJECT may
-be used to disable constraints on keys.
+    * ObjLib_GetCellConstraints
+    * ObjLib_GetFloatConstraints
+    * ObjLib_GetHandleConstraints
+    * ObjLib_GetFunctionConstraints
+    * ObjLib_GetStringConstraints
+    * ObjLib_GetArrayConstraints
+    * ObjLib_GetObjectConstraints
+    * ObjLib_GetObjTypeConstraints
+    * ObjLib_GetCustomConstraints   - Can be used with any data type.
 
-Constraint object types (created once globally by the object library):
-* CellConstraints           - nonzero, min/max
-* FloatConstraints          - nonzero, min/max
-* StringConstraints         - length, file/folder path (includinc game cache files), whitelist/blacklist characters
-* HandleConstraints         - nonzero
-* FunctionConstraints       - nonzero
-* ArrayConstraints          - length
-* ObjectConstraints         - nonzero, object type
-* ObjectTypeConstraints     - nonzero, require keys with certain data types
-* CustomConstraints         - callback to user defined validation
+The constraint object used must match the data type of the key.
 
-Custom validation callback:
-functag public bool:ObjLib_KeyValidator(Object:object, const String:keyName[], ObjectDataType:dataType, const any:values[], size, ObjectType:typeDescriptor);
+A custom constraint object may be used to let the user decide which values that
+are valid. It contains a reference to a ObjLib_KeyValidator callback.
 
-General error handler callback:
-functag public ObjLib_ErrorHandler(ObjectType:typeDescriptor, ObjLibError:errorType, const String:message[], Object:object);
+If a value violated a constraint the error handler will trigger a constraint
+violation error where the user is able to handle it. The value is rejected.
 
-Constraint builder:
-Functions for building constraint objects of certain types, like
-ObjLib_Get<Type>Constraints. The object returned may be passed as constraints in
-ObjLib_AddKey.
 
-Memory management:
-When deleting an object it will need to check for constraint object and delete
-them too. This will cause a recursive reentry to the delete function. Because of
-this constraint objects can't have their own constraints attached to them. The
-object library will make sure it's valid.
+DELETING CONSTRAINT OBJECTS
 
-Error handlers (only applies to recoverable errors, other errors will always use
-ThrowError):
-* Optional callback stored in type descriptor.
-* Callback passed to set functions (overrides general handler).
-* No handler - Using ThrowError.
+Constraint objects should only be deleted manually if it's not used anywhere.
+When attached to keys the type descriptor will delete constraint objects when
+it's deleted itself.
+
+
+EXAMPLE USAGE
+
+    // Declare a "person" type.
+    new ObjectType:personType = ObjLib_CreateType();
+    
+    // Get name constraints. We only set "nonempty" in this example to prevent
+    // empty strings. The builder has a lot of other optinal parameters too.
+    new Object:nameConstraints = ObjLib_GetStringConstraints(true);
+    
+    // Get skill constraints. Block negative values.
+    new Object:skillConstraints = ObjLib_GetCellConstraints(
+            false,          // nonzero
+            true,           // lowerLimit
+            false,          // upperLimit
+            0);             // min
+    
+    // Get friend constraints. Only allow personType objects.
+    new Object:friendConstraints = ObjLib_GetObjectConstraints(
+            false,          // nonzero
+            personType);    // type
+    
+    // Add keys to person type and assign constraint objects.
+    ObjLib_AddKey(personType, "name", ObjDataType_String, nameConstraints);
+    ObjLib_AddKey(personType, "skillPoints", ObjDataType_Cell, skillConstraints);
+    ObjLib_AddKey(personType, "bestFriend", ObjDataType_Object, friendConstraints);
+    
+    // Trying to set skillPoints to -1 will trigger a constraint violation
+    // error.
+    ObjLib_SetCell(somePersonObject, "skillPoints", -1);
 
 
 MEMORY MANAGEMENT
@@ -320,6 +360,7 @@ API
 ---
 
 TODO: This is getting outdated. Reorganize and update signatures and comments.
+      Move to objectlib-api.txt.
 
 List of public functions in the object library:
 
