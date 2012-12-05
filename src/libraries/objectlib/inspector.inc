@@ -122,7 +122,7 @@ stock ObjLib_ValueToString(Object:object, keyIndex, String:buffer[], maxlen)
         }
         case ObjDataType_Float:
         {
-            new value = GetArrayCell(data, keyIndex);
+            new Float:value = Float:GetArrayCell(data, keyIndex);
             return FloatToString(value, buffer, maxlen);
         }
         case ObjDataType_Handle, ObjDataType_Function, ObjDataType_Object, ObjDataType_ObjectType:
@@ -133,7 +133,8 @@ stock ObjLib_ValueToString(Object:object, keyIndex, String:buffer[], maxlen)
         case ObjDataType_Array:
         {
             new blockSize = ObjLib_GetTypeBlockSize(typeDescriptor);
-            new values[blockSize] = GetArrayCell(data, keyIndex);
+            new values[blockSize];
+            GetArrayArray(data, keyIndex, values, blockSize);
             return Array_CellsToString(values, blockSize, buffer, maxlen);
         }
         case ObjDataType_String:
