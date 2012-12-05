@@ -34,6 +34,8 @@
 
 #include <sourcemod>
 
+#include "libraries/arrays.inc"
+
 /*____________________________________________________________________________*/
 
 /**
@@ -50,6 +52,13 @@ enum Object
  * Number of bytes reserved for key names.
  */
 #define OBJECT_KEY_NAME_LEN     32
+
+/*____________________________________________________________________________*/
+
+/**
+ * Number of bytes reserved for string buffers.
+ */
+#define OBJLIB_MAX_STRING_LEN   255
 
 /*____________________________________________________________________________*/
 
