@@ -210,3 +210,4 @@ stock Handle:ObjLib_CloneTrie(Handle:trie, Handle:keys, keySize)
 #include "libraries/objectlib/constraints"
 #include "libraries/objectlib/constrainthandler"
 #include "libraries/objectlib/errorhandler"
+#include "libraries/objectlib/kvparser"

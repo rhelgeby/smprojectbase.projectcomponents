@@ -27,7 +27,7 @@
 
 /**
  * Length of string buffers used in parser. Increase this if you need to read
- * longer strings.
+ * longer string values.
  */
 #define OBJLIB_KV_MAX_STRING_LEN    255
 
@@ -35,8 +35,20 @@
 
 /**
  * Length of key name buffers used in parser.
+ *
+ * Note: Don't reserve too much space. The parser is recursive and very large
+ *       key name buffers will consume a lot of stack space if the keyvalue tree
+ *       is deep.
  */
 #define OBJLIB_KV_MAX_KEY_LEN    64
+
+/*____________________________________________________________________________*/
+
+/**
+ * Empty object type template with enough space reserved for strings.
+ */
+new ObjectType:ObjLib_KvObjectType = INVALID_OBJECT_TYPE;
+new bool:ObjLib_KvObjectTypeBuilt = false;
 
 /*____________________________________________________________________________*/
 
@@ -59,10 +71,11 @@ stock Object:ObjLib_ParseInObjectMode(ObjectType:typeDescriptor = INVALID_OBJECT
 /*____________________________________________________________________________*/
 
 /**
- * Parse a KeyValue file in list mode. This parser assumes that every key in the
+ * Parse a KeyValue tree in list mode. This parser assumes that every key in the
  * root is a sub section. Each section is parsed into an object and stored in a
  * list.
  *
+ * @param kv                KeyValue tree to parse.
  * @param typeDescriptor    (Optional) Type of object. If not specified it will
  *                          create keys in mutable objects.
  * @param sectionKeyName    Name of key where section name is stored. Must exist
@@ -71,14 +84,52 @@ stock Object:ObjLib_ParseInObjectMode(ObjectType:typeDescriptor = INVALID_OBJECT
  *
  * @return                  Handle to list of objects.
  */
-stock Handle:ObjLib_ParseInListMode(ObjectType:typeDescriptor = INVALID_OBJECT_TYPE, const String:sectionKeyName[])
+stock Handle:ObjLib_ParseInListMode(Handle:kv, ObjectType:typeDescriptor = INVALID_OBJECT_TYPE, const String:sectionKeyName[])
 {
+    decl String:keyName[OBJLIB_KV_MAX_KEY_LEN];
+    keyName[0] = 0;
+    
+    // Go to root.
+    KvRewind(kv);
+    
+    // Create list to store section objects.
+    new Handle:sections = CreateArray();
+    
+    // Loop through sections.
+    do
+    {
+        // Verify that key is a sub section.
+        if (KvGotoFirstSubKey(kv))
+        {
+            // Parse section recurively.
+            new Object:subObject;
+            if (typeDescriptor)
+            {
+                subObject = ObjLib_ParseSectionAs(kv, typeDescriptor, sectionKeyName);
+            }
+            else
+            {
+                subObject = ObjLib_ParseSection(kv, sectionKeyName);
+            }
+            
+            // Go up one level, out of the sub section so it's ready to read
+            // next section.
+            KvGoBack(kv);
+            
+            // Get section name.
+            ObjLib_GetKvKeyName(kv, keyName, sizeof(keyName));
+            
+            // Add object to list.
+            PushArrayCell(sections, subObject);
+        }
+    } while (KvGotoNextKey(kv));    // Go to next section, skip values.
 }
 
 /*____________________________________________________________________________*/
 
 /**
- * Parse the current section into an object.
+ * Parse the current section into an object. It will do full recursive traversal
+ * from the current section.
  *
  * @param kv                Handle to keyvalue tree with the cursor on a
  *                          section.
@@ -89,20 +140,69 @@ stock Handle:ObjLib_ParseInListMode(ObjectType:typeDescriptor = INVALID_OBJECT_T
  */
 stock Object:ObjLib_ParseSection(Handle:kv, const String:sectionKeyName[])
 {
-    decl String:sectionName[OBJLIB_KV_MAX_KEY_LEN];
-    sectionName[0] = 0;
+    // Note: This function do recursive calls to itself.
     
-    // Get section name.
-    KvGetSectionName(kv, buffer, maxlen);
-    KvGoBack(kv);
+    decl String:keyName[OBJLIB_KV_MAX_KEY_LEN];
+    keyName[0] = 0;
     
+    // Get name of current section.
+    ObjLib_GetKvKeyName(kv, keyName, sizeof(keyName));
     
+    // Build type template.
+    ObjLib_BuildKvObjectType();
+    
+    // Create mutable object.
+    new Object:object = ObjLib_CreateObject(ObjLib_KvObjectType);
+    
+    // Add key and store section name.
+    ObjLib_AddObjectKey(object, sectionKeyName, ObjDataType_String);
+    ObjLib_SetString(object, sectionKeyName, keyName);
+    
+    // Loop through keys and sections in the current kv section.
+    do
+    {
+        // Check if key is a sub section.
+        if (KvGotoFirstSubKey(kv, false))
+        {
+            // Key is a sub section.
+            
+            // Parse sub section recurively.
+            new Object:subObject = ObjLib_ParseSection(kv, sectionKeyName);
+            
+            // Go up one level, out of the sub section so it's ready to read
+            // next key.
+            KvGoBack(kv);
+            
+            // Get sub section name.
+            ObjLib_GetKvKeyName(kv, keyName, sizeof(keyName));
+            
+            // Add sub object to object.
+            ObjLib_AddObjectKey(object, keyName, ObjDataType_Object);
+            ObjLib_SetObject(object, keyName, subObject);
+        }
+        else
+        {
+            // Key is a value.
+            
+            // Get key name.
+            ObjLib_GetKvKeyName(kv, keyName, sizeof(keyName));
+        
+            // Add string key to store value in.
+            ObjLib_AddObjectKey(object, keyName, ObjDataType_String);
+            
+            // Get and store value.
+            ObjLib_GetKvValue(kv, object, keyName, ObjDataType_String);
+        }
+    } while (KvGotoNextKey(kv, false));     // Go to next key or section.
+    
+    return object;
 }
 
 /*____________________________________________________________________________*/
 
 /**
- * Parse the current section into an object of the specified type.
+ * Parse the current section into an object of the specified type. It will do
+ * full recursive traversal from the current section.
  *
  * @param kv                Handle to keyvalue tree with the cursor on a
  *                          section.
@@ -127,6 +227,8 @@ stock Object:ObjLib_ParseSectionAs(Handle:kv, ObjectType:typeDescriptor, const S
 stock ObjLib_GetKvKeyName(Handle:kv, String:buffer[], maxlen)
 {
     KvGetSectionName(kv, buffer, maxlen);
+    
+    // Go up one level. Get out of the section again.
     KvGoBack(kv);
 }
 
@@ -148,12 +250,12 @@ stock ObjLib_GetKvValue(Handle:kv, Object:object, const String:keyName[], Object
         case ObjDataType_Any:
         {
             new value = KvGetNum(kv, keyName);
-            OjbLib_SetAny(object, keyName, value);
+            ObjLib_SetAny(object, keyName, value);
         }
         case ObjDataType_Cell:
         {
             new value = KvGetNum(kv, keyName);
-            OjbLib_SetCell(object, keyName, value);
+            ObjLib_SetCell(object, keyName, value);
         }
         case ObjDataType_Bool:
         {
@@ -164,12 +266,12 @@ stock ObjLib_GetKvValue(Handle:kv, Object:object, const String:keyName[], Object
             // Throw error if unknown word.
             
             new bool:value = bool:KvGetNum(kv, keyName);
-            OjbLib_SetBool(object, keyName, value);
+            ObjLib_SetBool(object, keyName, value);
         }
         case ObjDataType_Float:
         {
             new Float:value = KvGetFloat(kv, keyName);
-            OjbLib_SetFloat(object, keyName, value);
+            ObjLib_SetFloat(object, keyName, value);
         }
         case ObjDataType_Handle:
         {
@@ -190,7 +292,7 @@ stock ObjLib_GetKvValue(Handle:kv, Object:object, const String:keyName[], Object
         {
             new String:value[OBJLIB_KV_MAX_STRING_LEN];
             KvGetString(kv, keyName, value, sizeof(value));
-            OjbLib_SetString(object, keyName, value);
+            ObjLib_SetString(object, keyName, value);
         }
         case ObjDataType_Object:
         {
@@ -206,5 +308,17 @@ stock ObjLib_GetKvValue(Handle:kv, Object:object, const String:keyName[], Object
         {
             ThrowError("[BUG] Unexpected data type. This is a bug in objectlib.");
         }
+    }
+}
+
+/*____________________________________________________________________________*/
+
+/** Internal use only! */
+stock ObjLib_BuildKvObjectType()
+{
+    if (!ObjLib_KvObjectTypeBuilt)
+    {
+        ObjLib_KvObjectType = ObjLib_CreateType(ByteCountToCells(OBJLIB_KV_MAX_STRING_LEN));
+        ObjLib_KvObjectTypeBuilt = true;
     }
 }
