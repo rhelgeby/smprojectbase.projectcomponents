@@ -206,3 +206,81 @@ stock Array_RemoveDuplicateInt(Handle:array, bool:sorted = false)
         lastVal = currentVal;
     }
 }
+
+/**
+ * Converts the contents of a cell array to a string.
+ *
+ * Output format: {1, 2, 3, ...}
+ *
+ * @param values    Source array.
+ * @param len       Size of source array.
+ * @param buffer    Destination string buffer.
+ * @param maxlen    Size of buffer.
+ *
+ * @return          Number of cells written.
+ */
+stock Array_CellsToString(const values[], len, String:buffer[], maxlen)
+{
+    decl String:valuebuffer[16];
+    valuebuffer[0] = 0;
+    
+    // Make sure buffer is empty.
+    buffer[0] = 0;
+    
+    new writeCount = 0;
+    
+    writeCount = StrCat(buffer, maxlen, "{");
+    
+    // Loop throug values.
+    for (new i = 0; i < len; i++)
+    {
+        IntToString(values[i], valuebuffer, sizeof(valuebuffer));
+        writeCount += StrCat(buffer, maxlen, valuebuffer);
+        
+        // If not the last value.
+        if (i < len - 1)
+        {
+            writeCount += StrCat(buffer, maxlen, ", ");
+        }
+    }
+    
+    writeCount += StrCat(buffer, maxlen, "}");
+    
+    return writeCount;
+}
+
+/**
+ * Converts the contents of a float array to a string.
+ *
+ * Output format: {1.0, 2.0, 3.0, ...}
+ *
+ * @param values    Source array.
+ * @param len       Size of source array.
+ * @param buffer    Destination string buffer.
+ * @param maxlen    Size of buffer.
+ */
+stock Array_FloatsToString(const Float:values[], len, String:buffer[], maxlen)
+{
+    decl String:valuebuffer[16];
+    valuebuffer[0] = 0;
+    
+    // Make sure buffer is empty.
+    buffer[0] = 0;
+    
+    StrCat(buffer, maxlen, "{");
+    
+    // Loop throug values.
+    for (new i = 0; i < len; i++)
+    {
+        FloatToString(values[i], valuebuffer, sizeof(valuebuffer));
+        StrCat(buffer, maxlen, valuebuffer);
+        
+        // If not the last value.
+        if (i < len - 1)
+        {
+            StrCat(buffer, maxlen, ", ");
+        }
+    }
+    
+    StrCat(buffer, maxlen, "}");
+}
