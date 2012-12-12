@@ -599,7 +599,7 @@ stock ObjectType:ObjLib_GetCustomConstraintType()
 /* Internal use only! */
 stock ObjLib_ValidateConstraintOrFail(Object:constraints, ObjectDataType:dataType = ObjDataType_Any)
 {
-    if (constraints != INVALID_OBJECT)
+    if (constraints == INVALID_OBJECT)
     {
         // INVALID_OBJECT is considered valid (no constraints enabled).
         return;

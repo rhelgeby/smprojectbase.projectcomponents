@@ -59,6 +59,7 @@ stock ObjLib_DumpObjectKeys(client, Object:object)
     
     // Get keys.
     new Handle:keys = ObjLib_GetTypeKeys(typeDescriptor);
+    new Handle:nullKey = ObjLib_GetObjectNullKey(object);
     
     // Get data types.
     new Handle:dataTypes = ObjLib_GetTypeDataTypes(typeDescriptor);
@@ -77,13 +78,21 @@ stock ObjLib_DumpObjectKeys(client, Object:object)
         ObjLib_DataTypeToString(ObjectDataType:GetArrayCell(dataTypes, key), dataTypeString, sizeof(dataTypeString));
         
         // Convert value to a string.
-        ObjLib_ValueToString(Object, key, valueString, sizeof(valueString));
+        new bool:isNull = bool:GetArrayCell(nullKey, key);
+        if (isNull)
+        {
+            strcopy(valueString, sizeof(valueString), "(Null)");
+        }
+        else
+        {
+            ObjLib_ValueToString(object, key, valueString, sizeof(valueString));
+        }
         
         // Print row.
         ReplyToCommand(client, ROW_FORMAT, keyName, dataTypeString, valueString);
     }
     
-    ReplyToCommand(client, "\n%n key(s) total.", numKeys);
+    ReplyToCommand(client, "\n%d key(s) total.", numKeys);
 }
 
 /*____________________________________________________________________________*/
@@ -128,7 +137,7 @@ stock ObjLib_ValueToString(Object:object, keyIndex, String:buffer[], maxlen)
         case ObjDataType_Handle, ObjDataType_Function, ObjDataType_Object, ObjDataType_ObjectType:
         {
             new value = GetArrayCell(data, keyIndex);
-            return Format(buffer, maxlen, "%x", value);
+            return Format(buffer, maxlen, "0x%x", value);
         }
         case ObjDataType_Array:
         {
