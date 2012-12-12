@@ -37,7 +37,7 @@
  * exampleKey3             Float       2.5
  * exampleKey4             Object      0x12345678
  *
- * 4 keys total.
+ * 4 key(s) total.
  *
  * @param client        Client or server index.
  * @param object        Object to inspect.
@@ -83,7 +83,7 @@ stock ObjLib_DumpObjectKeys(client, Object:object)
         ReplyToCommand(client, ROW_FORMAT, keyName, dataTypeString, valueString);
     }
     
-    ReplyToCommand(client, "\n%n keys total.", numKeys);
+    ReplyToCommand(client, "\n%n key(s) total.", numKeys);
 }
 
 /*____________________________________________________________________________*/

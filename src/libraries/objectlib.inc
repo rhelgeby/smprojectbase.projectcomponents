@@ -35,6 +35,7 @@
 #include <sourcemod>
 
 #include "libraries/arrays.inc"
+#include "libraries/utilities.inc"
 
 /*____________________________________________________________________________*/
 
