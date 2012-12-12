@@ -45,6 +45,17 @@
 #define UTILS_FILTER_CANTARGET    (1 << 4)    /** Only list clients that the menu recipient can target.  Needs target client!*/
 
 /**
+ * Type of boolean string.
+ */
+enum Util_BoolStringType
+{
+    BoolType_Any,
+    BoolType_TrueFalse,
+    BoolType_OnOff,
+    BoolType_YesNo
+}
+
+/**
  * Build an array of clients that pass the filters.
  * 
  * @param adtClients    The handle of the array.
@@ -325,6 +336,108 @@ stock Util_ReplyToCommandEx(client, const String:format[], any:...)
             // Move window one extra character to move past the last line break.
             windowPos++;
         }
+    }
+}
+
+/**
+ * Converts a string to a boolean value.
+ *
+ * @param value             String to convert.
+ * @param type              Type of boolean words.
+ * @param errorCallback     Function to call if a word is invalid. If not
+ *                          specified and type is not BoolType_Any it will throw
+ *                          an error.
+ *
+ * @return                  Boolean value.
+ *
+ * @error                   Invalid boolean word if type is not BoolType_Any.
+ */
+stock bool:Util_StringToBool(const String:value[], Util_BoolStringType:type = BoolType_Any, Function:errorCallback = INVALID_FUNCTION)
+{
+    if (strlen(value) == 0)
+    {
+        Util_CallFunctionOrFail(errorCallback, "Empty string.");
+        return false;
+    }
+    
+    switch (type)
+    {
+        case BoolType_Any:
+        {
+            if (StrEqual(value, "true", false)
+                || StrEqual(value, "on", false)
+                || StrEqual(value, "yes", false))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        case BoolType_TrueFalse:
+        {
+            return Util_BoolParserHandler(value, "true", "false", Function:errorCallback);
+        }
+        case BoolType_OnOff:
+        {
+            return Util_BoolParserHandler(value, "on", "off", Function:errorCallback);
+        }
+        case BoolType_YesNo:
+        {
+            return Util_BoolParserHandler(value, "yes", "no", Function:errorCallback);
+        }
+    }
+    
+    ThrowError("Invalid type.");
+    return false;
+}
+
+/**
+ * Helper parser for Util_StringToBool. Compares a value against two boolean
+ * words and returns the corresponding boolean value.
+ *
+ * Throws an error (or calls the error callback) for unknown words. If an error
+ * occour it will return false or not return at all.
+ *
+ * @param value             Value to check.
+ * @param trueWord          Word that's considered true.
+ * @param falseWord         Word that's considered false.
+ * @param errorCallback     Function to call if there's an error. If not
+ *                          specified it will throw an error instead.
+ */
+stock bool:Util_BoolParserHandler(const String:value[], const String:trueWord[], const String:falseWord[], Function:errorCallback = INVALID_FUNCTION)
+{
+    if (StrEqual(value, trueWord, false))
+    {
+        return true;
+    }
+    else if (StrEqual(value, falseWord, false))
+    {
+        return false;
+    }
+    else
+    {
+        Util_CallFunctionOrFail(errorCallback, "Invalid word.");
+        return false;
+    }
+}
+
+/**
+ * Call a simple function or throw an error.
+ *
+ * @param function      Function to call (no parameters).
+ * @param message       Error message if function is not specified.
+ */
+stock Util_CallFunctionOrFail(Function:function, const String:message[])
+{
+    if (function)
+    {
+        Call_StartFunction(GetMyHandle(), function);
+    }
+    else
+    {
+        ThrowError(message);
     }
 }
 
