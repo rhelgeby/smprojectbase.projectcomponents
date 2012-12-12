@@ -253,12 +253,9 @@ stock ObjLib_AddKey(ObjectType:typeDescriptor, const String:keyName[], ObjectDat
     // Update parent object if available.
     if (parent != INVALID_OBJECT)
     {
-        // Add initialized data entry. This will push a new empty value at the
-        // same index as the key.
-        ObjLib_InitializeNewValue(parent, dataType);
-        
-        // The key doesn't have a valid value yet. Mark key as null.
-        ObjLib_SetKeyNull(parent, entryIndex, true);
+        // Add new data entry. This will push a new value at the same index as
+        // the key. Value is also marked as null.
+        ObjLib_AddNewValue(parent, dataType);
     }
 }
 

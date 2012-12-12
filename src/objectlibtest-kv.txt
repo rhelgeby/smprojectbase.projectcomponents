@@ -1,0 +1,10 @@
+"Example"
+{
+    "description"   "Example of parsing KV files."
+    
+    "person"
+    {
+        "name"          "Alice"
+        "skillPoints"   "10"
+    }
+}

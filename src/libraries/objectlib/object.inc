@@ -410,9 +410,10 @@ stock ObjLib_GetKeyIndexOrFail(Object:object, const String:keyName[], ObjLib_Err
  * @param object    Object where new value entry is added.
  * @param dataType  Data type of initialized value.
  */
-stock ObjLib_InitializeNewValue(Object:object, ObjectDataType:dataType)
+stock ObjLib_AddNewValue(Object:object, ObjectDataType:dataType)
 {
     new Handle:data = ObjLib_GetObjectData(object);
+    new Handle:nullKey = ObjLib_GetObjectNullKey(object);
     
     switch (dataType)
     {
@@ -462,6 +463,9 @@ stock ObjLib_InitializeNewValue(Object:object, ObjectDataType:dataType)
             ThrowError("[BUG] Unexpected data type. This is a bug in objectlib.");
         }
     }
+    
+    // Add a corresponding null key flag. Mark value as null.
+    PushArrayCell(nullKey, true);
 }
 
 /*____________________________________________________________________________*/

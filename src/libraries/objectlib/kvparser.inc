@@ -66,6 +66,7 @@ new bool:ObjLib_KvObjectTypeBuilt = false;
  */
 stock Object:ObjLib_ParseInObjectMode(ObjectType:typeDescriptor = INVALID_OBJECT_TYPE, const String:sectionKeyName[])
 {
+    return INVALID_OBJECT;
 }
 
 /*____________________________________________________________________________*/
@@ -95,6 +96,13 @@ stock Handle:ObjLib_ParseInListMode(Handle:kv, ObjectType:typeDescriptor = INVAL
     // Create list to store section objects.
     new Handle:sections = CreateArray();
     
+    // Go to first key in section.
+    if (!KvGotoFirstSubKey(kv, true))
+    {
+        // No sections. Return list as it is (empty).
+        return sections;
+    }
+    
     // Loop through sections.
     do
     {
@@ -123,6 +131,8 @@ stock Handle:ObjLib_ParseInListMode(Handle:kv, ObjectType:typeDescriptor = INVAL
             PushArrayCell(sections, subObject);
         }
     } while (KvGotoNextKey(kv));    // Go to next section, skip values.
+    
+    return sections;
 }
 
 /*____________________________________________________________________________*/
@@ -158,13 +168,24 @@ stock Object:ObjLib_ParseSection(Handle:kv, const String:sectionKeyName[])
     ObjLib_AddObjectKey(object, sectionKeyName, ObjDataType_String);
     ObjLib_SetString(object, sectionKeyName, keyName);
     
+    // Go to first key in section.
+    if (!KvGotoFirstSubKey(kv, false))
+    {
+        // No keys in section. Return object as it is (with section name key).
+        return object;
+    }
+    
     // Loop through keys and sections in the current kv section.
+    PrintToServer("Section start.");
     do
     {
+        PrintToServer("Iteration start.");
+        
         // Check if key is a sub section.
-        if (KvGotoFirstSubKey(kv, false))
+        if (KvGotoFirstSubKey(kv, true))    // If section has a key.
         {
             // Key is a sub section.
+            PrintToServer("Key is a sub section.");
             
             // Parse sub section recurively.
             new Object:subObject = ObjLib_ParseSection(kv, sectionKeyName);
@@ -176,6 +197,10 @@ stock Object:ObjLib_ParseSection(Handle:kv, const String:sectionKeyName[])
             // Get sub section name.
             ObjLib_GetKvKeyName(kv, keyName, sizeof(keyName));
             
+            // Jump back to the section, ObjLib_GetKvKeyName moves into and back
+            // at the super section when reading the section name.
+            KvJumpToKey(kv, keyName);
+            
             // Add sub object to object.
             ObjLib_AddObjectKey(object, keyName, ObjDataType_Object);
             ObjLib_SetObject(object, keyName, subObject);
@@ -183,6 +208,7 @@ stock Object:ObjLib_ParseSection(Handle:kv, const String:sectionKeyName[])
         else
         {
             // Key is a value.
+            PrintToServer("Key is a value.");
             
             // Get key name.
             ObjLib_GetKvKeyName(kv, keyName, sizeof(keyName));
@@ -192,8 +218,13 @@ stock Object:ObjLib_ParseSection(Handle:kv, const String:sectionKeyName[])
             
             // Get and store value.
             ObjLib_GetKvValue(kv, object, keyName, ObjDataType_String);
+            
+            // Jump back to the key, because reading a value moves into that
+            // key.
+            KvJumpToKey(kv, keyName);
         }
     } while (KvGotoNextKey(kv, false));     // Go to next key or section.
+    PrintToServer("Section end.");
     
     return object;
 }
@@ -216,6 +247,7 @@ stock Object:ObjLib_ParseSection(Handle:kv, const String:sectionKeyName[])
  */
 stock Object:ObjLib_ParseSectionAs(Handle:kv, ObjectType:typeDescriptor, const String:sectionKeyName[])
 {
+    return INVALID_OBJECT;
 }
 
 /*____________________________________________________________________________*/
