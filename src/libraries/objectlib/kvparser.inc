@@ -83,14 +83,18 @@ stock Object:ObjLib_ParseInObjectMode(ObjectType:typeDescriptor = INVALID_OBJECT
  *                          in type descriptor if a type is used. Otherwise it's
  *                          created automatically.
  *
- * @return                  Handle to list of objects.
+ * @return                  Handle to list of objects. May be empty if tree is
+ *                          empty.
  */
 stock Handle:ObjLib_ParseInListMode(Handle:kv, ObjectType:typeDescriptor = INVALID_OBJECT_TYPE, const String:sectionKeyName[])
 {
     decl String:keyName[OBJLIB_KV_MAX_KEY_LEN];
     keyName[0] = 0;
     
+    new i = 0;
+    
     // Go to root.
+    // TODO: Don't rewind to support parsing a certain part of the tree.
     KvRewind(kv);
     
     // Create list to store section objects.
@@ -119,18 +123,31 @@ stock Handle:ObjLib_ParseInListMode(Handle:kv, ObjectType:typeDescriptor = INVAL
             subObject = ObjLib_ParseSection(kv, sectionKeyName);
         }
         
-        // Go up one level, out of the sub section so it's ready to read
-        // next section.
-        KvGoBack(kv);
-        PrintToServer("List mode: Going up one level.");
-        
-        // Get section name.
-        ObjLib_GetKvKeyName(kv, keyName, sizeof(keyName));
-        PrintToServer("List mode: Got section name: %s", keyName);
-        
         // Add object to list.
         PushArrayCell(sections, subObject);
-    } while (KvGotoNextKey(kv, true));    // Go to next section, skip values.
+        
+        // Get section name. This also implies going up one level, out of the
+        // sub section.
+        //ObjLib_GetKvKeyName(kv, keyName, sizeof(keyName));
+        //PrintToServer("List mode: Got section name: %s", keyName);
+        
+        // Go up one level. When reading last key the cursor was moved into that
+        // key.
+        // TODO: What if sub section is empty?
+        //KvGoBack(kv);
+        //PrintToServer("List mode: Going up one level (to root).");
+        
+        // Jump back to the section.
+        //KvJumpToKey(kv, keyName);
+        //PrintToServer("List mode: Jumping to %s", keyName);
+        
+        i++;
+        if (i > 5)
+        {
+            PrintToServer("BUG: Infinite loop. Aborting.");
+            break;
+        }
+    } while (KvGotoNextKey(kv, false));    // Go to next section, skip values.
     PrintToServer("===== List mode end =====");
     
     return sections;
@@ -156,8 +173,9 @@ stock Object:ObjLib_ParseSection(Handle:kv, const String:sectionKeyName[])
     decl String:keyName[OBJLIB_KV_MAX_KEY_LEN];
     keyName[0] = 0;
     
-    // Get name of current section.
-    ObjLib_GetKvKeyName(kv, keyName, sizeof(keyName));
+    // Get name of current section. Also don't go back to parent section, we
+    // want to stay in current section.
+    ObjLib_GetKvKeyName(kv, keyName, sizeof(keyName), false);
     PrintToServer("Got section name: %s", keyName);
     
     // Build type template.
@@ -197,15 +215,16 @@ stock Object:ObjLib_ParseSection(Handle:kv, const String:sectionKeyName[])
                 PrintToServer("Going up one level.");
                 
                 // Get sub section name.
-                ObjLib_GetKvKeyName(kv, keyName, sizeof(keyName));
+                ObjLib_GetString(subObject, sectionKeyName, keyName, sizeof(keyName));
                 PrintToServer("Got sub section name: %s", keyName);
+                //ObjLib_GetKvKeyName(kv, keyName, sizeof(keyName));
                 
-                // Jump back to the section, ObjLib_GetKvKeyName moves into and back
-                // at the super section when reading the section name.
-                KvJumpToKey(kv, keyName);
-                PrintToServer("Jumping to %s", keyName);
-                
-                // TODO: Read sub section name from subObject instead?
+                // ObjLib_GetKvKeyName moves into the sub section and back when
+                // reading the section name. After a the call the keyvalue
+                // cursor is at the first key again, so we must jump back to the
+                // sub section position.
+                //KvJumpToKey(kv, keyName);
+                //PrintToServer("Jumping to %s", keyName);
                 
                 // Add sub object to object.
                 ObjLib_AddObjectKey(object, keyName, ObjDataType_Object);
@@ -217,8 +236,6 @@ stock Object:ObjLib_ParseSection(Handle:kv, const String:sectionKeyName[])
                 PrintToServer("Key is a value.");
                 
                 // Get key name.
-                // TODO: bug - not reading key name, but parent name. Must jump to
-                // key first.
                 KvGotoFirstSubKey(kv, false);   // Jump into key (as if it's a section).
                 ObjLib_GetKvKeyName(kv, keyName, sizeof(keyName));  // Read section name of key.
                 PrintToServer("Got key name: %s", keyName);
@@ -232,12 +249,20 @@ stock Object:ObjLib_ParseSection(Handle:kv, const String:sectionKeyName[])
                 
                 // Jump back to the key, because reading a value moves into that
                 // key.
+                // TODO: Possible infinite loop if there are multiple keys with
+                //       the same name. Use key IDs instead of names.
                 KvJumpToKey(kv, keyName);
                 PrintToServer("Jumping to %s", keyName);
             }
         } while (KvGotoNextKey(kv, false));     // Go to next key or section.
     }
     PrintToServer("-- Parse section: end --");
+    
+    // Go out of section.
+    // This might not be correct to do in all cases. ParseSection should only be
+    // responsible for leaving the keyvalue cursor at the same level as when it
+    // began parsing the section.
+    KvGoBack(kv);
     
     return object;
 }
@@ -268,13 +293,20 @@ stock Object:ObjLib_ParseSectionAs(Handle:kv, ObjectType:typeDescriptor, const S
 /**
  * Internal use only!
  * Gets the name of the current key.
+ *
+ * Note: This will jump back to the super section. You might need to use
+ *       KvJumpToKey to jump back to the key name retrieved by this function -
+ *       unless it's ok to rewind to the first key in the current section.
  */
-stock ObjLib_GetKvKeyName(Handle:kv, String:buffer[], maxlen)
+stock ObjLib_GetKvKeyName(Handle:kv, String:buffer[], maxlen, bool:goBack = true)
 {
     KvGetSectionName(kv, buffer, maxlen);
     
     // Go up one level. Get out of the section again.
-    KvGoBack(kv);
+    if (goBack)
+    {
+        KvGoBack(kv);
+    }
 }
 
 /*____________________________________________________________________________*/
