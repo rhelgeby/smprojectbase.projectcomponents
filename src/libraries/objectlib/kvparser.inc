@@ -170,70 +170,73 @@ stock Object:ObjLib_ParseSection(Handle:kv, const String:sectionKeyName[])
     ObjLib_AddObjectKey(object, sectionKeyName, ObjDataType_String);
     ObjLib_SetString(object, sectionKeyName, keyName);
     
-    // Go to first key in section.
-    if (!KvGotoFirstSubKey(kv, false))
-    {
-        // No keys in section. Return object as it is (with section name key).
-        return object;
-    }
-    
-    // Loop through keys and sections in the current kv section.
     PrintToServer("-- Parse Section: start --");
-    do
+    
+    // Go to first key in section.
+    if (KvGotoFirstSubKey(kv, false))
     {
-        PrintToServer("Iteration start.");
-        
-        // Check if key is a sub section.
-        if (KvGotoFirstSubKey(kv, true))    // If section has a key.
+        PrintToServer("Jumped to first sub key.");
+    
+        // Loop through keys and sections in the current kv section.
+        do
         {
-            // Key is a sub section.
-            PrintToServer("Found sub section section. Recursive entry.");
+            PrintToServer("Iteration start.");
             
-            // Parse sub section recurively.
-            new Object:subObject = ObjLib_ParseSection(kv, sectionKeyName);
-            
-            // Go up one level, out of the sub section so it's ready to read
-            // next key.
-            KvGoBack(kv);
-            PrintToServer("Going up one level.");
-            
-            // Get sub section name.
-            ObjLib_GetKvKeyName(kv, keyName, sizeof(keyName));
-            PrintToServer("Got sub section name: %s", keyName);
-            
-            // Jump back to the section, ObjLib_GetKvKeyName moves into and back
-            // at the super section when reading the section name.
-            KvJumpToKey(kv, keyName);
-            PrintToServer("Jumping to %s", keyName);
-            
-            // TODO: Read sub section name from subObject instead?
-            
-            // Add sub object to object.
-            ObjLib_AddObjectKey(object, keyName, ObjDataType_Object);
-            ObjLib_SetObject(object, keyName, subObject);
-        }
-        else
-        {
-            // Key is a value.
-            PrintToServer("Key is a value.");
-            
-            // Get key name.
-            ObjLib_GetKvKeyName(kv, keyName, sizeof(keyName));
-            PrintToServer("Got key name: %s", keyName);
-        
-            // Add string key to store value in.
-            ObjLib_AddObjectKey(object, keyName, ObjDataType_String);
-            
-            // Get and store value.
-            ObjLib_GetKvValue(kv, object, keyName, ObjDataType_String);
-            PrintToServer("Reading value of %s", keyName);
-            
-            // Jump back to the key, because reading a value moves into that
-            // key.
-            KvJumpToKey(kv, keyName);
-            PrintToServer("Jumping to %s", keyName);
-        }
-    } while (KvGotoNextKey(kv, false));     // Go to next key or section.
+            // Check if key is a sub section.
+            if (KvGotoFirstSubKey(kv, true))
+            {
+                // Key is a sub section.
+                PrintToServer("Found sub section section. Recursive entry.");
+                
+                // Parse sub section recurively.
+                new Object:subObject = ObjLib_ParseSection(kv, sectionKeyName);
+                
+                // Go up one level, out of the sub section so it's ready to read
+                // next key.
+                KvGoBack(kv);
+                PrintToServer("Going up one level.");
+                
+                // Get sub section name.
+                ObjLib_GetKvKeyName(kv, keyName, sizeof(keyName));
+                PrintToServer("Got sub section name: %s", keyName);
+                
+                // Jump back to the section, ObjLib_GetKvKeyName moves into and back
+                // at the super section when reading the section name.
+                KvJumpToKey(kv, keyName);
+                PrintToServer("Jumping to %s", keyName);
+                
+                // TODO: Read sub section name from subObject instead?
+                
+                // Add sub object to object.
+                ObjLib_AddObjectKey(object, keyName, ObjDataType_Object);
+                ObjLib_SetObject(object, keyName, subObject);
+            }
+            else
+            {
+                // Key is a value.
+                PrintToServer("Key is a value.");
+                
+                // Get key name.
+                // TODO: bug - not reading key name, but parent name. Must jump to
+                // key first.
+                KvGotoFirstSubKey(kv, false);   // Jump into key (as if it's a section).
+                ObjLib_GetKvKeyName(kv, keyName, sizeof(keyName));  // Read section name of key.
+                PrintToServer("Got key name: %s", keyName);
+                
+                // Add string key to store value in.
+                ObjLib_AddObjectKey(object, keyName, ObjDataType_String);
+                
+                // Get and store value.
+                ObjLib_GetKvValue(kv, object, keyName, ObjDataType_String);
+                PrintToServer("Reading value of %s", keyName);
+                
+                // Jump back to the key, because reading a value moves into that
+                // key.
+                KvJumpToKey(kv, keyName);
+                PrintToServer("Jumping to %s", keyName);
+            }
+        } while (KvGotoNextKey(kv, false));     // Go to next key or section.
+    }
     PrintToServer("-- Parse section: end --");
     
     return object;
