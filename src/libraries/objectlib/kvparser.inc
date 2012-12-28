@@ -97,9 +97,12 @@ stock Handle:ObjLib_ParseInListMode(Handle:kv, ObjectType:typeDescriptor = INVAL
     // TODO: Don't rewind to support parsing a certain part of the tree.
     KvRewind(kv);
     
+    BrowseKeyValues(kv);
+    
     // Create list to store section objects.
     new Handle:sections = CreateArray();
     
+    /*
     // Go to first sub section in section.
     if (!KvGotoFirstSubKey(kv, true))
     {
@@ -149,7 +152,7 @@ stock Handle:ObjLib_ParseInListMode(Handle:kv, ObjectType:typeDescriptor = INVAL
         }
     } while (KvGotoNextKey(kv, true));    // Go to next section, skip values.
     PrintToServer("===== List mode end =====");
-    
+    */
     return sections;
 }
 
@@ -385,4 +388,32 @@ stock ObjLib_BuildKvObjectType()
         ObjLib_KvObjectType = ObjLib_CreateType(ByteCountToCells(OBJLIB_KV_MAX_STRING_LEN));
         ObjLib_KvObjectTypeBuilt = true;
     }
+}
+
+
+BrowseKeyValues(Handle:kv, level = 0)
+{
+    new String:sectionName[32];
+    new String:value[32];
+    
+    PrintToServer("-- Section start (level %d) --", level);
+    do
+    {
+        KvGetSectionName(kv, sectionName, sizeof(sectionName));
+        PrintToServer("Current key: %s", sectionName);
+        if (KvGotoFirstSubKey(kv, false))
+        {
+            PrintToServer("Sub key. Recursive entry.");
+            BrowseKeyValues(kv, level + 1);
+            
+            PrintToServer("Going back.");
+            KvGoBack(kv);
+        }
+        else
+        {
+            KvGetString(kv, NULL_STRING, value, sizeof(value));
+            PrintToServer("Regular key. Value: \"%s\"", value);
+        }
+    } while (KvGotoNextKey(kv, false));
+    PrintToServer("-- Section end --");
 }
