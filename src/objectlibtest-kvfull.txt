@@ -2,10 +2,10 @@
 {
     "DataTypes"
     {
-        "cell"          "10"
-        "bool"          "true"
-        "float"         "2.5"
-        "string"        "This is a string."
+        "cell"              "10"
+        "bool"              "true"
+        "float"             "2.5"
+        "string"            "This is a string."
     }
     
     "NestedSections"
@@ -26,6 +26,33 @@
             {
                 "valueE"    "5"
             }
+        }
+    }
+    
+    "EmptySection"
+    {
+    }
+    
+    "DuplicateKeys"
+    {
+        "DupKey"            "6"
+        "DupKey"            "7"
+        "DupKey"            "8"
+    }
+    
+    "DuplicateSections"
+    {
+        "DupSection"
+        {
+            "DummyKey"      "9"
+        }
+        "DupSection"
+        {
+            // Empty.
+        }
+        "DupSection"
+        {
+            "DummyKey"      "10"
         }
     }
 }
