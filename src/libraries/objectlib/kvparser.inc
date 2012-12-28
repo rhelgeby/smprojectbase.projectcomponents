@@ -401,8 +401,13 @@ BrowseKeyValues(Handle:kv, level = 0)
     {
         KvGetSectionName(kv, sectionName, sizeof(sectionName));
         PrintToServer("Current key: %s", sectionName);
+        
+        // Check if current key is a section. Assume it has sub keys and attempt
+        // to enter the section.
         if (KvGotoFirstSubKey(kv, false))
         {
+            // Success. Confirmed that it's a sub key.
+            
             PrintToServer("Sub key. Recursive entry.");
             BrowseKeyValues(kv, level + 1);
             
@@ -411,8 +416,24 @@ BrowseKeyValues(Handle:kv, level = 0)
         }
         else
         {
-            KvGetString(kv, NULL_STRING, value, sizeof(value));
-            PrintToServer("Regular key. Value: \"%s\"", value);
+            // Failed. It's a regular key, or the section is empty. Find out by
+            // getting the data type of the key.
+            
+            // Get data type of current key.
+            new KvDataTypes:dataType = KvGetDataType(kv, NULL_STRING);
+            
+            // Check if key has a data type. If not, the section is empty.
+            if (dataType != KvData_None)
+            {
+                // Cursor is on a key.
+                KvGetString(kv, NULL_STRING, value, sizeof(value));
+                PrintToServer("Regular key. Value: \"%s\"", value);
+            }
+            else
+            {
+                // Section is empty. Do nothing.
+                PrintToServer("Section is empty.");
+            }
         }
     } while (KvGotoNextKey(kv, false));
     PrintToServer("-- Section end --");
