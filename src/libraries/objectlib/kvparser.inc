@@ -147,7 +147,7 @@ stock Handle:ObjLib_ParseInListMode(Handle:kv, ObjectType:typeDescriptor = INVAL
             PrintToServer("BUG: Infinite loop. Aborting.");
             break;
         }
-    } while (KvGotoNextKey(kv, false));    // Go to next section, skip values.
+    } while (KvGotoNextKey(kv, true));    // Go to next section, skip values.
     PrintToServer("===== List mode end =====");
     
     return sections;
@@ -173,9 +173,8 @@ stock Object:ObjLib_ParseSection(Handle:kv, const String:sectionKeyName[])
     decl String:keyName[OBJLIB_KV_MAX_KEY_LEN];
     keyName[0] = 0;
     
-    // Get name of current section. Also don't go back to parent section, we
-    // want to stay in current section.
-    ObjLib_GetKvKeyName(kv, keyName, sizeof(keyName), false);
+    // Get name of current section.
+    KvGetSectionName(kv, keyName, sizeof(keyName));
     PrintToServer("Got section name: %s", keyName);
     
     // Build type template.
@@ -190,11 +189,11 @@ stock Object:ObjLib_ParseSection(Handle:kv, const String:sectionKeyName[])
     
     PrintToServer("-- Parse Section: start --");
     
-    // Go to first key in section.
+    // Go to first key or section.
     if (KvGotoFirstSubKey(kv, false))
     {
-        PrintToServer("Jumped to first sub key.");
-    
+        PrintToServer("Jumped to first key.");
+        
         // Loop through keys and sections in the current kv section.
         do
         {
@@ -203,28 +202,25 @@ stock Object:ObjLib_ParseSection(Handle:kv, const String:sectionKeyName[])
             // Check if key is a sub section.
             if (KvGotoFirstSubKey(kv, true))
             {
+                KvGetSectionName(kv, keyName, sizeof(keyName));
+                
                 // Key is a sub section.
-                PrintToServer("Found sub section section. Recursive entry.");
+                PrintToServer("Found sub section: %s. Recursive entry.", keyName);
+                
+                // TODO: Is the cursor positioned at the section root, or at the
+                //       first sub key in this section? Cursor must be
+                //       positioned at the section root before doing recursive
+                //       entry.
                 
                 // Parse sub section recurively.
                 new Object:subObject = ObjLib_ParseSection(kv, sectionKeyName);
                 
-                // Go up one level, out of the sub section so it's ready to read
-                // next key.
+                // Done with sub section. Go out?
                 KvGoBack(kv);
-                PrintToServer("Going up one level.");
+                PrintToServer("Going back.");
                 
-                // Get sub section name.
+                // Get sub section name from subObject.
                 ObjLib_GetString(subObject, sectionKeyName, keyName, sizeof(keyName));
-                PrintToServer("Got sub section name: %s", keyName);
-                //ObjLib_GetKvKeyName(kv, keyName, sizeof(keyName));
-                
-                // ObjLib_GetKvKeyName moves into the sub section and back when
-                // reading the section name. After a the call the keyvalue
-                // cursor is at the first key again, so we must jump back to the
-                // sub section position.
-                //KvJumpToKey(kv, keyName);
-                //PrintToServer("Jumping to %s", keyName);
                 
                 // Add sub object to object.
                 ObjLib_AddObjectKey(object, keyName, ObjDataType_Object);
@@ -233,36 +229,24 @@ stock Object:ObjLib_ParseSection(Handle:kv, const String:sectionKeyName[])
             else
             {
                 // Key is a value.
-                PrintToServer("Key is a value.");
                 
                 // Get key name.
-                KvGotoFirstSubKey(kv, false);   // Jump into key (as if it's a section).
-                ObjLib_GetKvKeyName(kv, keyName, sizeof(keyName));  // Read section name of key.
-                PrintToServer("Got key name: %s", keyName);
+                KvGetSectionName(kv, keyName, sizeof(keyName));
+                PrintToServer("Found key: %s", keyName);
                 
                 // Add string key to store value in.
                 ObjLib_AddObjectKey(object, keyName, ObjDataType_String);
                 
                 // Get and store value.
                 ObjLib_GetKvValue(kv, object, keyName, ObjDataType_String);
-                PrintToServer("Reading value of %s", keyName);
-                
-                // Jump back to the key, because reading a value moves into that
-                // key.
-                // TODO: Possible infinite loop if there are multiple keys with
-                //       the same name. Use key IDs instead of names.
-                KvJumpToKey(kv, keyName);
-                PrintToServer("Jumping to %s", keyName);
             }
         } while (KvGotoNextKey(kv, false));     // Go to next key or section.
+        
+        // Done with keys in this section. Go out.
+        KvGoBack(kv);
+        PrintToServer("Going back.");
     }
     PrintToServer("-- Parse section: end --");
-    
-    // Go out of section.
-    // This might not be correct to do in all cases. ParseSection should only be
-    // responsible for leaving the keyvalue cursor at the same level as when it
-    // began parsing the section.
-    KvGoBack(kv);
     
     return object;
 }
@@ -306,6 +290,7 @@ stock ObjLib_GetKvKeyName(Handle:kv, String:buffer[], maxlen, bool:goBack = true
     if (goBack)
     {
         KvGoBack(kv);
+        PrintToServer("Going back.");
     }
 }
 
@@ -367,9 +352,11 @@ stock ObjLib_GetKvValue(Handle:kv, Object:object, const String:keyName[], Object
         }
         case ObjDataType_String:
         {
-            new String:value[OBJLIB_KV_MAX_STRING_LEN];
-            KvGetString(kv, keyName, value, sizeof(value));
+            decl String:value[OBJLIB_KV_MAX_STRING_LEN];
+            value[0] = 0;
+            KvGetString(kv, NULL_STRING /*keyName*/, value, sizeof(value));
             ObjLib_SetString(object, keyName, value);
+            PrintToServer("Reading value of %s: \"%s\"", keyName, value);
         }
         case ObjDataType_Object:
         {

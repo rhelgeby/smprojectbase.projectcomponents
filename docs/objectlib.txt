@@ -370,6 +370,9 @@ Parsing:
       section is parsed into an object. The object reference is added to a list.
     - Object mode. The root itself is parsed into an object.
 * Using recursion when parsing sections.
+* Delegate reading and storing into objects to a separate handler. The parse
+  function should only do traversal and get key names. The rest is taken care of
+  in the handler.
 
 Validation:
 * Sometimes data cannot be validated until all keys are parsed. Provide a
