@@ -384,6 +384,13 @@ Validation:
 Type checking:
 * Match KV file against predefined type descriptor (eventually with nested types
   for sub sections in KV files.
+* Eventually support references where the KV file store a name (string) of an
+  object. While parsing, this string is replaced by a direct object reference.
+  We already have the Object data type. The parser only need to check
+  constraints on that key to see if a certain object type is required. If there
+  is a type restriction, it could read the name from the KV file and pass it to
+  an external lookup callback handled by the user. If the lookup failed the
+  parser will repsond with an error.
 * Ignore, but warn about undefined keys.
 
 Type builder:
