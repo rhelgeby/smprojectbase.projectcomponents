@@ -105,6 +105,16 @@ RESOURCE USAGE
   
   Use immutable objects when you can to reduce memory overhead, especially on
   object types that aren't modified after creation.
+  
+  The memory overhead also depends on how much space you reserve for each value
+  entry. Memory will be wasted if you reserve more space than the longest value
+  requires.
+  
+  An object with 4 strings of 256 byte will require about 2 KB, including the
+  object array itself, list of null keys and a type descriptor reference.
+  
+  The type descriptor for this object use 8-9 KB where the trie (key name index)
+  use 8 KB alone.
 
 * A little memory and CPU overhead is a trade off for writing more code
   yourself. It can still be efficient if used correctly.
