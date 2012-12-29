@@ -132,11 +132,15 @@ stock ObjLib_DeleteType(&ObjectType:typeDescriptor, bool:resetReference = true)
  * @param typeDescriptor    Source object type template.
  * @param locked            (Optional) Whether the new object type is locked.
  *                          Default is false.
+ * @param errorHandler      (Optional) Callback for general error handler. Called
+ *                          when a recoverable error occured. Use
+ *                          INVALID_FUNCTION to use the error handler in
+ *                          typeDescriptor.
  *
  * @return                  New object type descriptor. Must be deleted with
  *                          ObjLib_DeleteType when no longer in use.
  */
-stock ObjectType:ObjLib_CloneType(ObjectType:typeDescriptor, bool:locked = false)
+stock ObjectType:ObjLib_CloneType(ObjectType:typeDescriptor, bool:locked = false, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
 {
     // Stop possible infinite recursion.
     if (ObjLib_IsConstraintType(typeDescriptor))
@@ -155,6 +159,7 @@ stock ObjectType:ObjLib_CloneType(ObjectType:typeDescriptor, bool:locked = false
     new Handle:nameIndex = ObjLib_CloneTrie(ObjLib_GetTypeNameIndex(typeDescriptor), keys, keySize);
     new Handle:dataTypes = CloneArray(ObjLib_GetTypeDataTypes(typeDescriptor));
     new Handle:sourceConstraints = ObjLib_GetTypeConstraints(typeDescriptor);
+    new ObjLib_ErrorHandler:newErrorHandler = ObjLib_GetErrorHandler(typeDescriptor, errorHandler);
     
     new numKeys = GetArraySize(keys);
     new Handle:constraintList = CreateArray(_, numKeys);
@@ -186,6 +191,7 @@ stock ObjectType:ObjLib_CloneType(ObjectType:typeDescriptor, bool:locked = false
     ObjLib_SetTypeNameIndex(newType,    nameIndex);
     ObjLib_SetTypeDataTypes(newType,    dataTypes);
     ObjLib_SetTypeConstraints(newType,  constraintList);
+    ObjLib_SetTypeErrorHandler(newType, newErrorHandler);
     
     return newType;
 }
@@ -231,7 +237,7 @@ stock ObjLib_AddKey(ObjectType:typeDescriptor, const String:keyName[], ObjectDat
     
     // Check if key exist.
     if (ObjLib_KeyExist(typeDescriptor, keyName)
-        && ObjLib_HandleError(typeDescriptor, parent, ObjLibError_KeyExist, _, "Key name already exist (\"%s\").", keyName))
+        && ObjLib_HandleError(typeDescriptor, parent, ObjLibError_KeyExist, _, "Key name already exist (\"%s\"). You might want to use an array if this was intended.", keyName))
     {
         return;
     }
