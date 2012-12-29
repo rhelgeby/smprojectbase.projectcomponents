@@ -97,60 +97,54 @@ stock Handle:ObjLib_ParseInListMode(Handle:kv, ObjectType:typeDescriptor = INVAL
     // TODO: Don't rewind to support parsing a certain part of the tree.
     KvRewind(kv);
     
-    BrowseKeyValues(kv);
+    //BrowseKeyValues(kv);
     
     // Create list to store section objects.
     new Handle:sections = CreateArray();
     
-    /*
     // Go to first sub section in section.
-    if (!KvGotoFirstSubKey(kv, true))
+    /*if (!KvGotoFirstSubKey(kv))
     {
         // No sections. Return list as it is (empty).
         return sections;
-    }
+    }*/
+    
+    new Object:subObject = ObjLib_ParseSection(kv, sectionKeyName);
+    PushArrayCell(sections, subObject);
     
     // Loop through sections.
+    /*
     PrintToServer("===== List mode: start =====");
     do
     {
         PrintToServer("----- List mode: iteration start -----");
-        // Parse section recurively.
-        new Object:subObject;
-        if (typeDescriptor)
+        if (KvGotoFirstSubKey(kv, false))
         {
-            subObject = ObjLib_ParseSectionAs(kv, typeDescriptor, sectionKeyName);
+            PrintToServer("----- List mode: sub section start -----");
+            // Parse section recurively.
+            new Object:subObject;
+            if (typeDescriptor)
+            {
+                subObject = ObjLib_ParseSectionAs(kv, typeDescriptor, sectionKeyName);
+            }
+            else
+            {
+                subObject = ObjLib_ParseSection(kv, sectionKeyName);
+            }
+            
+            // Add object to list.
+            PushArrayCell(sections, subObject);
+            
+            KvGoBack(kv);
         }
-        else
-        {
-            subObject = ObjLib_ParseSection(kv, sectionKeyName);
-        }
-        
-        // Add object to list.
-        PushArrayCell(sections, subObject);
-        
-        // Get section name. This also implies going up one level, out of the
-        // sub section.
-        //ObjLib_GetKvKeyName(kv, keyName, sizeof(keyName));
-        //PrintToServer("List mode: Got section name: %s", keyName);
-        
-        // Go up one level. When reading last key the cursor was moved into that
-        // key.
-        // TODO: What if sub section is empty?
-        //KvGoBack(kv);
-        //PrintToServer("List mode: Going up one level (to root).");
-        
-        // Jump back to the section.
-        //KvJumpToKey(kv, keyName);
-        //PrintToServer("List mode: Jumping to %s", keyName);
         
         i++;
-        if (i > 5)
+        if (i > 10)
         {
             PrintToServer("BUG: Infinite loop. Aborting.");
             break;
         }
-    } while (KvGotoNextKey(kv, true));    // Go to next section, skip values.
+    } while (KvGotoNextKey(kv, false));    // Go to next section, skip values.
     PrintToServer("===== List mode end =====");
     */
     return sections;
@@ -177,8 +171,9 @@ stock Object:ObjLib_ParseSection(Handle:kv, const String:sectionKeyName[])
     keyName[0] = 0;
     
     // Get name of current section.
-    KvGetSectionName(kv, keyName, sizeof(keyName));
-    PrintToServer("Got section name: %s", keyName);
+    // TODO: This is not the section name, but name of the first sub key.
+    //KvGetSectionName(kv, keyName, sizeof(keyName));
+    //PrintToServer("Got section name: %s", keyName);
     
     // Build type template.
     ObjLib_BuildKvObjectType();
@@ -187,52 +182,48 @@ stock Object:ObjLib_ParseSection(Handle:kv, const String:sectionKeyName[])
     new Object:object = ObjLib_CreateObject(ObjLib_KvObjectType);
     
     // Add key and store section name.
-    ObjLib_AddObjectKey(object, sectionKeyName, ObjDataType_String);
-    ObjLib_SetString(object, sectionKeyName, keyName);
+    //ObjLib_AddObjectKey(object, sectionKeyName, ObjDataType_String);
+    //ObjLib_SetString(object, sectionKeyName, keyName);
     
     PrintToServer("-- Parse Section: start --");
     
-    // Go to first key or section.
-    if (KvGotoFirstSubKey(kv, false))
+    // Loop through keys and sections in the current kv section.
+    do
     {
-        PrintToServer("Jumped to first key.");
+        PrintToServer("Iteration start.");
         
-        // Loop through keys and sections in the current kv section.
-        do
+        // Get current key or section name.
+        KvGetSectionName(kv, keyName, sizeof(keyName));
+        PrintToServer("Current key: %s", keyName);
+        
+        // Check if key is a sub section.
+        if (KvGotoFirstSubKey(kv, false))
         {
-            PrintToServer("Iteration start.");
+            // Key is a sub section.
+            PrintToServer("Found sub section. Recursive entry.");
             
-            // Check if key is a sub section.
-            if (KvGotoFirstSubKey(kv, true))
+            // Parse sub section recurively.
+            new Object:subObject = ObjLib_ParseSection(kv, sectionKeyName);
+            
+            // Done with sub section. Go out?
+            KvGoBack(kv);
+            PrintToServer("Going back.");
+            
+            // Get sub section name from subObject.
+            //ObjLib_GetString(subObject, sectionKeyName, keyName, sizeof(keyName));
+            
+            // Add sub object to object.
+            ObjLib_AddObjectKey(object, keyName, ObjDataType_Object);
+            ObjLib_SetObject(object, keyName, subObject);
+        }
+        else
+        {
+            // Key is a value, or section is empty.
+            
+            // Sections don't have a data type. If there is a data type, it's a
+            // key.
+            if (KvGetDataType(kv, NULL_STRING) != KvData_None)
             {
-                KvGetSectionName(kv, keyName, sizeof(keyName));
-                
-                // Key is a sub section.
-                PrintToServer("Found sub section: %s. Recursive entry.", keyName);
-                
-                // TODO: Is the cursor positioned at the section root, or at the
-                //       first sub key in this section? Cursor must be
-                //       positioned at the section root before doing recursive
-                //       entry.
-                
-                // Parse sub section recurively.
-                new Object:subObject = ObjLib_ParseSection(kv, sectionKeyName);
-                
-                // Done with sub section. Go out?
-                KvGoBack(kv);
-                PrintToServer("Going back.");
-                
-                // Get sub section name from subObject.
-                ObjLib_GetString(subObject, sectionKeyName, keyName, sizeof(keyName));
-                
-                // Add sub object to object.
-                ObjLib_AddObjectKey(object, keyName, ObjDataType_Object);
-                ObjLib_SetObject(object, keyName, subObject);
-            }
-            else
-            {
-                // Key is a value.
-                
                 // Get key name.
                 KvGetSectionName(kv, keyName, sizeof(keyName));
                 PrintToServer("Found key: %s", keyName);
@@ -243,12 +234,21 @@ stock Object:ObjLib_ParseSection(Handle:kv, const String:sectionKeyName[])
                 // Get and store value.
                 ObjLib_GetKvValue(kv, object, keyName, ObjDataType_String);
             }
-        } while (KvGotoNextKey(kv, false));     // Go to next key or section.
-        
-        // Done with keys in this section. Go out.
-        KvGoBack(kv);
-        PrintToServer("Going back.");
-    }
+            else
+            {
+                // Found an empty section.
+                PrintToServer("Found empty section.", object);
+                
+                // Add an empty sub object to object.
+                // TODO: Add parameter to set whether empty sections are
+                //       ignored.
+                new Object:subObject = ObjLib_CreateObject(ObjLib_KvObjectType);
+                ObjLib_AddObjectKey(object, keyName, ObjDataType_Object);
+                ObjLib_SetObject(object, keyName, subObject);
+            }
+        }
+    } while (KvGotoNextKey(kv, false));     // Go to next key or section.
+    
     PrintToServer("-- Parse section: end --");
     
     return object;

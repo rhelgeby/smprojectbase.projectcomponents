@@ -64,7 +64,7 @@ stock bool:ObjLib_HandleError(ObjectType:typeDescriptor,
     // Format message.
     decl String:message[255];
     message[0] = 0;
-    VFormat(message, sizeof(message), format, 5);
+    VFormat(message, sizeof(message), format, 6);
     
     if (callback == INVALID_FUNCTION)
     {
