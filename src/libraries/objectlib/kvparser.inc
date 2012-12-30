@@ -25,6 +25,10 @@
  * ============================================================================
  */
 
+#include "libraries/utilities"
+
+/*____________________________________________________________________________*/
+
 /**
  * Length of string buffers used in parser. Increase this if you need to read
  * longer string values.
@@ -49,6 +53,15 @@
  */
 new ObjectType:ObjLib_KvObjectType = INVALID_OBJECT_TYPE;
 new bool:ObjLib_KvObjectTypeBuilt = false;
+
+/*____________________________________________________________________________*/
+
+/**
+ * Temporary global storage for simple error handler. Used to wrap error handler
+ * in boolean word parser (utilities.inc).
+ */
+//new ObjLib_ErrorHandler:TempErrorHandler = INVALID_FUNCTION;
+//new ObjectType:TempType = INVALID_OBJECT_TYPE;
 
 /*____________________________________________________________________________*/
 
@@ -79,14 +92,11 @@ stock Object:ObjLib_ParseInObjectMode(ObjectType:typeDescriptor = INVALID_OBJECT
  * @param kv                KeyValue tree to parse.
  * @param typeDescriptor    (Optional) Type of object. If not specified it will
  *                          create keys in mutable objects.
- * @param sectionKeyName    Name of key where section name is stored. Must exist
- *                          in type descriptor if a type is used. Otherwise it's
- *                          created automatically.
  *
  * @return                  Handle to list of objects. May be empty if tree is
  *                          empty.
  */
-stock Handle:ObjLib_ParseInListMode(Handle:kv, ObjectType:typeDescriptor = INVALID_OBJECT_TYPE, const String:sectionKeyName[])
+stock Handle:ObjLib_ParseInListMode(Handle:kv, ObjectType:typeDescriptor = INVALID_OBJECT_TYPE)
 {
     decl String:keyName[OBJLIB_KV_MAX_KEY_LEN];
     keyName[0] = 0;
@@ -125,11 +135,11 @@ stock Handle:ObjLib_ParseInListMode(Handle:kv, ObjectType:typeDescriptor = INVAL
             new Object:subObject;
             if (typeDescriptor)
             {
-                subObject = ObjLib_ParseSectionAs(kv, typeDescriptor, sectionKeyName);
+                subObject = ObjLib_ParseSectionAs(kv, typeDescriptor);
             }
             else
             {
-                subObject = ObjLib_ParseSection(kv, sectionKeyName);
+                subObject = ObjLib_ParseSection(kv);
             }
             
             // Add object to list.
@@ -158,12 +168,18 @@ stock Handle:ObjLib_ParseInListMode(Handle:kv, ObjectType:typeDescriptor = INVAL
  *
  * @param kv                Handle to keyvalue tree with the cursor on a
  *                          section.
- * @param addEmptySections  Whether to add sections with no keys. An empty
- *                          object will represent an empty section.
+ * @param addEmptySections  (Optional) Whether to add sections with no keys.
+ *                          An empty object will represent an empty section.
+ *                          Default is true.
+ * @param booleanType       (Optional) Which boolean words to allow when
+ *                          converting to boolean values. Default is
+ *                          BoolType_Any (utilities.inc).
+ * @param errorHandler      (Optional) Custom error handler. Overrides any other
+ *                          error handler if specified.
  *
  * @return                  Object with data from the section.
  */
-stock Object:ObjLib_ParseSection(Handle:kv, bool:addEmptySections = true)
+stock Object:ObjLib_ParseSection(Handle:kv, bool:addEmptySections = true, Util_BoolStringType:booleanType = BoolType_Any, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
 {
     // Note: This function do recursive calls to itself.
     
@@ -202,7 +218,7 @@ stock Object:ObjLib_ParseSection(Handle:kv, bool:addEmptySections = true)
             
             // Add sub object to object.
             ObjLib_AddObjectKey(object, keyName, ObjDataType_Object);
-            ObjLib_SetObject(object, keyName, subObject);
+            ObjLib_SetObject(object, keyName, subObject, errorHandler);
         }
         else
         {
@@ -220,7 +236,7 @@ stock Object:ObjLib_ParseSection(Handle:kv, bool:addEmptySections = true)
                 ObjLib_AddObjectKey(object, keyName, ObjDataType_String);
                 
                 // Get and store value.
-                ObjLib_GetKvValue(kv, object, keyName, ObjDataType_String);
+                ObjLib_GetKvValue(kv, object, keyName, ObjDataType_String, booleanType);
             }
             else
             {
@@ -232,7 +248,7 @@ stock Object:ObjLib_ParseSection(Handle:kv, bool:addEmptySections = true)
                 {
                     new Object:subObject = ObjLib_CreateObject(ObjLib_KvObjectType);
                     ObjLib_AddObjectKey(object, keyName, ObjDataType_Object);
-                    ObjLib_SetObject(object, keyName, subObject);
+                    ObjLib_SetObject(object, keyName, subObject, errorHandler);
                 }
             }
         }
@@ -285,40 +301,55 @@ stock ObjLib_AddSection(Object:object, Object:subObject, const String:keyName[],
  * Internal use only!
  * Reads a value from a key and store it in the object.
  *
- * @param kv        Handle to keyvalue tree.
- * @param object    Object to store value in.
- * @param keyName   Key to read.
- * @param dataType  Key type.
+ * @param kv            Handle to keyvalue tree.
+ * @param object        Object to store value in.
+ * @param keyName       Key to read.
+ * @param dataType      Key type.
+ * @param errorHandler  Custom error handler. Overrides any other error handler
+ *                      if specified.
  */
-stock ObjLib_GetKvValue(Handle:kv, Object:object, const String:keyName[], ObjectDataType:dataType)
+stock ObjLib_GetKvValue(Handle:kv, Object:object, const String:keyName[], ObjectDataType:dataType, Util_BoolStringType:booleanType = BoolType_Any, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
 {
     switch (dataType)
     {
         case ObjDataType_Any:
         {
-            new value = KvGetNum(kv, keyName);
-            ObjLib_SetAny(object, keyName, value);
+            new value = KvGetNum(kv, NULL_STRING);
+            ObjLib_SetAny(object, keyName, value, errorHandler);
         }
         case ObjDataType_Cell:
         {
-            new value = KvGetNum(kv, keyName);
-            ObjLib_SetCell(object, keyName, value);
+            new value = KvGetNum(kv, NULL_STRING);
+            ObjLib_SetCell(object, keyName, value, errorHandler);
         }
         case ObjDataType_Bool:
         {
-            // TODO: Support boolean strings ("true", "false", "on", "off", "yes", "no).
-            // Get value as string
-            // Check if number, if so convert to bool.
-            // If string check for boolean words, convert.
-            // Throw error if unknown word.
+            /* TODO: Too complicated, simplify boolean parser with better error
+               handling. Need two return values: the converted value and whether
+               the value was converted successfully so the error can be
+               forwarded to errorHandler.
+            
+            decl String:value[16];
+            value[0] = 0;
+            KvGetString(kv, NULL_STRING, value, sizeof(value));
+            
+            TempErrorHandler = errorHandler;
+            TempType = ObjLib_GetTypeDescriptor(object);
+            
+            // Parse boolean string.
+            new bool:boolValue = Util_StringToBool(value, booleanType, ObjLib_BoolParseErrorHandler);
+            
+            TempErrorHandler = INVALID_FUNCTION;
+            TempType = INVALID_OBJECT_TYPE;
+            */
             
             new bool:value = bool:KvGetNum(kv, keyName);
-            ObjLib_SetBool(object, keyName, value);
+            ObjLib_SetBool(object, keyName, boolValue, errorHandler);
         }
         case ObjDataType_Float:
         {
-            new Float:value = KvGetFloat(kv, keyName);
-            ObjLib_SetFloat(object, keyName, value);
+            new Float:value = KvGetFloat(kv, NULL_STRING);
+            ObjLib_SetFloat(object, keyName, value, errorHandler);
         }
         case ObjDataType_Handle:
         {
@@ -339,14 +370,18 @@ stock ObjLib_GetKvValue(Handle:kv, Object:object, const String:keyName[], Object
         {
             decl String:value[OBJLIB_KV_MAX_STRING_LEN];
             value[0] = 0;
-            KvGetString(kv, NULL_STRING /*keyName*/, value, sizeof(value));
-            ObjLib_SetString(object, keyName, value);
+            KvGetString(kv, NULL_STRING, value, sizeof(value));
+            ObjLib_SetString(object, keyName, value, errorHandler);
             PrintToServer("Reading value of %s: \"%s\"", keyName, value);
         }
         case ObjDataType_Object:
         {
             // This shouldn't happen. Objects should be read as kv sections.
             ThrowError("[BUG] Can't read key as object. The parser should check if this key is a section, if not it's a bug in objectlib.");
+            
+            // TODO: Support named object lookup through a user defined lookup
+            //       callback. It will automatically look up an object by name
+            //       here and replace it with the object reference.
         }
         case ObjDataType_ObjectType:
         {
@@ -359,6 +394,17 @@ stock ObjLib_GetKvValue(Handle:kv, Object:object, const String:keyName[], Object
         }
     }
 }
+
+/*____________________________________________________________________________*/
+
+/*public ObjLib_BoolParseErrorHandler()
+{
+    ObjLib_HandleError(ObjectType:typeDescriptor,   // typeDescriptor
+                       INVALID_OBJECT,              // object
+                       ObjLibError_ValidationError, // errorType
+                       TempErrorHandler,            // customHandler
+                       "Invalid boolean string.");  // format
+}*/
 
 /*____________________________________________________________________________*/
 
