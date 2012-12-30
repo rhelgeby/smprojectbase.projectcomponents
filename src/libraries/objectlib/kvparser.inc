@@ -158,32 +158,23 @@ stock Handle:ObjLib_ParseInListMode(Handle:kv, ObjectType:typeDescriptor = INVAL
  *
  * @param kv                Handle to keyvalue tree with the cursor on a
  *                          section.
- * @param sectionKeyName    Name of key where section name is stored. This key
- *                          will be created.
+ * @param addEmptySections  Whether to add sections with no keys. An empty
+ *                          object will represent an empty section.
  *
  * @return                  Object with data from the section.
  */
-stock Object:ObjLib_ParseSection(Handle:kv, const String:sectionKeyName[])
+stock Object:ObjLib_ParseSection(Handle:kv, bool:addEmptySections = true)
 {
     // Note: This function do recursive calls to itself.
     
     decl String:keyName[OBJLIB_KV_MAX_KEY_LEN];
     keyName[0] = 0;
     
-    // Get name of current section.
-    // TODO: This is not the section name, but name of the first sub key.
-    //KvGetSectionName(kv, keyName, sizeof(keyName));
-    //PrintToServer("Got section name: %s", keyName);
-    
     // Build type template.
     ObjLib_BuildKvObjectType();
     
     // Create mutable object.
-    new Object:object = ObjLib_CreateObject(ObjLib_KvObjectType);
-    
-    // Add key and store section name.
-    //ObjLib_AddObjectKey(object, sectionKeyName, ObjDataType_String);
-    //ObjLib_SetString(object, sectionKeyName, keyName);
+    new Object:object = ObjLib_CreateObject(ObjLib_KvObjectType, true);
     
     PrintToServer("-- Parse Section: start --");
     
@@ -208,9 +199,6 @@ stock Object:ObjLib_ParseSection(Handle:kv, const String:sectionKeyName[])
             // Done with sub section. Go out?
             KvGoBack(kv);
             PrintToServer("Going back.");
-            
-            // Get sub section name from subObject.
-            //ObjLib_GetString(subObject, sectionKeyName, keyName, sizeof(keyName));
             
             // Add sub object to object.
             ObjLib_AddObjectKey(object, keyName, ObjDataType_Object);
@@ -239,12 +227,13 @@ stock Object:ObjLib_ParseSection(Handle:kv, const String:sectionKeyName[])
                 // Found an empty section.
                 PrintToServer("Found empty section.", object);
                 
-                // Add an empty sub object to object.
-                // TODO: Add parameter to set whether empty sections are
-                //       ignored.
-                new Object:subObject = ObjLib_CreateObject(ObjLib_KvObjectType);
-                ObjLib_AddObjectKey(object, keyName, ObjDataType_Object);
-                ObjLib_SetObject(object, keyName, subObject);
+                // Add an empty sub object to object, if enabled.
+                if (addEmptySections)
+                {
+                    new Object:subObject = ObjLib_CreateObject(ObjLib_KvObjectType);
+                    ObjLib_AddObjectKey(object, keyName, ObjDataType_Object);
+                    ObjLib_SetObject(object, keyName, subObject);
+                }
             }
         }
     } while (KvGotoNextKey(kv, false));     // Go to next key or section.
@@ -279,22 +268,15 @@ stock Object:ObjLib_ParseSectionAs(Handle:kv, ObjectType:typeDescriptor, const S
 
 /**
  * Internal use only!
- * Gets the name of the current key.
+ * Adds a sub object to the specified object. This function will handle type
+ * checking if a type descriptor is specified.
  *
- * Note: This will jump back to the super section. You might need to use
- *       KvJumpToKey to jump back to the key name retrieved by this function -
- *       unless it's ok to rewind to the first key in the current section.
+ * @param object            Object to add section in.
+ * @param subObject         Sub object representing the section to add.
+ * @param keyName           Name of key to store sub object in.
  */
-stock ObjLib_GetKvKeyName(Handle:kv, String:buffer[], maxlen, bool:goBack = true)
+stock ObjLib_AddSection(Object:object, Object:subObject, const String:keyName[], ObjectType:typeDescriptor = INVALID_OBJECT_TYPE)
 {
-    KvGetSectionName(kv, buffer, maxlen);
-    
-    // Go up one level. Get out of the section again.
-    if (goBack)
-    {
-        KvGoBack(kv);
-        PrintToServer("Going back.");
-    }
 }
 
 /*____________________________________________________________________________*/
