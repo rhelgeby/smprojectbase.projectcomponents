@@ -95,6 +95,17 @@ enum ObjectDataType
 /**
  * Internal use only!
  * Object entries. Used internally to name array indexes.
+ *
+ * Possible future optimization:
+ * Separate strings and numeric data. Currently, each entry has reserved the
+ * same amount of space (block size). If an object only has one long string and
+ * several number entries, there will be a lot of wasted space.
+ *
+ * Memory usage can be reduced by storing numeric data in a separate array with
+ * block size of 1 cell.
+ *
+ * If further optmimization is required the data may be serialized, but in a way
+ * that allow random access (both reading and writing).
  */
 #define OBJECT_DATA_LEN         3   /** Number of elements below. */
 enum ObjectData

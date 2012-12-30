@@ -45,19 +45,24 @@
  * ObjLib_CloneType and use the cloned type template instead.
  *
  * @param typeTemplate      Object type to use.
- * @param mutableObject     (Optional) Whether the object is mutable (add/remove
- *                          keys). Default is true.
+ * @param mutableObject     (Optional) Whether the new object is mutable.
+ *                          Default is false.
  *
  * @return                  Reference to new object. Must be deleted with
  *                          ObjLib_DeleteObject when no longer in use.
+ *
+ * @error                   Invalid type template.
  */
-stock Object:ObjLib_CreateObject(ObjectType:typeTemplate, bool:mutableObject = true)
+stock Object:ObjLib_CreateObject(ObjectType:typeTemplate, bool:mutableObject = false)
 {
+    // Validate.
+    ObjLib_ValidateObjectType(typeTemplate);
+    
     new Object:object = Object:CreateArray(_, OBJECT_DATA_LEN);
     new blockSize = ObjLib_GetTypeBlockSize(typeTemplate);
     new keyCount = ObjLib_GetNumKeys(typeTemplate);
     
-    // Create array for storing object data.
+    // Create array for storing raw object data.
     new Handle:data = CreateArray(blockSize);
     new Handle:nullKey = CreateArray(_, keyCount);
     
@@ -96,11 +101,56 @@ stock Object:ObjLib_CreateObject(ObjectType:typeTemplate, bool:mutableObject = t
 /*____________________________________________________________________________*/
 
 /**
+ * Create an object using either the first or second type as type template. This
+ * is useful if you need a second type to fall back on (for instance a mutable
+ * object).
+ *
+ * The primary type will be checked first. If not specified, it will use the
+ * secondary type. At least one type must be specified.
+ *
+ * @param primaryType           First type to use.
+ * @param secondaryType         Second type to use (fallback type).
+ * @param mutableIfSecondary    (Optional) Make the new object mutable if
+ *                              secondary type was used. Default is false.
+ *
+ * @return                      Reference to new object. Must be deleted with
+ *                              ObjLib_DeleteObject when no longer in use.
+ *
+ * @error                       No type specified.
+ */
+stock Object:ObjLib_CreateObjectEx(ObjectType:primaryType == INVALID_OBJECT_TYPE, ObjectType:secondaryType == INVALID_OBJECT_TYPE, bool:mutableIfSecondary = false)
+{
+    ObjectType:type = INVALID_OBJECT_TYPE;
+    new bool:mutableObject = false;
+    
+    // Use first type available.
+    if (primaryType != INVALID_OBJECT_TYPE)
+    {
+        type = firstType;
+    }
+    else if (secondaryType != INVALID_OBJECT_TYPE)
+    {
+        type = secondaryType;
+        mutableObject = mutableIfSecondary;
+    }
+    else
+    {
+        ThrowError("At least one type must be specified.");
+    }
+    
+    return ObjLib_CreateObject(type, mutableObject);
+}
+
+/*____________________________________________________________________________*/
+
+/**
  * Deletes an object and its data.
  *
  * @param object            Object to delete.
  * @param resetReference    (Optional) Reset object to INVALID_OBJECT when
  *                          deleted. Default is true.
+ *
+ * @error                   Invalid object.
  */
 stock ObjLib_DeleteObject(&Object:object, resetReference = true)
 {
@@ -159,6 +209,8 @@ stock ObjLib_DeleteObject(&Object:object, resetReference = true)
  *                          Default is false.
  *
  * @return                  Reference to new cloned object.
+ *
+ * @error                   Invalid object template.
  */
 stock Object:ObjLib_CloneObject(Object:objectTemplate, bool:mutableObject = true, bool:cloneHandles = false)
 {
@@ -181,7 +233,7 @@ stock Object:ObjLib_CloneObject(Object:objectTemplate, bool:mutableObject = true
     new bool:mutableSource = ObjLib_IsMutable(objectTemplate);
     
     /*
-    The if block below decides how the type should be cloned and attached.
+    The if-statements below decides how the type should be cloned and attached.
     
     m = mutable
     i = immutable
@@ -267,10 +319,10 @@ stock bool:ObjLib_IsValidObject(Object:object)
 /**
  * Returns whether the object is the specitifed type.
  *
- * Note: This is simple type checking. It compares the objects type descriptor
+ * Note: This is simple type checking. It compares the object's type descriptor
  *       reference against the specified reference.
  *
- * @param object            Object reference to validate.
+ * @param object            Object reference to check.
  * @param typeDescriptor    Type to match against.
  *
  * @return                  True if types match, false otherwise.
@@ -291,10 +343,14 @@ stock bool:ObjLib_TypeOf(Object:object, ObjectType:typeDescriptor)
  * @param constraints   Key constraints. Constraint type must match data type.
  *                      Use INVALID_OBJECT to disable constraints.
  *
- * @error               Immutable object.
+ * @error               Invalid object, immutable object, invalid constraint
+ *                      object, or key name already exist.
  */
 stock bool:ObjLib_AddObjectKey(Object:object, const String:keyName[], ObjectDataType:dataType = ObjDataType_Any, Object:constraints = INVALID_OBJECT)
 {
+    // Validate.
+    ObjLib_ValidateObject(object);
+    
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     ObjLib_AddKey(typeDescriptor, keyName, dataType, constraints);
 }
@@ -309,10 +365,13 @@ stock bool:ObjLib_AddObjectKey(Object:object, const String:keyName[], ObjectData
  * @param object    Object to remove key from.
  * @param keyName   Name of key to remove. Case sensitive.
  *
- * @error           Immutable object.
+ * @error           Invalid object, immutable object, or key name doesn't exist.
  */
 stock ObjLib_RemoveObjectKey(Object:object, const String:keyName[])
 {
+    // Validate.
+    ObjLib_ValidateObject(object);
+    
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     ObjLib_RemoveKey(typeDescriptor, keyName);
 }
@@ -324,6 +383,8 @@ stock ObjLib_RemoveObjectKey(Object:object, const String:keyName[])
  *
  * @param object    Object to update.
  * @param keyName   Key name.
+ *
+ * @error           Invalid object.
  */
 stock ObjLib_ClearKey(Object:object, const String:keyName[])
 {
@@ -338,9 +399,14 @@ stock ObjLib_ClearKey(Object:object, const String:keyName[])
  *
  * @param object    Object to update.
  * @param keyIndex  Key index.
+ *
+ * @error           Invalid object.
  */
 stock ObjLib_ClearKeyAt(Object:object, keyIndex)
 {
+    // Validate.
+    ObjLib_ValidateObject(object);
+    
     ObjLib_SetKeyNull(object, keyIndex, true);
 }
 
@@ -386,6 +452,9 @@ stock bool:ObjLib_NullCheck(Object:object, keyIndex, ObjLib_ErrorHandler:errorHa
 /** Internal use only! */
 stock ObjLib_GetKeyIndexOrFail(Object:object, const String:keyName[], ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
 {
+    // Validate.
+    ObjLib_ValidateObject(object);
+    
     new keyIndex = ObjLib_GetKeyIndex(object, keyName);
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
@@ -474,7 +543,7 @@ stock ObjLib_AddNewValue(Object:object, ObjectDataType:dataType)
  * Internal use only!
  * Removes a value entry from an object.
  *
- * Note: Don't make new value entries without updating the type descriptor.
+ * Note: Don't remove value entries without updating the type descriptor.
  *
  * @param object        Object to remove value from.
  * @param entryIndex    Data index of value entry.

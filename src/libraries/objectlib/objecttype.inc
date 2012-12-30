@@ -46,7 +46,7 @@
  */
 stock ObjectType:ObjLib_CreateType(blockSize = 1, keySzie = 8, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
 {
-    // Create array to store type descriptor data. Reserve space required.
+    // Create array to store raw type descriptor data. Reserve space required.
     new ObjectType:typeDescriptor = ObjectType:CreateArray(_, OBJECT_TYPE_DATA_LEN);
     
     new Handle:keys = CreateArray(keySzie);         // List of key names (for enumeration or reflection).
@@ -78,6 +78,8 @@ stock ObjectType:ObjLib_CreateType(blockSize = 1, keySzie = 8, ObjLib_ErrorHandl
  * @param typeDescriptor    Type descriptor to delete.
  * @param resetReference    (Optional) Reset typeDescriptor to
  *                          INVALID_OBJECT_TYPE when deleted. Default is true.
+ *
+ * @error                   Invalid object type.
  */
 stock ObjLib_DeleteType(&ObjectType:typeDescriptor, bool:resetReference = true)
 {
@@ -139,17 +141,24 @@ stock ObjLib_DeleteType(&ObjectType:typeDescriptor, bool:resetReference = true)
  *
  * @return                  New object type descriptor. Must be deleted with
  *                          ObjLib_DeleteType when no longer in use.
+ *
+ * @error                   Invalid object type or trying to clone a constraint
+ *                          type.
  */
 stock ObjectType:ObjLib_CloneType(ObjectType:typeDescriptor, bool:locked = false, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
 {
-    // Stop possible infinite recursion.
+    // Validate.
+    ObjLib_ValidateObjectType(typeDescriptor);
+    
+    // Stop possible infinite recursion or users trying to clone constraint
+    // objects.
     if (ObjLib_IsConstraintType(typeDescriptor))
     {
         // Note: Possible recursive reentry when cloning constraints.
         // Constraints are objects that must be cloned too. They are immutable
         // and shouldn't need to clone their type. If they do, it's a bug and
         // will cause an infinite loop or eventually stack overflow.
-        ThrowError("[BUG] Constraint types should never need to be cloned. This is a bug in objectlib.");
+        ThrowError("Constraint types cannot be cloned.");
     }
     
     new keySize = ObjLib_GetTypeKeySize(typeDescriptor);
@@ -220,6 +229,9 @@ stock bool:ObjLib_IsValidObjectType(ObjectType:typeDescriptor)
  * @param dataType          Data type of key.
  * @param constraints       Key constraints. Constraint type must match data
  *                          type. Use INVALID_OBJECT to disable constraints.
+ *
+ * @error                   Invalid object type, invalid constraint object,
+ *                          type is not mutable, or key name already exist.
  */
 stock ObjLib_AddKey(ObjectType:typeDescriptor, const String:keyName[], ObjectDataType:dataType = ObjDataType_Any, Object:constraints = INVALID_OBJECT)
 {
@@ -237,7 +249,7 @@ stock ObjLib_AddKey(ObjectType:typeDescriptor, const String:keyName[], ObjectDat
     
     // Check if key exist.
     if (ObjLib_KeyExist(typeDescriptor, keyName)
-        && ObjLib_HandleError(typeDescriptor, parent, ObjLibError_KeyExist, _, "Key name already exist (\"%s\"). You might want to use an array if this was intended.", keyName))
+        && ObjLib_HandleError(typeDescriptor, parent, ObjLibError_KeyExist, _, "Key name already exist (\"%s\"). You might want to use an array/collection if this was intended.", keyName))
     {
         return;
     }
@@ -275,6 +287,9 @@ stock ObjLib_AddKey(ObjectType:typeDescriptor, const String:keyName[], ObjectDat
  *
  * @return                  True if successful, false if type descriptor was
  *                          locked.
+ *
+ * @error                   Invalid object type, type is not mutable or key name
+ *                          doesn't exist.
  */
 stock bool:ObjLib_RemoveKey(ObjectType:typeDescriptor, const String:keyName[])
 {
