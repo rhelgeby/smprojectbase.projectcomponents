@@ -49,7 +49,7 @@
  */
 enum Util_BoolStringType
 {
-    BoolType_Any,
+    BoolType_Any,           /** Includes numeric strings. Any number but zero is considered true. */
     BoolType_TrueFalse,
     BoolType_OnOff,
     BoolType_YesNo
@@ -246,6 +246,57 @@ stock Util_GetRandomInt(min, max)
 }
 
 /**
+ * Source: http://www.sourcemodplugins.org/smlib/
+ *
+ * Checks if the string is numeric.
+ * This correctly handles + - . in the String.
+ *
+ * @param str				String to check.
+ * @return					True if the String is numeric, false otherwise..
+ */
+stock bool:Util_IsNumeric(const String:str[])
+{
+	new x=0;
+	new dotsFound=0;
+	new numbersFound=0;
+    
+	if (str[x] == '+' || str[x] == '-')
+	{
+		x++;
+	}
+    
+	while (str[x] != '\0')
+	{
+		if (IsCharNumeric(str[x]))
+		{
+			numbersFound++;
+		}
+		else if (str[x] == '.')
+		{
+			dotsFound++;
+			
+			if (dotsFound > 1)
+			{
+				return false;
+			}
+		}
+		else
+		{
+			return false;
+		}
+		
+		x++;
+	}
+	
+	if (!numbersFound)
+	{
+		return false;
+	}
+	
+	return true;
+}
+
+/**
  * Prints strings longer than 1022 bytes to the console. Max 4 KB.
  *
  * @param client        Client index, or 0 for server.
@@ -354,6 +405,15 @@ stock Util_ReplyToCommandEx(client, const String:format[], any:...)
  */
 stock bool:Util_StringToBool(const String:value[], Util_BoolStringType:type = BoolType_Any, Function:errorCallback = INVALID_FUNCTION)
 {
+    /*
+    TODO: Make a parameter (by reference) for returning whether the error
+          callback was called or not.
+          
+          or
+          
+          Return 1, 0 or -1, where -1 indicate failure to convert.
+    */
+    
     if (strlen(value) == 0)
     {
         Util_CallFunctionOrFail(errorCallback, "Empty string.");
@@ -364,6 +424,20 @@ stock bool:Util_StringToBool(const String:value[], Util_BoolStringType:type = Bo
     {
         case BoolType_Any:
         {
+            // Check if string is numeric.
+            if (!Util_IsNumeric(value))
+            {
+                // Nonzero values are considered true.
+                if (StringToInt(value) != 0)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            
             if (StrEqual(value, "true", false)
                 || StrEqual(value, "on", false)
                 || StrEqual(value, "yes", false))
@@ -377,15 +451,15 @@ stock bool:Util_StringToBool(const String:value[], Util_BoolStringType:type = Bo
         }
         case BoolType_TrueFalse:
         {
-            return Util_BoolParserHandler(value, "true", "false", Function:errorCallback);
+            return Util_BoolParserHandler(value, "true", "false", errorCallback);
         }
         case BoolType_OnOff:
         {
-            return Util_BoolParserHandler(value, "on", "off", Function:errorCallback);
+            return Util_BoolParserHandler(value, "on", "off", errorCallback);
         }
         case BoolType_YesNo:
         {
-            return Util_BoolParserHandler(value, "yes", "no", Function:errorCallback);
+            return Util_BoolParserHandler(value, "yes", "no", errorCallback);
         }
     }
     
