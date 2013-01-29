@@ -118,7 +118,7 @@ stock Object:ObjLib_CreateObject(ObjectType:typeTemplate, bool:mutableObject = f
  *
  * @error                       No type specified.
  */
-stock Object:ObjLib_CreateObjectEx(ObjectType:primaryType == INVALID_OBJECT_TYPE, ObjectType:secondaryType == INVALID_OBJECT_TYPE, bool:mutableIfSecondary = false)
+stock Object:ObjLib_CreateObjectEx(ObjectType:primaryType = INVALID_OBJECT_TYPE, ObjectType:secondaryType = INVALID_OBJECT_TYPE, bool:mutableIfSecondary = false)
 {
     ObjectType:type = INVALID_OBJECT_TYPE;
     new bool:mutableObject = false;
