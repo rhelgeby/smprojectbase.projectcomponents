@@ -1353,6 +1353,10 @@ stock ObjectType:ObjLib_GetTypeDescriptor(Object:object)
 /**
  * Gets the index for the specified key in an object.
  *
+ * Warning: When a key is removed, indexes for existing keys below the removed
+ *          key will be shifted up. If you cache an index and later remove a key
+ *          you need to cache the index again.
+ *
  * @param object    Object to get index from.
  * @param keyName   Name of key. Case sensitive.
  *
@@ -1372,6 +1376,10 @@ stock ObjLib_GetKeyIndex(Object:object, const String:keyName[])
 
 /**
  * Gets the index for the specified key in an object.
+ *
+ * Warning: When a key is removed, indexes for existing keys below the removed
+ *          key will be shifted up. If you cache an index and later remove a key
+ *          you need to cache the index again.
  *
  * @param object    Object to get index from.
  * @param keyName   Name of key. Case sensitive.

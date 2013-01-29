@@ -35,6 +35,8 @@
  *                      value entry. Default is 1 cell.
  * @param keySize       (Optional) Maximum number of cells reserved for each
  *                      key name. Default is 8 cells (32 bytes/characters).
+ *                      Make sure OBJECT_KEY_NAME_LEN also is big enough (global
+ *                      upper limit).
  * @param errorHandler  (Optional) Callback for general error handler. Called
  *                      when a recoverable error occured.
  *
@@ -327,6 +329,9 @@ stock bool:ObjLib_RemoveKey(ObjectType:typeDescriptor, const String:keyName[])
     RemoveFromTrie(nameIndex, keyName);                 // Remove from name index.
     RemoveFromArray(constraintList, entryIndex);        // Remove constraint.
     
+    // Refresh name index, since keys below this key is shifted up.
+    ObjLib_RefreshNameIndex(typeDescriptor);
+    
     // Update parent object if available.
     if (parent != INVALID_OBJECT)
     {
@@ -427,4 +432,27 @@ stock bool:ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, Object:object, keyInde
     }
     
     return true;
+}
+
+/*____________________________________________________________________________*/
+
+/** Internal use only! */
+stock ObjLib_RefreshNameIndex(ObjectType:typeDescriptor)
+{
+    decl String:keyName[OBJECT_KEY_NAME_LEN];
+    keyName[0] = 0;
+    
+    new Handle:keys = ObjLib_GetTypeKeys(typeDescriptor);
+    new Handle:nameIndex = ObjLib_GetTypeNameIndex(typeDescriptor);
+    new len = GetArraySize(keys);
+    
+    // Loop through all keys.
+    for (new key = 0; key < len; key++)
+    {
+        // Get key name.
+        GetArrayString(keys, key, keyName, sizeof(keyName));
+        
+        // Update key with new index value.
+        SetTrieValue(nameIndex, keyName, key);
+    }
 }
