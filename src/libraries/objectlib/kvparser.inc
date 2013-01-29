@@ -101,37 +101,33 @@ stock Handle:ObjLib_ParseInListMode(Handle:kv, ObjectType:typeDescriptor = INVAL
     decl String:keyName[OBJLIB_KV_MAX_KEY_LEN];
     keyName[0] = 0;
     
-    new i = 0;
-    
-    // Go to root.
-    // TODO: Don't rewind to support parsing a certain part of the tree.
-    KvRewind(kv);
-    
-    //BrowseKeyValues(kv);
-    
     // Create list to store section objects.
     new Handle:sections = CreateArray();
     
     // Go to first sub section in section.
-    /*if (!KvGotoFirstSubKey(kv))
+    if (!KvGotoFirstSubKey(kv))
     {
         // No sections. Return list as it is (empty).
         return sections;
-    }*/
-    
-    new Object:subObject = ObjLib_ParseSection(kv, sectionKeyName);
-    PushArrayCell(sections, subObject);
+    }
     
     // Loop through sections.
-    /*
     PrintToServer("===== List mode: start =====");
     do
     {
         PrintToServer("----- List mode: iteration start -----");
-        if (KvGotoFirstSubKey(kv, false))
+        
+        // Get section name before entering section.
+        KvGetSectionName(kv, keyName, sizeof(keyName));
+        
+        // Enter section.
+        KvGotoFirstSubKey(kv, false);
+        
+        // Verify that cursor is on a key and not an empty section.
+        if (KvGetDataType(kv, NULL_STRING) != KvData_None)
         {
-            PrintToServer("----- List mode: sub section start -----");
-            // Parse section recurively.
+            PrintToServer("Parsing section \"%s\"", keyName);
+            
             new Object:subObject;
             if (typeDescriptor)
             {
@@ -142,21 +138,14 @@ stock Handle:ObjLib_ParseInListMode(Handle:kv, ObjectType:typeDescriptor = INVAL
                 subObject = ObjLib_ParseSection(kv);
             }
             
-            // Add object to list.
+            // Add object to result list.
             PushArrayCell(sections, subObject);
             
             KvGoBack(kv);
         }
-        
-        i++;
-        if (i > 10)
-        {
-            PrintToServer("BUG: Infinite loop. Aborting.");
-            break;
-        }
-    } while (KvGotoNextKey(kv, false));    // Go to next section, skip values.
+    } while (KvGotoNextKey(kv));    // Go to next section.
     PrintToServer("===== List mode end =====");
-    */
+    
     return sections;
 }
 
@@ -210,7 +199,7 @@ stock Object:ObjLib_ParseSection(Handle:kv, bool:addEmptySections = true, Util_B
             PrintToServer("Found sub section. Recursive entry.");
             
             // Parse sub section recurively.
-            new Object:subObject = ObjLib_ParseSection(kv, sectionKeyName);
+            new Object:subObject = ObjLib_ParseSection(kv);
             
             // Done with sub section. Go out?
             KvGoBack(kv);
@@ -268,14 +257,12 @@ stock Object:ObjLib_ParseSection(Handle:kv, bool:addEmptySections = true, Util_B
  * @param kv                Handle to keyvalue tree with the cursor on a
  *                          section.
  * @param typeDescriptor    Type of object.
- * @param sectionKeyName    Name of key where section name is stored. This key
- *                          must exist in the type descriptor.
  *
  * @return                  Object with data from the section.
  *
  * @error                   Unexpected key.
  */
-stock Object:ObjLib_ParseSectionAs(Handle:kv, ObjectType:typeDescriptor, const String:sectionKeyName[])
+stock Object:ObjLib_ParseSectionAs(Handle:kv, ObjectType:typeDescriptor)
 {
     return INVALID_OBJECT;
 }
@@ -344,7 +331,7 @@ stock ObjLib_GetKvValue(Handle:kv, Object:object, const String:keyName[], Object
             */
             
             new bool:value = bool:KvGetNum(kv, keyName);
-            ObjLib_SetBool(object, keyName, boolValue, errorHandler);
+            ObjLib_SetBool(object, keyName, value, errorHandler);
         }
         case ObjDataType_Float:
         {

@@ -116,15 +116,15 @@ stock ObjLib_DumpRawObject(client, Object:object)
     ReplyToCommand(client, HEADER_FORMAT, "Field:", "Data type:", "Value:");
     
     // data
-    Format(valueString, sizeof(valueString), "0x%x", data);
+    Format(valueString, sizeof(valueString), "0x%X", data);
     ReplyToCommand(client, ROW_FORMAT, "Object_Data", "Array", valueString);
     
     // nullKey
-    Format(valueString, sizeof(valueString), "0x%x", nullKey);
+    Format(valueString, sizeof(valueString), "0x%X", nullKey);
     ReplyToCommand(client, ROW_FORMAT, "Object_NullKey", "Array", valueString);
     
     // typeDescriptor
-    Format(valueString, sizeof(valueString), "0x%x", typeDescriptor);
+    Format(valueString, sizeof(valueString), "0x%X", typeDescriptor);
     ReplyToCommand(client, ROW_FORMAT, "Object_MetaData", "ObjectType", valueString);
 }
 
@@ -162,7 +162,7 @@ stock ObjLib_DumpRawType(client, ObjectType:typeDescriptor)
     ReplyToCommand(client, ROW_FORMAT, "ObjectType_Locked", "Boolean", valueString);
     
     // parent
-    Format(valueString, sizeof(valueString), "0x%x", parent);
+    Format(valueString, sizeof(valueString), "0x%X", parent);
     ReplyToCommand(client, ROW_FORMAT, "ObjectType_ParentObject", "Object", valueString);
     
     // keySize
@@ -174,15 +174,15 @@ stock ObjLib_DumpRawType(client, ObjectType:typeDescriptor)
     ReplyToCommand(client, ROW_FORMAT, "ObjectType_BlockSize", "Integer", valueString);
     
     // keys
-    Format(valueString, sizeof(valueString), "0x%x", keys);
+    Format(valueString, sizeof(valueString), "0x%X", keys);
     ReplyToCommand(client, ROW_FORMAT, "ObjectType_Keys", "Array", valueString);
     
     // nameIndex
-    Format(valueString, sizeof(valueString), "0x%x", nameIndex);
+    Format(valueString, sizeof(valueString), "0x%X", nameIndex);
     ReplyToCommand(client, ROW_FORMAT, "ObjectType_NameIndex", "Trie", valueString);
     
     // dataTypes
-    Format(valueString, sizeof(valueString), "0x%x", dataTypes);
+    Format(valueString, sizeof(valueString), "0x%X", dataTypes);
     ReplyToCommand(client, ROW_FORMAT, "ObjectType_DataTypes", "Array", valueString);
     
     // constraints
@@ -190,7 +190,7 @@ stock ObjLib_DumpRawType(client, ObjectType:typeDescriptor)
     ReplyToCommand(client, ROW_FORMAT, "ObjectType_Constraints", "Array", valueString);
     
     // errorHandler
-    Format(valueString, sizeof(valueString), "0x%x", errorHandler);
+    Format(valueString, sizeof(valueString), "0x%X", errorHandler);
     ReplyToCommand(client, ROW_FORMAT, "ObjectType_ErrorHandler", "Function", valueString);
 }
 
@@ -236,7 +236,7 @@ stock ObjLib_ValueToString(Object:object, keyIndex, String:buffer[], maxlen)
         case ObjDataType_Handle, ObjDataType_Function, ObjDataType_Object, ObjDataType_ObjectType:
         {
             new value = GetArrayCell(data, keyIndex);
-            return Format(buffer, maxlen, "0x%x", value);
+            return Format(buffer, maxlen, "0x%X", value);
         }
         case ObjDataType_Array:
         {

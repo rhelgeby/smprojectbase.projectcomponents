@@ -33,26 +33,26 @@
     {
     }
     
-    "DuplicateKeys"
-    {
-        "DupKey"            "6"
-        "DupKey"            "7"
-        "DupKey"            "8"
-    }
+    //"DuplicateKeys"
+    //{
+    //    "DupKey"            "6"
+    //    "DupKey"            "7"
+    //    "DupKey"            "8"
+    //}
     
-    "DuplicateSections"
-    {
-        "DupSection"
-        {
-            "DummyKey"      "9"
-        }
-        "DupSection"
-        {
-            // Empty.
-        }
-        "DupSection"
-        {
-            "DummyKey"      "10"
-        }
-    }
+    //"DuplicateSections"
+    //{
+    //    "DupSection"
+    //    {
+    //        "DummyKey"      "9"
+    //    }
+    //    "DupSection"
+    //    {
+    //        // Empty.
+    //    }
+    //    "DupSection"
+    //    {
+    //        "DummyKey"      "10"
+    //    }
+    //}
 }
