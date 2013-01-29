@@ -22,7 +22,8 @@ ParseKv()
     KvFull = CreateKeyValues("Root");
     FileToKeyValues(KvFull, "objectlibtest-kvfull.txt");    // Must be located in root of game directory.
     
-    List = ObjLib_ParseInListMode(KvFull, INVALID_OBJECT_TYPE, "sectionName");
+    KvRewind(KvFull);
+    List = ObjLib_ParseInListMode(KvFull, INVALID_OBJECT_TYPE);
     
     PrintToServer("KeyValue file parsed.");
 }
@@ -36,7 +37,7 @@ public Action:Command_List(client, argc)
     for (new i = 0; i < len; i++)
     {
         new object = GetArrayCell(List, i);
-        ReplyToCommand(client, "0x%x", object);
+        ReplyToCommand(client, "0x%X", object);
     }
     
     return Plugin_Handled;
@@ -52,7 +53,7 @@ public Action:Command_Inspect(client, argc)
     // Parse hex string.
     StringToIntEx(argBuffer, _:object, 16);
     
-    ReplyToCommand(client, "Inspecting object 0x%x.", object);
+    ReplyToCommand(client, "Inspecting object 0x%X.", object);
     
     ObjLib_DumpObjectKeys(client, object);
     
@@ -69,7 +70,7 @@ public Action:Command_InspectEx(client, argc)
     // Parse hex string.
     StringToIntEx(argBuffer, _:object, 16);
     
-    ReplyToCommand(client, "Inspecting raw data in object 0x%x.", object);
+    ReplyToCommand(client, "Inspecting raw data in object 0x%X.", object);
     
     ObjLib_DumpRawObject(client, object);
     
@@ -86,7 +87,7 @@ public Action:Command_InspectTypeEx(client, argc)
     // Parse hex string.
     StringToIntEx(argBuffer, _:typeDescriptor, 16);
     
-    ReplyToCommand(client, "Inspecting raw data in object type 0x%x.", typeDescriptor);
+    ReplyToCommand(client, "Inspecting raw data in object type 0x%X.", typeDescriptor);
     
     ObjLib_DumpRawType(client, typeDescriptor);
     
