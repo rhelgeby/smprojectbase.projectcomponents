@@ -284,3 +284,51 @@ stock Array_FloatsToString(const Float:values[], len, String:buffer[], maxlen)
     
     StrCat(buffer, maxlen, "}");
 }
+
+/**
+ * Gets and pops the last value from an ADT array.
+ *
+ * @param stackArray    Handle to ADT array that is used as a stack.
+ * @param value         (Output) Value retrieved at last index in array. The
+ *                      value is only valid if this function returns true.
+ *
+ * @return              True if a value was retrieved, false if array was empty.
+ */
+stock bool:Array_PopCell(Handle:stackArray, &any:value = 0)
+{
+    // Get last cell.
+    if (Array_PeekCell(stackArray, value))
+    {
+        // Value retrieved, remove it from the array.
+        new len = GetArraySize(stackArray);
+        RemoveFromArray(stackArray, len - 1);
+        return true;
+    }
+    
+    // Stack was empty.
+    return false;
+}
+
+/**
+ * Gets the value at the last index from an ADT array.
+ *
+ * @param stackArray    Handle to ADT array that is used as a stack.
+ * @param value         (Output) Value retrieved at last index in array. The
+ *                      value is only valid if this function returns true.
+ *
+ * @return              True if a value was retrieved, false if array was empty.
+ */
+stock bool:Array_PeekCell(Handle:stackArray, &any:value = 0)
+{
+    new len = GetArraySize(stackArray);
+    
+    if (!len)
+    {
+        // Stack empty.
+        return false;
+    }
+    
+    // Get last cell.
+    value = GetArrayCell(stackArray, len - 1);
+    return true;
+}

@@ -147,7 +147,7 @@ will clone and use a private one.
 
 When you create an immutable object with this type, the type descriptor will be
 locked. You can still create more objects based on it, but keys cannot be added
-or removed unless you create mutable object or clone the type into a separate
+or removed unless you create mutable objects or clone the type into a separate
 unlocked type.
 
 
@@ -158,16 +158,16 @@ There are two types of objects: Mutable and immutable. Mutable objects allow you
 to add or remove keys after they were created, while immutable objects only
 allow the data in existing keys to be modified.
 
-The most optimal solution is to use immutable objects when you can because to
-reduce memory overhead.
+The most optimal solution is to use immutable objects when you can to reduce
+memory overhead.
 
 Create objects using the ObjLib_CreateObject function and specify which type of
-object you're creating. Also set mutableObject to false if you're creating an
-immutable object:
+object you're creating. Default is an immutable object, but this can be
+overridden with mutableObject:
 
     // Create immutable person objects.
-    new Object:alice = ObjLib_CreateObject(personType, false);
-    new Object:bob = ObjLib_CreateObject(personType, false);
+    new Object:alice = ObjLib_CreateObject(personType);
+    new Object:bob = ObjLib_CreateObject(personType);
 
 Now there's two person objects with the keys described in the person type
 descriptor. Simply use the set functions to initialize object data:
@@ -240,9 +240,9 @@ ERROR HANDLERS
 --------------
 
 Type descriptors may store a custom error handler for handling recoverable
-errors. Unrecoverable errors are always handled by such as invalid object
-references. Recoverable errors are invalid key names, type mismatch and
-constraint violation.
+errors. Unrecoverable errors are always handled by this library, such as
+invalid object references. Recoverable errors are invalid key names, type
+mismatch and constraint violations.
 
 The error handler use the ObjLib_ErrorHandler callback and may be used when
 creating type descriptors.
@@ -384,12 +384,36 @@ Parsing:
   function should only do traversal and get key names. The rest is taken care of
   in the handler.
 
+New parser:
+* Separate parser logic and object logic (delegate to separate handlers).
+* Parser will traverse the tree recursively from the current node and call the
+  following handlers:
+  - OnSectionStart(kv, sectionName, parseDataBundle)
+  - OnNewKey(kv, keyName, parseDataBundle)
+  - OnSectionEnd(kv, parseDataBundle)
+* parseDataBundle is a data pack that stores the following:
+  - type descriptor (if any, if none create mutable objects)
+  - error handler (if any)
+  - ignoreEmptySections flag
+  - boolean type (which words that are allowed)
+* Use a stack to keep track of object cursor.
+* Use a second stack to keep track of current type descriptor.
+* Use a flag to store whether a key was found in the current section. Flag is
+  cleared in OnSectionStart and used in OnSectionEnd to detect empty sections.
+
 Validation:
 * Sometimes data cannot be validated until all keys are parsed. Provide a
-  callback for doing full object validation once a section is parsed.
-  How to handle nested sections?
-* Keep track of cursor location (stack of key names). If a parse error occour
-  use the stack to build a path to the current location.
+  callback for doing full object validation once a section is parsed (not the
+  same as OnSectionEnd, but a user callback).
+  (How to handle nested sections?)
+* If a parse error occour, use the object stack to extract key names and build
+  a path to the current location.
+* A tree will usually require multiple type descriptors linked together in a
+  way that's matching the tree structure. The type descriptors need to use
+  object constraints so sub sections can be validated properly.
+* When entering a new section the parser should extract the type descriptor
+  from the constraints of the current section. Push to object type stack. Pop
+  on section end.
 
 Type checking:
 * Match KV file against predefined type descriptor (eventually with nested types
