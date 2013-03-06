@@ -244,14 +244,14 @@ stock ObjLib_AddKey(ObjectType:typeDescriptor, const String:keyName[], ObjectDat
     
     // Check if not mutable.
     if (!ObjLib_IsTypeMutable(typeDescriptor)
-        && ObjLib_HandleError(typeDescriptor, parent, ObjLibError_Immutable, _, "This object type descriptor is immutable (%x).", typeDescriptor))
+        && ObjLib_HandleError(typeDescriptor, parent, ObjLibError_Immutable, _, _, _, "This object type descriptor is immutable (%x).", typeDescriptor))
     {
         return;
     }
     
     // Check if key exist.
     if (ObjLib_KeyExist(typeDescriptor, keyName)
-        && ObjLib_HandleError(typeDescriptor, parent, ObjLibError_KeyExist, _, "Key name already exist (\"%s\"). You might want to use an array/collection if this was intended.", keyName))
+        && ObjLib_HandleError(typeDescriptor, parent, ObjLibError_KeyExist, _, _, _, "Key name already exist (\"%s\"). You might want to use an array/collection if this was intended.", keyName))
     {
         return;
     }
@@ -392,7 +392,7 @@ stock bool:ObjLib_KeyTypeMismatchError(ObjectType:typeDescriptor, Object:object,
     ObjLib_DataTypeToString(actual, actualName, sizeof(actualName));
     ObjLib_DataTypeToString(expected, expectedName, sizeof(expectedName));
     
-    return ObjLib_HandleError(typeDescriptor, object, ObjLibError_InvalidKeyType, errorHandler, "Key type mismatch. Expected \"%s\", but \"%s\" was used.", expectedName, actualName);
+    return ObjLib_HandleError(typeDescriptor, object, ObjLibError_InvalidKeyType, errorHandler, _, _, "Key type mismatch. Expected \"%s\", but \"%s\" was used.", expectedName, actualName);
 }
 
 /*____________________________________________________________________________*/
@@ -416,7 +416,7 @@ stock bool:ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, Object:object, keyInde
 {
     // Validate key index.
     if (keyIndex < 0
-        && ObjLib_HandleError(typeDescriptor, object, ObjLibError_InvalidKey, errorHandler, "Invalid key index (%d).", keyIndex))
+        && ObjLib_HandleError(typeDescriptor, object, ObjLibError_InvalidKey, errorHandler, _, _, "Invalid key index (%d).", keyIndex))
     {
         return false;
     }

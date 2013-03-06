@@ -85,7 +85,7 @@ stock bool:ObjLib_HandleValueConstraints(Object:object,
     {
         // Invalid constraints object type.
         ThrowError("[BUG] Invalid constraints object type. They are validated so this is a bug in objectlib.");
-        return false;   // To satisfy compiler.
+        return false;
     }
 }
 
@@ -129,7 +129,7 @@ stock bool:ObjLib_HandleArrayConstraints(Object:object,
     {
         // Invalid constraints object type.
         ThrowError("[BUG] Invalid constraints object type. They are validated so this is a bug in objectlib.");
-        return false;   // To satisfy compiler.
+        return false;
     }
 }
 
@@ -143,7 +143,7 @@ stock bool:ObjLib_HandleConstraintError(const String:constraintName[], Object:ob
     new Handle:keys = ObjLib_GetTypeKeys(typeDescriptor);
     GetArrayString(keys, keyIndex, keyName, sizeof(keyName));
     
-    return ObjLib_HandleError(typeDescriptor, object, ObjLibError_ValidationError, errorHandler, "Cannot set value in key (\"%s\"). Value violated constraint: %s", keyName, constraintName);
+    return ObjLib_HandleError(typeDescriptor, object, ObjLibError_ValidationError, errorHandler, _, _, "Cannot set value in key (\"%s\"). Value violated constraint: %s", keyName, constraintName);
 }
 
 /*____________________________________________________________________________*/
@@ -181,7 +181,6 @@ stock bool:ObjLib_HandleCustomConstraints(Object:object,
     Call_PushCell(typeDescriptor);
     Call_Finish(result);
     
-    // Passed validation.
     return result;
 }
 

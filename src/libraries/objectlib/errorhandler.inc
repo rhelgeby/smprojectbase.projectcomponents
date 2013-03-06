@@ -35,6 +35,9 @@
  * @param errorType         Type of error.
  * @param customHandler     Custom error handler. Overrides handler in type
  *                          descriptor if specified.
+ * @param result            (Output) Return value from custom handler. Only
+ *                          valid if this function returns true.
+ * @param data              Data bundle with additional data, if available.
  * @param format            Message formatting rules.
  * @param ...               Format parameters.
  *
@@ -45,6 +48,8 @@ stock bool:ObjLib_HandleError(ObjectType:typeDescriptor,
                               Object:object = INVALID_OBJECT,
                               ObjLibError:errorType,
                               ObjLib_ErrorHandler:customHandler = INVALID_FUNCTION,
+                              &Action:result = Plugin_Handled,
+                              Object:data = INVALID_OBJECT,
                               const String:format[],
                               any:...)
 {
@@ -76,13 +81,14 @@ stock bool:ObjLib_HandleError(ObjectType:typeDescriptor,
     else
     {
         // Forward to callback.
-        // functag public ObjLib_ErrorHandler(ObjectType:typeDescriptor, ObjLibError:errorType, const String:message[]);
+        // functag public Action:ObjLib_ErrorHandler(ObjectType:typeDescriptor, ObjLibError:errorType, const String:message[], Object:object, Object:data);
         Call_StartFunction(GetMyHandle(), callback);
         Call_PushCell(typeDescriptor);
         Call_PushCell(errorType);
         Call_PushString(message);
         Call_PushCell(object);
-        Call_Finish();
+        Call_PushCell(data);
+        Call_Finish(result);
         return true;
     }
 }
