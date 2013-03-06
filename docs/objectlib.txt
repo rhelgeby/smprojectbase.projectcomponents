@@ -31,8 +31,6 @@ MAIN FEATURES
 * Import (and validate) data from Valve's KeyValue file format
   Creates objects based on the contents of a KeyValue file, and a user defined
   object type descriptor with optional validation constraints.
-  
-  TO BE IMPLEMENTED. (Probably as a separate library that depend on this one.)
 
 * Reflection
   Objects or types can be inspected at run time. Loop through keys, get data
@@ -64,7 +62,7 @@ WHAT IT DOESN'T DO
   You'll have to make sure objects and types are deleted when no longer in use.
   Otherwise there will be memory leaks. Read the API documentation carefully
   to see which functions that return resources that must be released again.
-  (Hint: Cloning or creating objects and types)
+  (Hint: Cloning or creating objects and types, parser context object)
 
 * It's not a tree structure
   Regular KeyValue files use a tree structure. This object manager use a plain
@@ -79,16 +77,11 @@ WHAT IT DOESN'T DO
 RESOURCE USAGE
 --------------
 
-* Small CPU overhead
+* Small processing overhead
   The main goal isn't a super efficient object manager, but efficient enough.
   Because of type checking and validation there is a small overhead when
-  modifying data. These checks are basically comparison of primitive values and
+  modifying data. These checks are basically comparisons of primitive values and
   shouldn't be an issue with normal usage.
-
-  Another overhead is the native call overhead for reading and writing to ADT
-  arrays. This overhead is so tiny it shouldn't be mentioned, but it's still
-  there. Remember that just because something is _slower_ doesn't mean it's
-  slow.
 
   If you have code that's _very_ busy you should consider using buffers or
   caches in front of the data storage. Use the SourceMod profiler to measure if
@@ -114,7 +107,7 @@ RESOURCE USAGE
   object array itself, list of null keys and a type descriptor reference.
   
   The type descriptor for this object use 8-9 KB where the trie (key name index)
-  use 8 KB alone.
+  use 8 KB alone (probably a canditate for the SourceMod team to optimize).
 
 * A little memory and CPU overhead is a trade off for writing more code
   yourself. It can still be efficient if used correctly.
@@ -158,19 +151,19 @@ There are two types of objects: Mutable and immutable. Mutable objects allow you
 to add or remove keys after they were created, while immutable objects only
 allow the data in existing keys to be modified.
 
-The most optimal solution is to use immutable objects when you can to reduce
+The most optimal solution is to use immutable objects when you can, to reduce
 memory overhead.
 
 Create objects using the ObjLib_CreateObject function and specify which type of
 object you're creating. Default is an immutable object, but this can be
-overridden with mutableObject:
+overridden with the mutableObject parameter.
 
     // Create immutable person objects.
     new Object:alice = ObjLib_CreateObject(personType);
     new Object:bob = ObjLib_CreateObject(personType);
 
 Now there's two person objects with the keys described in the person type
-descriptor. Simply use the set functions to initialize object data:
+descriptor. Simply use the set functions to initialize object data.
 
     // Setting values.
     ObjLib_SetString(alice, "name", "Alice");
@@ -187,9 +180,9 @@ This pattern is chosen to enforce type safety as far as SourcePawn can do.
 
 There are also functions for refering keys by index instead of names (like
 ObjLib_SetCellAt) so that it's possible to do optimizations in busy code such as
-loops. You retreive key indexes by using ObjLib_GetKeyIndex and cache them.
-Otherwise the object library is using ADT tries to map key names to indexes for
-fast lookup.
+loops. You can retreive key indexes by using ObjLib_GetKeyIndex and cache them.
+The object library is using ADT tries to map key names to indexes for fast
+lookup, so using key names will be fine in most cases.
 
 
 CLONING TYPES AND OBJECTS
@@ -244,12 +237,11 @@ errors. Unrecoverable errors are always handled by this library, such as
 invalid object references. Recoverable errors are invalid key names, type
 mismatch and constraint violations.
 
-The error handler use the ObjLib_ErrorHandler callback and may be used when
-creating type descriptors.
+The error handler use the ObjLib_ErrorHandler callback prototype, and you may
+attatch error handler callbacks to type descriptors you create.
 
 It's also possible to override an error handler in data accessor functions such
-as ObjLib_SetCell. Then it's possible to use custom error handlers in various
-situations.
+as ObjLib_SetCell. Then you can use a different error handler in special cases.
 
 Possible future improvements:
 Custom error handler for individual keys or constraints. Need to consider
@@ -285,7 +277,7 @@ violation error where the user is able to handle it. The value is rejected.
 DELETING CONSTRAINT OBJECTS
 
 Constraint objects should only be deleted manually if it's not used anywhere.
-When attached to keys the type descriptor will delete constraint objects when
+When attached to keys, the type descriptor will delete constraint objects when
 it's deleted itself.
 
 
@@ -320,6 +312,19 @@ EXAMPLE USAGE
     ObjLib_SetCell(somePersonObject, "skillPoints", -1);
 
 
+DIFFERENCE BETWEEN OBJECT CONSTRAINTS AND OBJECT TYPE CONSTRAINTS
+
+An object constraint may require the object to be a certain type (use a certain
+type descriptor). This is a strict constraint and implies any sub constraints
+in the type it's bound to.
+
+Object type constraints may just require certain keys to exist instead of
+requiring the entire object to be a certain type. As the name describes,
+"object type constraint", it's only putting constraints on the type itself, not
+the whole object, and is less strict. As long as the object has the required
+keys, it's valid.
+
+
 MEMORY MANAGEMENT
 -----------------
 
@@ -334,7 +339,8 @@ These functions will by default also reset the references to INVALID_OBJECT or
 INVALID_OBJECT_TYPE.
 
 Make sure that you don't delete a type that's still used by other objects. If
-those objects try to access their type descriptor there will be an error.
+those objects try to access their type descriptor there will be an unrecoverable
+error.
 
 Mutable objects that have their own private type descriptors will delete them
 itself. Trying to delete their type descriptor will trigger an error because
@@ -389,7 +395,7 @@ New parser:
 * Parser will traverse the tree recursively from the current node and call the
   following handlers:
   - OnSectionStart(kv, sectionName, parseDataBundle)
-  - OnNewKey(kv, keyName, parseDataBundle)
+  - OnKeyValue(kv, keyName, parseDataBundle)
   - OnSectionEnd(kv, parseDataBundle)
 * parseDataBundle is a data pack that stores the following:
   - type descriptor (if any, if none create mutable objects)
@@ -531,866 +537,3 @@ ParseSectionAs(kv, sectionKeyName, typeDescriptor)
     
     return object
 }
-
-
-API
----
-
-TODO: This is getting outdated. Reorganize and update signatures and comments.
-      Move to objectlib-api.txt.
-
-List of public functions in the object library:
-
-stock ObjectType:ObjLib_CreateType(blockSize = 1, keySzie = 8)
-stock ObjLib_DeleteType(&ObjectType:typeDescriptor, bool:resetReference = true)
-stock ObjectType:ObjLib_CloneType(ObjectType:typeDescriptor, bool:locked = false)
-stock bool:ObjLib_IsValidObjectType(ObjectType:typeDescriptor)
-stock ObjLib_AddKey(ObjectType:typeDescriptor, const String:keyName[], ObjectDataType:dataType = ObjDataType_Any)
-stock bool:ObjLib_RemoveKey(ObjectType:typeDescriptor, const String:keyName[])
-stock bool:ObjLib_KeyExist(ObjectType:typeDescriptor, const String:keyName[])
-stock bool:ObjLib_AddObjectKey(Object:object, const String:keyName[], ObjectDataType:dataType = ObjDataType_Any)
-stock ObjLib_RemoveObjectKey(Object:object, const String:keyName[])
-stock Object:ObjLib_CreateObject(ObjectType:typeTemplate, bool:mutableObject = true)
-stock ObjLib_DeleteObject(&Object:object, resetReference = true)
-stock Object:ObjLib_CloneObject(Object:objectTemplate, bool:mutableObject = true, bool:cloneHandles = false)
-stock bool:ObjLib_IsValidObject(Object:object)
-stock bool:ObjLib_IsMutable(Object:object)
-stock any:ObjLib_GetAny(Object:object, const String:keyName[])
-stock ObjLib_SetAny(Object:object, const String:keyName[], any:value)
-stock ObjLib_GetCell(Object:object, const String:keyName[])
-stock ObjLib_SetCell(Object:object, const String:keyName[], any:value)
-stock bool:ObjLib_GetBool(Object:object, const String:keyName[])
-stock ObjLib_SetBool(Object:object, const String:keyName[], bool:value)
-stock Float:ObjLib_GetFloat(Object:object, const String:keyName[])
-stock ObjLib_SetFloat(Object:object, const String:keyName[], Float:value)
-stock Handle:ObjLib_GetHandle(Object:object, const String:keyName[])
-stock ObjLib_SetHandle(Object:object, const String:keyName[], Handle:value)
-stock Function:ObjLib_GetFunction(Object:object, const String:keyName[])
-stock ObjLib_SetFunction(Object:object, const String:keyName[], Function:value)
-stock ObjLib_GetArray(Object:object, const String:keyName[], any:buffer[], maxlen)
-stock ObjLib_SetArray(Object:object, const String:keyName[], const any:values[], maxlen)
-stock ObjLib_GetString(Object:object, const String:keyName[], String:buffer[], maxlen)
-stock ObjLib_SetString(Object:object, const String:keyName[], const String:value[])
-stock Object:ObjLib_GetObject(Object:object, const String:keyName[])
-stock ObjLib_SetObject(Object:object, const String:keyName[], Object:value)
-stock ObjectType:ObjLib_GetObjectType(Object:object, const String:keyName[])
-stock ObjLib_SetObjectType(Object:object, const String:keyName[], ObjectType:value)
-stock any:ObjLib_GetAnyAt(Object:object, index)
-stock ObjLib_SetAnyAt(Object:object, index, any:value)
-stock ObjLib_GetCellAt(Object:object, index)
-stock ObjLib_SetCellAt(Object:object, index, value)
-stock bool:ObjLib_GetBoolAt(Object:object, index)
-stock ObjLib_SetBoolAt(Object:object, index, bool:value)
-stock Float:ObjLib_GetFloatAt(Object:object, index)
-stock ObjLib_SetFloatAt(Object:object, index, Float:value)
-stock Handle:ObjLib_GetHandleAt(Object:object, index)
-stock ObjLib_SetHandleAt(Object:object, index, Handle:value)
-stock Function:ObjLib_GetFunctionAt(Object:object, index)
-stock ObjLib_SetFunctionAt(Object:object, index, Function:value)
-stock ObjLib_GetArrayAt(Object:object, index, any:buffer[], maxlen)
-stock ObjLib_SetArrayAt(Object:object, index, const any:values[], maxlen)
-stock ObjLib_GetStringAt(Object:object, index, String:buffer[], maxlen)
-stock ObjLib_SetStringAt(Object:object, index, const String:value[])
-stock Object:ObjLib_GetObjectAt(Object:object, index)
-stock ObjLib_SetObjectAt(Object:object, index, Object:value)
-stock ObjectType:ObjLib_GetObjectTypeAt(Object:object, index)
-stock ObjLib_SetObjectTypeAt(Object:object, index, ObjectType:value)
-stock ObjectType:ObjLib_GetTypeDescriptor(Object:object)
-stock ObjLib_GetKeyIndex(Object:object, const String:keyName[])
-stock bool:ObjLib_IsTypeMutable(ObjectType:typeDescriptor)
-stock ObjLib_DataTypeToString(ObjectDataType:dataType, String:buffer[], maxlen)
-stock Handle:ObjLib_GetTypeKeys(ObjectType:typeDescriptor)
-stock Handle:ObjLib_GetTypeDataTypes(ObjectType:typeDescriptor)
-
-________________________________________________________________________________
-/**
- * Object tag.
- */
-enum Object
-{
-    INVALID_OBJECT = 0
-}
-
-/**
- * Number of bytes reserved for key names.
- */
-#define OBJECT_KEY_NAME_LEN     32
-
-/**
- * Object type descriptor tag.
- */
-enum ObjectType
-{
-    INVALID_OBJECT_TYPE = 0
-}
-
-/**
- * Data types that objects can store.
- */
-enum ObjectDataType
-{
-    ObjDataType_Any,            /** Does not include arrays. */
-    ObjDataType_Cell,
-    ObjDataType_Bool,
-    ObjDataType_Float,
-    ObjDataType_Handle,
-    ObjDataType_Function,
-    ObjDataType_Array,
-    ObjDataType_String,
-    ObjDataType_Object,
-    ObjDataType_ObjectType,
-}
-
-________________________________________________________________________________
-/**
- * Creates an empty object type descriptor.
- *
- * Note: You may use ByteCountToCells to calculate number of cells required to
- *       fit a certain string length for blockSize and keySize.
- *
- * @param blockSize     (Optional) Maximum number of cells reserved for each
- *                      value entry. Default is 1 cell.
- * @param keySize       (Optional) Maximum number of cells reserved for each
- *                      key name. Default is 8 cells (32 bytes/characters).
- *
- * @return              Reference to type descriptor. Must be deleted with
- *                      ObjLib_DeleteType when no longer in use.
- *
- *                      Note: Don't delete type descriptors if there are objects
- *                      using it. Delete objects first.
- */
-stock ObjectType:ObjLib_CreateType(blockSize = 1, keySzie = 8)
-
-________________________________________________________________________________
-/**
- * Deletes an object type descriptor.
- *
- * Warning: If there are objects refering to this type descriptor they may
- *          trigger an error when trying to use it. Delete objects first.
- *
- * @param typeDescriptor    Type descriptor to delete.
- * @param resetReference    (Optional) Reset typeDescriptor to
- *                          INVALID_OBJECT_TYPE when deleted. Default is true.
- */
-stock ObjLib_DeleteType(&ObjectType:typeDescriptor, bool:resetReference = true)
-
-________________________________________________________________________________
-/**
- * Creates a new object type based on the specified type descriptor.
- *
- * Note: blockSize and keySize of the new cloned object type cannot be modified.
- * Note: The new object type will not be attatched to an object.
- *
- * @param typeDescriptor    Source object type template.
- * @param locked            (Optional) Whether the new object type is locked.
- *                          Default is false.
- *
- * @return                  New object type descriptor. Must be deleted with
- *                          ObjLib_DeleteType when no longer in use.
- */
-stock ObjectType:ObjLib_CloneType(ObjectType:typeDescriptor, bool:locked = false)
-
-________________________________________________________________________________
-/**
- * Returns whether the object type descriptor is valid.
- *
- * @param typeDescriptor    Type descriptor to validate.
- *
- * @return                  True if valid, false otherwise.
- */
-stock bool:ObjLib_IsValidObjectType(ObjectType:typeDescriptor)
-
-________________________________________________________________________________
-/**
- * Adds a new key to an object type descriptor.
- * 
- * @param typeDescriptor    Handle to type descriptor.
- * @param keyName           Name of the new key. Case sensitive.
- * @param dataType          Data type of key.
- */
-stock ObjLib_AddKey(ObjectType:typeDescriptor, const String:keyName[], ObjectDataType:dataType = ObjDataType_Any)
-
-________________________________________________________________________________
-/**
- * Removes a key from an object type descriptor, if not locked.
- *
- * @param typeDescriptor    Object type descriptor to remove key from.
- * @param keyName           Name of key to remove. Case sensitive.
- *
- * @return                  True if successful, false if type descriptor was
- *                          locked.
- */
-stock bool:ObjLib_RemoveKey(ObjectType:typeDescriptor, const String:keyName[])
-
-________________________________________________________________________________
-/**
- * Returns whether a key exist in an object type descriptor.
- *
- * @param typeDescriptor    Obect type descriptor to inspect.
- * @param keyName           Key to search for. Case sensitive.
- *
- * @return                  True if found, false otherwise.
- */
-stock bool:ObjLib_KeyExist(ObjectType:typeDescriptor, const String:keyName[])
-
-________________________________________________________________________________
-/**
- * Adds a new key to an object, if not locked.
- *
- * @param object    Object to remove key from.
- * @param keyName   Name of key to remove. Case sensitive.
- * @param dataType  Data type of key.
- */
-stock bool:ObjLib_AddObjectKey(Object:object, const String:keyName[], ObjectDataType:dataType = ObjDataType_Any)
-
-________________________________________________________________________________
-/**
- * Removes a key from an object, if not locked.
- *
- * Warning: Data associated with this key will also be deleted.
- *
- * @param object    Object to remove key from.
- * @param keyName   Name of key to remove. Case sensitive.
- */
-stock ObjLib_RemoveObjectKey(Object:object, const String:keyName[])
-
-________________________________________________________________________________
-/**
- * Creates an empty object based on the type template.
- *
- * There are two types of objects, mutable and immutable.
- *
- * Mutable objects store their own copy of the type descriptor when created so
- * that keys can be added or removed. They use a bit more memory because of
- * this, but are flexible.
- *
- * Immutable objects can have its contents modified, but not its type. Keys
- * cannot be added or removed. The type template is used directly and shared
- * between immutable objects. Memory usage is more efficient than mutable
- * objects.
- *
- * Warning:
- * Creating an immutable object will automatically lock the type template
- * because it's now used directly. If you don't want to lock it, clone it with
- * ObjLib_CloneType and use the cloned type template instead.
- *
- * @param typeTemplate      Object type to use.
- * @param mutableObject     (Optional) Whether the object is mutable (add/remove
- *                          keys). Default is true.
- *
- * @return                  Reference to new object. Must be deleted with
- *                          ObjLib_DeleteObject when no longer in use.
- */
-stock Object:ObjLib_CreateObject(ObjectType:typeTemplate, bool:mutableObject = true)
-
-________________________________________________________________________________
-/**
- * Deletes an object and its data.
- *
- * @param object            Object to delete.
- * @param resetReference    (Optional) Reset object to INVALID_OBJECT when
- *                          deleted. Default is true.
- */
-stock ObjLib_DeleteObject(&Object:object, resetReference = true)
-
-________________________________________________________________________________
-/**
- * Creates a clone of an object and its data.
- *
- * Note: If the object data contain reference values, only the references
- *       themself will be cloned, not the data they refer to. See the
- *       cloneHandles parameter for more info.
- *
- * Warning: Creating an immutable object from a mutable object will also create
- *          a clone of the source type descriptor. Delete this type descriptor 
- *          when it's no longer in use. It can be retrieved from the cloned
- *          object with ObjLib_GetTypeDescriptor.
- *
- * @param objectTemplate    Source object.
- * @param mutableObject     (Optional) Make new object mutable. Default is true.
- * @param cloneHandles      (Optional) Use CloneHandle on value entries with the
- *                          handle data type. The handles will still refer to
- *                          the same data, but through a new cloned handle.
- *                          Default is false.
- *
- * @return                  Reference to new cloned object.
- */
-stock Object:ObjLib_CloneObject(Object:objectTemplate, bool:mutableObject = true, bool:cloneHandles = false)
-
-________________________________________________________________________________
-/**
- * Returns whether the object reference is valid.
- *
- * @param object    Object reference to validate.
- *
- * @return          True if valid, false otherwise.
- */
-stock bool:ObjLib_IsValidObject(Object:object)
-
-________________________________________________________________________________
-/**
- * Returns whether the specified object is mutable.
- *
- * @return      True if mutable, false otherwise.
- */
-stock bool:ObjLib_IsMutable(Object:object)
-
-________________________________________________________________________________
-/**
- * Gets a value of type "any" from the specified key.
- *
- * @param object    Object to get value from.
- * @param keyName   Name of key. Case sensitive.
- *
- * @return          Value in the specified key.
- *
- * @error           Invalid object, key name or key type mismatch.
- */
-stock any:ObjLib_GetAny(Object:object, const String:keyName[])
-
-________________________________________________________________________________
-/**
- * Sets a value of type "any" in the specified key.
- *
- * @param object    Object to update.
- * @param keyName   Name of key. Case sensitive.
- * @param value     Value to set.
- *
- * @error           Invalid object, key name or key type mismatch.
- */
-stock ObjLib_SetAny(Object:object, const String:keyName[], any:value)
-
-________________________________________________________________________________
-/**
- * Gets a value of type "cell" from the specified key.
- *
- * @param object    Object to get value from.
- * @param keyName   Name of key. Case sensitive.
- *
- * @return          Value in the specified key.
- *
- * @error           Invalid object, key name or key type mismatch.
- */
-stock ObjLib_GetCell(Object:object, const String:keyName[])
-
-________________________________________________________________________________
-/**
- * Sets a value of type "cell" in the specified key.
- *
- * @param object    Object to update.
- * @param keyName   Name of key. Case sensitive.
- * @param value     Value to set.
- *
- * @error           Invalid object, key name or key type mismatch.
- */
-stock ObjLib_SetCell(Object:object, const String:keyName[], any:value)
-
-________________________________________________________________________________
-/**
- * Gets a value of type "bool" from the specified key.
- *
- * @param object    Object to get value from.
- * @param keyName   Name of key. Case sensitive.
- *
- * @return          Value in the specified key.
- *
- * @error           Invalid object, key name or key type mismatch.
- */
-stock bool:ObjLib_GetBool(Object:object, const String:keyName[])
-
-________________________________________________________________________________
-/**
- * Sets a value of type "bool" in the specified key.
- *
- * @param object    Object to update.
- * @param keyName   Name of key. Case sensitive.
- * @param value     Value to set.
- *
- * @error           Invalid object, key name or key type mismatch.
- */
-stock ObjLib_SetBool(Object:object, const String:keyName[], bool:value)
-
-________________________________________________________________________________
-/**
- * Gets a value of type "float" from the specified key.
- *
- * @param object    Object to get value from.
- * @param keyName   Name of key. Case sensitive.
- *
- * @return          Value in the specified key.
- *
- * @error           Invalid object, key name or key type mismatch.
- */
-stock Float:ObjLib_GetFloat(Object:object, const String:keyName[])
-
-________________________________________________________________________________
-/**
- * Sets a value of type "float" in the specified key.
- *
- * @param object    Object to update.
- * @param keyName   Name of key. Case sensitive.
- * @param value     Value to set.
- *
- * @error           Invalid object, key name or key type mismatch.
- */
-stock ObjLib_SetFloat(Object:object, const String:keyName[], Float:value)
-
-________________________________________________________________________________
-/**
- * Gets a value of type "handle" from the specified key.
- *
- * @param object    Object to get value from.
- * @param keyName   Name of key. Case sensitive.
- *
- * @return          Value in the specified key.
- *
- * @error           Invalid object, key name or key type mismatch.
- */
-stock Handle:ObjLib_GetHandle(Object:object, const String:keyName[])
-
-________________________________________________________________________________
-/**
- * Sets a value of type "handle" in the specified key.
- *
- * @param object    Object to update.
- * @param keyName   Name of key. Case sensitive.
- * @param value     Value to set.
- *
- * @error           Invalid object, key name or key type mismatch.
- */
-stock ObjLib_SetHandle(Object:object, const String:keyName[], Handle:value)
-
-________________________________________________________________________________
-/**
- * Gets a value of type "function" from the specified key.
- *
- * @param object    Object to get value from.
- * @param keyName   Name of key. Case sensitive.
- *
- * @return          Value in the specified key.
- *
- * @error           Invalid object, key name or key type mismatch.
- */
-stock Function:ObjLib_GetFunction(Object:object, const String:keyName[])
-
-________________________________________________________________________________
-/**
- * Sets a value of type "function" in the specified key.
- *
- * @param object    Object to update.
- * @param keyName   Name of key. Case sensitive.
- * @param value     Value to set.
- *
- * @error           Invalid object, key name or key type mismatch.
- */
-stock ObjLib_SetFunction(Object:object, const String:keyName[], Function:value)
-
-________________________________________________________________________________
-/**
- * Gets a value of type "array" in the specified key.
- *
- * @param object    Object to get value from.
- * @param keyName   Name of key. Case sensitive.
- * @param buffer    Destination buffer.
- * @param maxlen    Size of buffer.
- *
- * @return          Number of cells copied.
- *
- * @error           Invalid object, key name or key type mismatch.
- */
-stock ObjLib_GetArray(Object:object, const String:keyName[], any:buffer[], maxlen)
-
-________________________________________________________________________________
-/**
- * Sets a value of type "array" in the specified key.
- *
- * @param object    Object to update.
- * @param keyName   Name of key. Case sensitive.
- * @param values    Array to set.
- * @param maxlen    Size of array.
- *
- * @return          Number of cells copied.
- *
- * @error           Invalid object, key name or key type mismatch.
- */
-stock ObjLib_SetArray(Object:object, const String:keyName[], const any:values[], maxlen)
-
-________________________________________________________________________________
-/**
- * Gets a value of type "string" in the specified key.
- *
- * @param object    Object to get value from.
- * @param keyName   Name of key. Case sensitive.
- * @param buffer    Destination buffer.
- * @param maxlen    Size of buffer.
- *
- * @return          Number of characters copied.
- *
- * @error           Invalid object, key name or key type mismatch.
- */
-stock ObjLib_GetString(Object:object, const String:keyName[], String:buffer[], maxlen)
-
-________________________________________________________________________________
-/**
- * Sets a value of type "string" in the specified key.
- *
- * @param object    Object to update.
- * @param keyName   Name of key. Case sensitive.
- * @param value     String to set.
- *
- * @return          Number of characters copied.
- *
- * @error           Invalid object, key name or key type mismatch.
- */
-stock ObjLib_SetString(Object:object, const String:keyName[], const String:value[])
-
-________________________________________________________________________________
-/**
- * Gets a value of type "object" from the specified key.
- *
- * @param object    Object to get value from.
- * @param keyName   Name of key. Case sensitive.
- *
- * @return          Value in the specified key.
- *
- * @error           Invalid object, key name or key type mismatch.
- */
-stock Object:ObjLib_GetObject(Object:object, const String:keyName[])
-
-________________________________________________________________________________
-/**
- * Sets a value of type "object" in the specified key.
- *
- * @param object    Object to update.
- * @param keyName   Name of key. Case sensitive.
- * @param value     Value to set.
- *
- * @error           Invalid object, key name or key type mismatch.
- */
-stock ObjLib_SetObject(Object:object, const String:keyName[], Object:value)
-
-________________________________________________________________________________
-/**
- * Gets a value of type "object type" from the specified key.
- *
- * @param object    Object to get value from.
- * @param keyName   Name of key. Case sensitive.
- *
- * @return          Value in the specified key.
- *
- * @error           Invalid object, key name or key type mismatch.
- */
-stock ObjectType:ObjLib_GetObjectType(Object:object, const String:keyName[])
-
-________________________________________________________________________________
-/**
- * Sets a value of type "object type" in the specified key.
- *
- * @param object    Object to update.
- * @param keyName   Name of key. Case sensitive.
- * @param value     Value to set.
- *
- * @error           Invalid object, key name or key type mismatch.
- */
-stock ObjLib_SetObjectType(Object:object, const String:keyName[], ObjectType:value)
-
-________________________________________________________________________________
-/**
- * Gets a value of type "any" at the specified key index.
- *
- * @param object    Object to get value from.
- * @param index     Index of key.
- *
- * @return          Value in the specified key.
- *
- * @error           Invalid object, key index or key type mismatch.
- */
-stock any:ObjLib_GetAnyAt(Object:object, index)
-
-________________________________________________________________________________
-/**
- * Sets a value of type "any" at the specified key index.
- *
- * @param object    Object to update.
- * @param index     Index of key.
- * @param value     Value to set.
- */
-stock ObjLib_SetAnyAt(Object:object, index, any:value)
-
-________________________________________________________________________________
-/**
- * Gets a value of type "cell" at the specified key index.
- *
- * @param object    Object to get value from.
- * @param index     Index of key.
- *
- * @return          Value in the specified key.
- *
- * @error           Invalid object, key index or key type mismatch.
- */
-stock ObjLib_GetCellAt(Object:object, index)
-
-________________________________________________________________________________
-/**
- * Sets a value of type "cell" at the specified key index.
- *
- * @param object    Object to update.
- * @param index     Index of key.
- * @param value     Value to set.
- */
-stock ObjLib_SetCellAt(Object:object, index, value)
-
-________________________________________________________________________________
-/**
- * Gets a value of type "bool" at the specified key index.
- *
- * @param object    Object to get value from.
- * @param index     Index of key.
- *
- * @return          Value in the specified key.
- *
- * @error           Invalid object, key index or key type mismatch.
- */
-stock bool:ObjLib_GetBoolAt(Object:object, index)
-
-________________________________________________________________________________
-/**
- * Sets a value of type "bool" at the specified key index.
- *
- * @param object    Object to update.
- * @param index     Index of key.
- * @param value     Value to set.
- */
-stock ObjLib_SetBoolAt(Object:object, index, bool:value)
-
-________________________________________________________________________________
-/**
- * Gets a value of type "float" at the specified key index.
- *
- * @param object    Object to get value from.
- * @param index     Index of key.
- *
- * @return          Value in the specified key.
- *
- * @error           Invalid object, key index or key type mismatch.
- */
-stock Float:ObjLib_GetFloatAt(Object:object, index)
-
-________________________________________________________________________________
-/**
- * Sets a value of type "float" at the specified key index.
- *
- * @param object    Object to update.
- * @param index     Index of key.
- * @param value     Value to set.
- */
-stock ObjLib_SetFloatAt(Object:object, index, Float:value)
-
-________________________________________________________________________________
-/**
- * Gets a value of type "handle" at the specified key index.
- *
- * @param object    Object to get value from.
- * @param index     Index of key.
- *
- * @return          Value in the specified key.
- *
- * @error           Invalid object, key index or key type mismatch.
- */
-stock Handle:ObjLib_GetHandleAt(Object:object, index)
-
-________________________________________________________________________________
-/**
- * Sets a value of type "handle" at the specified key index.
- *
- * @param object    Object to update.
- * @param index     Index of key.
- * @param value     Value to set.
- */
-stock ObjLib_SetHandleAt(Object:object, index, Handle:value)
-
-________________________________________________________________________________
-/**
- * Gets a value of type "function" at the specified key index.
- *
- * @param object    Object to get value from.
- * @param index     Index of key.
- *
- * @return          Value in the specified key.
- *
- * @error           Invalid object, key index or key type mismatch.
- */
-stock Function:ObjLib_GetFunctionAt(Object:object, index)
-
-________________________________________________________________________________
-/**
- * Sets a value of type "function" at the specified key index.
- *
- * @param object    Object to update.
- * @param index     Index of key.
- * @param value     Value to set.
- */
-stock ObjLib_SetFunctionAt(Object:object, index, Function:value)
-
-________________________________________________________________________________
-/**
- * Gets a value of type "array" at the specified key index.
- *
- * @param object    Object to get value from.
- * @param index     Index of key.
- * @param buffer    Destination buffer.
- * @param maxlen    Size of buffer.
- *
- * @return          Number of cells copied.
- *
- * @error           Invalid object, key index or key type mismatch.
- */
-stock ObjLib_GetArrayAt(Object:object, index, any:buffer[], maxlen)
-
-________________________________________________________________________________
-/**
- * Sets a value of type "array" at the specified key index.
- *
- * @param object    Object to update.
- * @param index     Index of key.
- * @param values    Array to set.
- * @param maxlen    Size of array.
- *
- * @return          Number of cells copied.
- */
-stock ObjLib_SetArrayAt(Object:object, index, const any:values[], maxlen)
-
-________________________________________________________________________________
-/**
- * Gets a value of type "string" at the specified key index.
- *
- * @param object    Object to get value from.
- * @param index     Index of key.
- * @param buffer    Destination buffer.
- * @param maxlen    Size of buffer.
- *
- * @return          Number of characters copied.
- *
- * @error           Invalid object, key index or key type mismatch.
- */
-stock ObjLib_GetStringAt(Object:object, index, String:buffer[], maxlen)
-
-________________________________________________________________________________
-/**
- * Sets a value of type "string" at the specified key index.
- *
- * @param object    Object to update.
- * @param index     Index of key.
- * @param value     String to set.
- *
- * @return          Number of characters copied.
- */
-stock ObjLib_SetStringAt(Object:object, index, const String:value[])
-
-________________________________________________________________________________
-/**
- * Gets a value of type "object" at the specified key index.
- *
- * @param object    Object to get value from.
- * @param index     Index of key.
- *
- * @return          Value in the specified key.
- *
- * @error           Invalid object, key index or key type mismatch.
- */
-stock Object:ObjLib_GetObjectAt(Object:object, index)
-
-________________________________________________________________________________
-/**
- * Sets a value of type "object" at the specified key index.
- *
- * @param object    Object to update.
- * @param index     Index of key.
- * @param value     Value to set.
- */
-stock ObjLib_SetObjectAt(Object:object, index, Object:value)
-
-________________________________________________________________________________
-/**
- * Gets a value of type "object type" at the specified key index.
- *
- * @param object    Object to get value from.
- * @param index     Index of key.
- *
- * @return          Value in the specified key.
- *
- * @error           Invalid object, key index or key type mismatch.
- */
-stock ObjectType:ObjLib_GetObjectTypeAt(Object:object, index)
-
-________________________________________________________________________________
-/**
- * Sets a value of type "object type" at the specified key index.
- *
- * @param object    Object to update.
- * @param index     Index of key.
- * @param value     Value to set.
- */
-stock ObjLib_SetObjectTypeAt(Object:object, index, ObjectType:value)
-
-________________________________________________________________________________
-/**
- * Gets an object's type descriptor.
- *
- * @param object    Object to get type from.
- *
- * @return          Object type descriptor reference.
- */
-stock ObjectType:ObjLib_GetTypeDescriptor(Object:object)
-
-________________________________________________________________________________
-/**
- * Gets the index for the specified key in an object.
- *
- * @param object    Object to get index from.
- * @param keyName   Name of key. Case sensitive.
- *
- * @return          Key index if successful, or -1 if it doesn't exist.
- */
-stock ObjLib_GetKeyIndex(Object:object, const String:keyName[])
-
-________________________________________________________________________________
-/**
- * Returns whether the specified object type descriptor is mutable (not locked).
- *
- * @return      True if mutable, false otherwise.
- */
-stock bool:ObjLib_IsTypeMutable(ObjectType:typeDescriptor)
-
-________________________________________________________________________________
-/**
- * Returns the name of a data type.
- *
- * @param dataType  Data type value.
- * @param buffer    Name buffer.
- * @param maxlen    Size of buffer.
- *
- * @return          Number of cells written.
- */
-stock ObjLib_DataTypeToString(ObjectDataType:dataType, String:buffer[], maxlen)
-
-________________________________________________________________________________
-/**
- * Gets the list of key names in an object type descriptor.
- *
- * @param typeDescriptor    Object type to inspect.
- *
- * @return      Handle to ADT array with strings of key names. Do not close this
- *              handle. Use ObjLib_DeleteType instead.
- */
-stock Handle:ObjLib_GetTypeKeys(ObjectType:typeDescriptor)
-
-________________________________________________________________________________
-/**
- * Gets the list of data types for each key in an object type descriptor.
- *
- * @param typeDescriptor    Type descriptor to inspect.
- *
- * @return      Handle to ADT array of ObjectDataType entries.
- */
-stock Handle:ObjLib_GetTypeDataTypes(ObjectType:typeDescriptor)

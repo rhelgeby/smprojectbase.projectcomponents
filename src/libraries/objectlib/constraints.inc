@@ -309,8 +309,8 @@ stock Object:ObjLib_GetObjectConstraints(bool:nonzero = false,
 /*____________________________________________________________________________*/
 
 /**
- * Creates a object type constraint object. All parameters are optional and defaults
- * to no limit.
+ * Creates a object type constraint object. All parameters are optional and
+ * defaults to no limit.
  *
  * @param nonzero       Cannot be zero (INVALID_OBJECT).
  * @param type          Must be a certain type. Use INVALID_OBJECT_TYPE to skip

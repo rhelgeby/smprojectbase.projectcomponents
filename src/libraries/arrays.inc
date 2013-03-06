@@ -231,7 +231,7 @@ stock Array_CellsToString(const values[], len, String:buffer[], maxlen)
     
     writeCount = StrCat(buffer, maxlen, "{");
     
-    // Loop throug values.
+    // Loop through values.
     for (new i = 0; i < len; i++)
     {
         IntToString(values[i], valuebuffer, sizeof(valuebuffer));
@@ -269,7 +269,7 @@ stock Array_FloatsToString(const Float:values[], len, String:buffer[], maxlen)
     
     StrCat(buffer, maxlen, "{");
     
-    // Loop throug values.
+    // Loop through values.
     for (new i = 0; i < len; i++)
     {
         FloatToString(values[i], valuebuffer, sizeof(valuebuffer));
@@ -283,6 +283,26 @@ stock Array_FloatsToString(const Float:values[], len, String:buffer[], maxlen)
     }
     
     StrCat(buffer, maxlen, "}");
+}
+
+/**
+ * Pops a value at the end of the stack array, ignoring it.
+ *
+ * @param stackArray    Handle to ADT array that is used as a stack.
+ *
+ * @return              True if a value was popped, false if array was empty.
+ */
+stock bool:Array_Pop(Handle:stackArray)
+{
+    new len = GetArraySize(stackArray);
+    
+    if (len > 0)
+    {
+        RemoveFromArray(stackArray, len - 1);
+        return true;
+    }
+    
+    return false;
 }
 
 /**
@@ -300,13 +320,39 @@ stock bool:Array_PopCell(Handle:stackArray, &any:value = 0)
     if (Array_PeekCell(stackArray, value))
     {
         // Value retrieved, remove it from the array.
-        new len = GetArraySize(stackArray);
-        RemoveFromArray(stackArray, len - 1);
-        return true;
+        return Array_Pop(stackArray);
     }
     
     // Stack was empty.
     return false;
+}
+
+/**
+ * Gets and pops the last string from an ADT array.
+ *
+ * @param stackArray    Handle to ADT array that is used as a stack.
+ * @param value         (Output) String retrieved at last index in array. The
+ *                      value is only valid if this function returns true.
+ * @param maxlen        Size of output string buffer.
+ *
+ * @return              Number of characters copied.
+ */
+stock bool:Array_PopString(Handle:stackArray, String:value[], maxlen)
+{
+    // Get last cell.
+    new charCount = Array_PeekString(stackArray, value, maxlen);
+    if (charCount)
+    {
+        // String retrieved, remove it from the array.
+        if (Array_Pop(stackArray))
+        {
+            return charCount;
+        }
+        return 0;
+    }
+    
+    // Stack was empty.
+    return 0;
 }
 
 /**
@@ -331,4 +377,28 @@ stock bool:Array_PeekCell(Handle:stackArray, &any:value = 0)
     // Get last cell.
     value = GetArrayCell(stackArray, len - 1);
     return true;
+}
+
+/**
+ * Gets the string at the last index from an ADT array.
+ *
+ * @param stackArray    Handle to ADT array that is used as a stack.
+ * @param value         (Output) String retrieved at last index in array. The
+ *                      value is only valid if this function returns true.
+ * @param               Size of string output buffer.
+ *
+ * @return              Number of characters copied.
+ */
+stock bool:Array_PeekString(Handle:stackArray, String:value[], maxlen)
+{
+    new len = GetArraySize(stackArray);
+    
+    if (!len)
+    {
+        // Stack empty.
+        return false;
+    }
+    
+    // Get last string.
+    return GetArrayString(stackArray, len - 1, value, maxlen);
 }

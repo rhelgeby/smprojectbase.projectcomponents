@@ -21,9 +21,13 @@ ParseKv()
 {
     KvFull = CreateKeyValues("Root");
     FileToKeyValues(KvFull, "objectlibtest-kvfull.txt");    // Must be located in root of game directory.
-    
     KvRewind(KvFull);
-    List = ObjLib_ParseInListMode(KvFull, INVALID_OBJECT_TYPE);
+    
+    new Object:parseContext = ObjLib_GetParseContext();
+    
+    List = ObjLib_ParseInListMode(KvFull, parseContext);
+    
+    ObjLib_DeleteParseContext(parseContext);
     
     PrintToServer("KeyValue file parsed.");
 }

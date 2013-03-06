@@ -162,12 +162,27 @@ enum ObjLibError
 /**
  * General error callback.
  *
+ * The return value may be used to decide what to do next. In most cases it's
+ * irrelevant and the value is ignored. But the keyvalue parser is using the
+ * return value to abort or continue parsing.
+ *
+ * It would be considered a good habit to return a proper value even if it's
+ * ignored in some cases.
+ *
  * @param typeDescriptor    Related type descriptor.
  * @param errorType         Type of error.
  * @param message           Error message.
  * @param object            Related object, if available.
+ * @param data              Data bundle with additional data, if available.
+ *
+ * @return                  What to do next.
+ *                          * Plugin_Handled - Error is handled and further
+ *                          processing should be aborted.
+ *                          * Plugin_Continue - Continue processing if possible.
+ *                          This is useful to let the parser continue parsing
+ *                          remaining keys.
  */
-functag public ObjLib_ErrorHandler(ObjectType:typeDescriptor, ObjLibError:errorType, const String:message[], Object:object);
+functag public Action:ObjLib_ErrorHandler(ObjectType:typeDescriptor, ObjLibError:errorType, const String:message[], Object:object, Object:data);
 
 /*____________________________________________________________________________*/
 
