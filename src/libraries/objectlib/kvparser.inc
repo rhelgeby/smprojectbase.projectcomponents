@@ -508,11 +508,11 @@ stock Object:ObjLib_OnSectionEnd(Handle:kv, const String:sectionName[], Object:p
         // No constraints, create key if it doesn't exist.
         if (keyIndex < 0)
         {
-            // Create key.
+            // TODO: Create key.
         }
     }
     
-    // Add object to parent.
+    // TODO: Add object to parent.
     //ObjLib_AddObjectKey(object, keyName, ObjDataType_Object);
     //ObjLib_SetObject(object, keyName, subObject, errorHandler);
     
