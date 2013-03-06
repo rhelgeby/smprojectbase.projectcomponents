@@ -394,18 +394,43 @@ New parser:
 * Separate parser logic and object logic (delegate to separate handlers).
 * Parser will traverse the tree recursively from the current node and call the
   following handlers:
-  - OnSectionStart(kv, sectionName, parseDataBundle)
-  - OnKeyValue(kv, keyName, parseDataBundle)
-  - OnSectionEnd(kv, parseDataBundle)
-* parseDataBundle is a data pack that stores the following:
-  - type descriptor (if any, if none create mutable objects)
-  - error handler (if any)
-  - ignoreEmptySections flag
-  - boolean type (which words that are allowed)
-* Use a stack to keep track of object cursor.
-* Use a second stack to keep track of current type descriptor.
+  - OnSectionStart(kv, sectionName, parseContext)
+  - OnKeyValue(kv, keyName, parseContext)
+  - OnSectionEnd(kv, parseContext)
 * Use a flag to store whether a key was found in the current section. Flag is
   cleared in OnSectionStart and used in OnSectionEnd to detect empty sections.
+  (Or just count number of keys in object.)
+
+Parse context object:
+* Stores various settings and states used by the parser:
+* rootType
+    Type decriptor for the current section, if any. If none it will use a
+    template that store values as strings in mutable objects.
+    
+    Nested types for sub sections will be handled if the root type has sub type
+    constraints.
+* ignoreEmptySections
+    Flag for ignoring empty sections when parsing. If the empty section has
+    constraints it will still be ignored. The object reference will be null
+    instead.
+* booleanType
+    What type of boolean words to accept when converting strings to a boolean
+    value.
+* continueOnError
+    Flag for continuing parsing remaining elements if there's a validation
+    error.
+* errorHandler
+    Custom error handler to use so that the user can handle parse and validation
+    errors.
+* parseSignal
+    What the parser should do on next iteration (continue, stop, abort with
+    error).
+* objectStack
+    Stack of objects parsed.
+* typeStack
+    Stack of type tescriptors for objects parsed.
+* nameStack
+    Stack of key names. Used to build a path to the current parse location.
 
 Validation:
 * Sometimes data cannot be validated until all keys are parsed. Provide a
@@ -441,99 +466,3 @@ Type builder:
 How to loop through keys and get both key name and value:
 http://code.google.com/p/zombiereloaded/source/browse/src/zr/modules/gamerules.inc?repo=zr-dev-base#355
 
-
-PARSE METHOD:
-
-Object:ParseInObjectMode(typeDescriptor, sectionKeyName)
-{
-    load kv file
-    rewind
-    
-    if (typeDescriptor)
-    {
-        ParseSectionAs(kv, typeDescriptor, sectionKeyName)
-        set object
-    }
-    else
-    {
-        ParseSection(kv, sectionKeyName)
-        set object
-    }
-}
-
-Handle:ParseInListMode(typeDescriptor, sectionKeyName)
-{
-    load kv file
-    rewind
-    
-    create list
-    
-    for(each section in root)
-    {
-        if (typeDescriptor)
-        {
-            ParseSectionAs(kv, typeDescriptor, sectionKeyName)
-            add object to list
-        }
-        else
-        {
-            ParseSection(kv, sectionKeyName)
-            add object to list
-        }
-    }
-    
-    return list
-}
-
-ParseSection(kv, sectionKeyName)
-{
-    create mutable object
-    
-    store section name in sectionKeyName
-    
-    for (each key in kv section)
-    {
-        if (key is section)
-        {
-            ParseSection()
-            set object
-        }
-        else
-        {
-            add key, data type: string, no constraints
-            set string value
-        }
-    }
-    
-    return object
-}
-
-ParseSectionAs(kv, sectionKeyName, typeDescriptor)
-{
-    create immutable object, use type passed to parse object function
-    
-    store section name in sectionKeyName
-    
-    for (each key in KV section)
-    {
-        if (key defined in type)
-        {
-            if (key is section)
-            {
-                get type, as defined in type descriptor for this key
-                ParseSectionAs(type)
-                set object
-            }
-            else
-            {
-                add key to object   // implies validation if there are constraints
-            }
-        }
-        else
-        {
-            warn about unexpected key (use callback from type)
-        }
-    }
-    
-    return object
-}
