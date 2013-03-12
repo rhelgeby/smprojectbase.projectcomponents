@@ -681,7 +681,7 @@ stock ObjLib_SetCellAt(Object:object, index, value, ObjLib_ErrorHandler:errorHan
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
-    if (!ObjLib_KeyTypeCheck(typeDescriptor, object, index, ObjDataType_Any, errorHandler))
+    if (!ObjLib_KeyTypeCheck(typeDescriptor, object, index, ObjDataType_Cell, errorHandler))
     {
         return;
     }

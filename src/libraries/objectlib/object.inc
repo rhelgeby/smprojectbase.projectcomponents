@@ -66,9 +66,10 @@ stock Object:ObjLib_CreateObject(ObjectType:typeTemplate, bool:mutableObject = f
     new Handle:data = CreateArray(blockSize);
     new Handle:nullKey = CreateArray(_, keyCount);
     
-    // Initialize null key flags. All keys are null.
+    // Initialize keys. All keys are null.
     for (new i = 0; i < keyCount; i++)
     {
+        PushArrayCell(data, 0);
         PushArrayCell(nullKey, 1);
     }
     
@@ -362,18 +363,21 @@ stock bool:ObjLib_AddObjectKey(Object:object, const String:keyName[], ObjectData
  *
  * Warning: Data associated with this key will also be deleted.
  *
- * @param object    Object to remove key from.
- * @param keyName   Name of key to remove. Case sensitive.
+ * @param object            Object to remove key from.
+ * @param keyName           Name of key to remove. Case sensitive.
+ * @param deleteConstraint  (Optional) Delete constratint object, if any.
+ *                          Default is true.
  *
- * @error           Invalid object, immutable object, or key name doesn't exist.
+ * @error                   Invalid object, immutable object, or key name
+ *                          doesn't exist.
  */
-stock ObjLib_RemoveObjectKey(Object:object, const String:keyName[])
+stock ObjLib_RemoveObjectKey(Object:object, const String:keyName[], bool:deleteConstraint = true)
 {
     // Validate.
     ObjLib_ValidateObject(object);
     
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
-    ObjLib_RemoveKey(typeDescriptor, keyName);
+    ObjLib_RemoveKey(typeDescriptor, keyName, deleteConstraint);
 }
 
 /*____________________________________________________________________________*/

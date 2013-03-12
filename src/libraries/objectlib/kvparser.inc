@@ -91,6 +91,8 @@ enum ObjLibParseState
  * Creates a parse context object. This object store the state and various
  * settings required by the parser.
  *
+ * @param name              (Optional) Parser name. Useful to identify parser in
+ *                          error logs or error handlers.
  * @param rootType          (Optional) Initial type to use when parsing the
  *                          first section. Default is no type; build type while
  *                          parsing.
@@ -110,7 +112,8 @@ enum ObjLibParseState
  * @return                  Parse context object. Must be deleted with
  *                          ObjLib_DeleteParseContext when no longer in use.
  */
-stock Object:ObjLib_GetParseContext(ObjectType:rootType = INVALID_OBJECT_TYPE,
+stock Object:ObjLib_GetParseContext(const String:name[] = "",
+                                    ObjectType:rootType = INVALID_OBJECT_TYPE,
                                     bool:ignoreEmptySections = false,
                                     Util_BoolStringType:booleanType = BoolType_Any,
                                     bool:continueOnError = true,
@@ -119,17 +122,31 @@ stock Object:ObjLib_GetParseContext(ObjectType:rootType = INVALID_OBJECT_TYPE,
     // Make sture type is ready.
     ObjLib_BuildKvContextType();
     
-    new Object:parseParams = ObjLib_CreateObject(ObjLib_KvContextType);
+    new Object:parseContext = ObjLib_CreateObject(ObjLib_KvContextType);
     
     // Set parameters.
-    ObjLib_SetObjectType(parseParams, "rootType", rootType);
-    ObjLib_SetBool(parseParams, "ignoreEmptySections", ignoreEmptySections);
-    ObjLib_SetCell(parseParams, "booleanType", booleanType);
-    ObjLib_SetBool(parseParams, "continueOnError", continueOnError);
-    ObjLib_SetFunction(parseParams, "errorHandler", errorHandler);
-    ObjLib_SetCell(parseParams, "parseState", ObjLibState_Running);
+    ObjLib_SetObjectType(parseContext, "rootType", rootType);
+    ObjLib_SetBool(parseContext, "ignoreEmptySections", ignoreEmptySections);
+    ObjLib_SetCell(parseContext, "booleanType", booleanType);
+    ObjLib_SetBool(parseContext, "continueOnError", continueOnError);
+    ObjLib_SetFunction(parseContext, "errorHandler", errorHandler);
+    ObjLib_SetCell(parseContext, "parseState", ObjLibState_Running);
+    if (strlen(name) > 0)
+    {
+        ObjLib_SetString(parseContext, "name", name);
+    }
     
-    return parseParams;
+    // Create stacks.
+    new Handle:objectStack = CreateArray();
+    new Handle:typeStack = CreateArray();
+    new Handle:nameStack = CreateArray(ByteCountToCells(PLATFORM_MAX_PATH));
+    
+    // Set stacks.
+    ObjLib_SetHandle(parseContext, "objectStack", objectStack);
+    ObjLib_SetHandle(parseContext, "typeStack", typeStack);
+    ObjLib_SetHandle(parseContext, "nameStack", nameStack);
+    
+    return parseContext;
 }
 
 /*____________________________________________________________________________*/
@@ -139,9 +156,11 @@ stock ObjLib_DeleteParseContext(Object:parseContext)
     // Get and delete stack arrays.
     new Handle:objectStack = ObjLib_GetHandle(parseContext, "objectStack");
     new Handle:typeStack = ObjLib_GetHandle(parseContext, "typeStack");
+    new Handle:nameStack = ObjLib_GetHandle(parseContext, "nameStack");
     
     CloseHandle(objectStack);
     CloseHandle(typeStack);
+    CloseHandle(nameStack);
 }
 
 /*____________________________________________________________________________*/
@@ -216,6 +235,15 @@ stock Handle:ObjLib_ParseInListMode(Handle:kv, Object:parseContext)
             
             KvGoBack(kv);
         }
+        else
+        {
+            // TODO: Empty section. Check if they should be added.
+            if (!ObjLib_GetBool(parseContext, "ignoreEmptySections"))
+            {
+                // Add empty section.
+                // TODO: How to avoid duplicated code?
+            }
+        }
     } while (KvGotoNextKey(kv));    // Go to next section.
     PrintToServer("===== List mode end =====");
     
@@ -227,6 +255,9 @@ stock Handle:ObjLib_ParseInListMode(Handle:kv, Object:parseContext)
 /**
  * Parse the current section into an object. It will do full recursive traversal
  * from the current section.
+ *
+ * Note: This function expects the KeyValue cursor to be positioned on the first
+ *       sub key in the section.
  *
  * @param kv                Handle to keyvalue tree with the cursor on a
  *                          section.
@@ -246,8 +277,14 @@ stock Object:ObjLib_ParseSection(Handle:kv, Object:parseContext)
     keyName[0] = 0;
     sectionName[0] = 0;
     
-    // Get current section name.
+    // Get current section name. At this point the cursor is pointing to the
+    // first sub key, not the section itself. Save the position (keyId) of this
+    // key and go back to get the section name.
+    new keyId;
+    KvGetSectionSymbol(kv, keyId);
+    KvGoBack(kv);
     KvGetSectionName(kv, sectionName, sizeof(sectionName));
+    KvJumpToKeySymbol(kv, keyId);   // Jump back to the first sub key again.
     
     // Prepare new section object.
     ObjLib_OnSectionStart(kv, sectionName, parseContext);
@@ -261,7 +298,7 @@ stock Object:ObjLib_ParseSection(Handle:kv, Object:parseContext)
     {
         ThrowError("[BUG] No object on object stack. This is a bug in objectlib.");
     }
-    PrintToServer("-- Parse Section: start --");
+    PrintToServer("-- Parse Section Start: %s --", sectionName);
     
     // Loop through keys and sections in the current kv section.
     do
@@ -329,7 +366,7 @@ stock Object:ObjLib_ParseSection(Handle:kv, Object:parseContext)
         }
     } while (KvGotoNextKey(kv, false));     // Go to next key or section.
     
-    PrintToServer("-- Parse section: end --");
+    PrintToServer("-- Parse section End: %s --", sectionName);
     
     // End the section object. If an object is returned there is no parent to
     // store it in, or an error occoured. The parseState parameter in
@@ -399,6 +436,15 @@ stock Object:ObjLib_OnSectionEnd(Handle:kv, const String:sectionName[], Object:p
     new Handle:objectStack = ObjLib_GetHandle(parseContext, "objectStack");
     new Handle:nameStack = ObjLib_GetHandle(parseContext, "nameStack");
     
+    // Get error handler.
+    new ObjLib_ErrorHandler:errorHandler = ObjLib_GetFunction(parseContext, "errorHandler");
+    if (errorHandler == INVALID_FUNCTION)
+    {
+        // No error handler specified. Replace with fallback error
+        // handler.
+        errorHandler = ObjLib_KvErrorHandler;
+    }
+    
     // Pop current section from name stack.
     Array_Pop(nameStack);
     
@@ -440,8 +486,7 @@ stock Object:ObjLib_OnSectionEnd(Handle:kv, const String:sectionName[], Object:p
     // Add section object to parent. Validate constraints first.
     
     // Get index of sub section key in parent object. This key may not exist if
-    // the parent object is not bound to a type (using an empty type template
-    // instead).
+    // the parent object type is not predefined in rootType.
     new keyIndex = ObjLib_GetKeyIndex(parent, sectionName);
     
     // Get key constraints, if any.
@@ -464,19 +509,8 @@ stock Object:ObjLib_OnSectionEnd(Handle:kv, const String:sectionName[], Object:p
             // This key is not supposed to be a sub section. Trigger validation
             // error.
             
-            // Get error handler.
-            new Action:result = Plugin_Handled;
-            new ObjLib_ErrorHandler:errorHandler = ObjLib_GetFunction(parseContext, "errorHandler");
-            
-            // Check if valid.
-            if (errorHandler == INVALID_FUNCTION)
-            {
-                // No error handler specified. Replace with fallback error
-                // handler.
-                errorHandler = ObjLib_KvErrorHandler;
-            }
-            
             // Call error handler.
+            new Action:result = Plugin_Handled;
             if (ObjLib_HandleError(parentType,                  // typeDescriptor
                                    object,                      // object
                                    ObjLibError_ValidationError, // errorType
@@ -486,12 +520,11 @@ stock Object:ObjLib_OnSectionEnd(Handle:kv, const String:sectionName[], Object:p
                                    "Expected \"%s\" to be a key value pair, but it's a sub section (object). Type constraints does not allow this.",   // format
                                    sectionName))
             {
-                // Error was handled in customHandler. Check if the parser
-                // should continue.
-                
-                // Update parser state.
+                // Error was handled in customHandler. Update parser state.
                 ObjLib_SetCell(parseContext, "parseState", result);
                 
+                // Return to parse loop. The parse state will tell if parser
+                // should abort or continue.
                 return object;
             }
             else
@@ -505,16 +538,18 @@ stock Object:ObjLib_OnSectionEnd(Handle:kv, const String:sectionName[], Object:p
     }
     else
     {
-        // No constraints, create key if it doesn't exist.
+        // No constraints.
+        
+        // Check if key in parent exists.
         if (keyIndex < 0)
         {
-            // TODO: Create key.
+            // Create object key for storing this section.
+            ObjLib_AddObjectKey(parent, sectionName, ObjDataType_Object);
         }
     }
     
-    // TODO: Add object to parent.
-    //ObjLib_AddObjectKey(object, keyName, ObjDataType_Object);
-    //ObjLib_SetObject(object, keyName, subObject, errorHandler);
+    // Add object to parent.
+    ObjLib_SetObject(parent, sectionName, object, errorHandler);
     
     return INVALID_OBJECT;
 }
@@ -526,52 +561,23 @@ stock Object:ObjLib_OnSectionEnd(Handle:kv, const String:sectionName[], Object:p
  *
  * @param kv                Handle to keyvalue tree.
  * @param keyName           Name of the key.
- * @param dataType          Key data type.
+ * @param dataType          Data type in KeyValue tree.
  * @param parseContext      Object with parser settings.
  *                          (Type: ObjLib_KvParamsType)
  */
-stock ObjLib_OnKeyValue(Handle:kv, const String:keyName[], KvDataTypes:dataType, Object:parseContext)
+stock ObjLib_OnKeyValue(Handle:kv, const String:keyName[], KvDataTypes:kvDataType, Object:parseContext)
 {
-    // TODO: Reorganize. Separate typed and non-typed retrieval (or change
-    //       data type to string).
-    
-    // Check key constraints, data type, etc.
-    // Check if key exist, if not add it (string data type).
-    
-    // Use dataType to check which set function to use. If there's a type
-    // mismatch objectlib will trigger an error. Override the error handler
-    // and send a parse error.
-    
     // Get stacks.
     new Handle:objectStack = ObjLib_GetHandle(parseContext, "objectStack");
-    new Handle:typeStack = ObjLib_GetHandle(parseContext, "typeStack");
     
     // Get object.
     new Object:object = INVALID_OBJECT;
     Array_PeekCell(objectStack, object);
     if (object == INVALID_OBJECT)
     {
-        // Bug.
+        // Bug. An object should already be prepared and pushed onto the stack
+        // when the section started.
         ThrowError("[BUG] No object. This is a bug in objectlib.");
-    }
-    
-    // Get type.
-    new ObjectType:typeDescriptor = ObjLib_KvGetCurrentType(parseContext);
-    if (typeDescriptor != INVALID_OBJECT_TYPE)
-    {
-        // TODO: Check if key is bound by constraints.
-    }
-    else
-    {
-        // TODO: No type. Get and store value as string.
-    }
-    
-    // Check for unsupported data types.
-    if (dataType == KvData_Ptr
-        || dataType == KvData_Color
-        || dataType == KvData_UInt64)
-    {
-        // TODO: Throw validation error. Objectlib does not support this data type.
     }
     
     // Get error handler.
@@ -583,32 +589,54 @@ stock ObjLib_OnKeyValue(Handle:kv, const String:keyName[], KvDataTypes:dataType,
         errorHandler = ObjLib_KvErrorHandler;
     }
     
-    // Get value.
-    switch (dataType)
+    new ObjectDataType:keyDataType = ObjDataType_String;
+    
+    // Check if object has a predefined type descriptor.
+    if (!ObjLib_KvHasRootType(parseContext))
     {
-        case KvData_String, KvData_WString:
+        // Object has no predefined type descriptor. This means that a mutable
+        // object was created. Add string key with no constraints.
+        ObjLib_AddObjectKey(object, keyName, ObjDataType_String);
+        keyDataType = ObjDataType_String;
+    }
+    else
+    {
+        // Object has predefined type descriptor. Get key data type.
+        
+        new ObjectType:typeDescriptor = ObjLib_KvGetCurrentType(parseContext);
+        new Handle:keyDataTypes = ObjLib_GetTypeDataTypes(typeDescriptor);
+        new keyIndex = ObjLib_GetKeyIndexFromType(typeDescriptor, keyName);
+        
+        // Validate key.
+        if (keyIndex < 0)
         {
-            // TODO: Read from kv, store in object.
+            // Unexpected key. Throw validation error.
+            new Action:result = Plugin_Handled;
+            if (ObjLib_HandleError(typeDescriptor,                      // typeDescriptor
+                                   object,                              // object
+                                   ObjLibError_InvalidKey,              // errorType
+                                   errorHandler,                        // customHandler
+                                   result,                              // result
+                                   parseContext,                        // data
+                                   "Unexpected key. The \"%s\" key does not exist in the type descriptor.",   // format
+                                   keyName))
+            {
+                // Error was handled in customHandler. Update parser state.
+                ObjLib_SetCell(parseContext, "parseState", result);
+                
+                // Return to parse loop. The parse state will tell if parser
+                // should abort or continue.
+                return;
+            }
         }
-        case KvData_Int:
-        {
-        }
-        case KvData_Float:
-        {
-        }
-        default:
-        {
-            ThrowError("[BUG] Unexpected data type while parsing value. This is a bug in objectlib.");
-        }
+        
+        // Get data type of key.
+        keyDataType = ObjectDataType:GetArrayCell(keyDataTypes, keyIndex);
     }
     
-    // Old code:
-    
-    // Add string key to store value in.
-    //ObjLib_AddObjectKey(object, keyName, ObjDataType_String);
-    
-    // Get and store value.
-    //ObjLib_GetKvValue(kv, object, keyName, ObjDataType_String, booleanType);
+    // Get and store value. Objectlib will handle type mismatch or constraint
+    // violations.
+    ObjLib_StoreKvValue(kv, object, keyName, keyDataType, parseContext);
 }
 
 /*____________________________________________________________________________*/
@@ -623,9 +651,26 @@ stock ObjLib_OnKeyValue(Handle:kv, const String:keyName[], KvDataTypes:dataType,
  * @param dataType      Key type.
  * @param errorHandler  Custom error handler. Overrides any other error handler
  *                      if specified.
+ * @param parseContect  Object with parser settings.
+ *                      (Type: ObjLib_KvParamsType)
  */
-stock ObjLib_GetKvValue(Handle:kv, Object:object, const String:keyName[], ObjectDataType:dataType, Util_BoolStringType:booleanType = BoolType_Any, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+stock ObjLib_StoreKvValue(Handle:kv, Object:object, const String:keyName[], ObjectDataType:dataType, Object:parseContext)
 {
+    // Note: Using NULL_STRING as key name in KeyValue tree so that it will read
+    //       the value at the current cursor position (which is prepared by the
+    //       parser).
+    
+    // Get error handler.
+    new ObjLib_ErrorHandler:errorHandler = ObjLib_GetFunction(parseContext, "errorHandler");
+    if (errorHandler == INVALID_FUNCTION)
+    {
+        // No error handler specified. Replace with fallback error
+        // handler.
+        errorHandler = ObjLib_KvErrorHandler;
+    }
+    
+    // Read value from KeyValue tree according to the expected data type.
+    // Objectlib will validate type and constraints.
     switch (dataType)
     {
         case ObjDataType_Any:
@@ -728,22 +773,36 @@ stock ObjLib_GetKvValue(Handle:kv, Object:object, const String:keyName[], Object
  * @param errorType         Type of error.
  * @param message           Error message.
  * @param object            Related object, if available.
- * @param parseParams       Parser settings.
+ * @param parseContext      Object with parser settings.
+ *                          (Type: ObjLib_KvParamsType)
  *
- * @return                  What to do next.
- *                          * Plugin_Handled - Stop parsing.
- *                          * Plugin_Continue - Continue parsing remaining keys.
+ * @return                  What to do next:
+ *                          Plugin_Handled - Stop parsing.
+ *                          Plugin_Continue - Skip current element, continue
+ *                          parsing remaining keys.
  */
-public Action:ObjLib_KvErrorHandler(ObjectType:typeDescriptor, ObjLibError:errorType, const String:message[], Object:object, Object:parseParams)
+public Action:ObjLib_KvErrorHandler(ObjectType:typeDescriptor, ObjLibError:errorType, const String:message[], Object:object, Object:parseContext)
 {
-    new bool:continueOnError = ObjLib_GetBool(parseParams, "continueOnError");
+    new bool:continueOnError = ObjLib_GetBool(parseContext, "continueOnError");
     
     // Get path to current location in keyvalue tree.
     decl String:path[PLATFORM_MAX_PATH];
-    ObjLib_KvBuildPath(parseParams, path, sizeof(path));
+    ObjLib_KvBuildPath(parseContext, path, sizeof(path));
+    
+    // Get parser name if available.
+    decl String:name[OBJLIB_KV_MAX_KEY_LEN];
+    name[0] = 0;
+    if (!ObjLib_IsKeyNull(parseContext, "name"))
+    {
+        ObjLib_GetString(parseContext, "name", name, sizeof(name));
+    }
+    else
+    {
+        strcopy(name, sizeof(name), "Unnamed parser");
+    }
     
     // Log general parse error.
-    LogError("Error parsing element in %s: %s", path, message);
+    LogError("[%s] Error parsing element in %s: %s", name, path, message);
     
     // Check if parser should continue.
     if (continueOnError)
@@ -784,13 +843,14 @@ stock ObjLib_BuildKvObjectType()
 
 /**
  * Internal use only!
- * Builds the context object type used to store parser settings.
+ * Builds the global context object type used to store parser settings.
  */
 stock ObjLib_BuildKvContextType()
 {
     if (!ObjLib_KvContextTypeBuilt)
     {
-        ObjLib_KvContextType = ObjLib_CreateType();
+        // Create parse context type. Reserve some space for strings.
+        ObjLib_KvContextType = ObjLib_CreateType(ByteCountToCells(OBJLIB_KV_MAX_KEY_LEN));
         
         // Key for storing a reference to the root type descriptor (the root in
         // this case is the section where the parser started from).
@@ -811,9 +871,13 @@ stock ObjLib_BuildKvContextType()
         // ObjLib_ErrorHandler function.
         ObjLib_AddKey(ObjLib_KvContextType, "errorHandler", ObjDataType_Function, INVALID_OBJECT);
         
-        // Signal value read by parser on every iteration. Used to stop parser
+        // Parser name (optional). Useful to see which parser that failed in
+        // error logs.
+        ObjLib_AddKey(ObjLib_KvContextType, "name", ObjDataType_String, INVALID_OBJECT);
+        
+        // State value read by parser on every iteration. Used to stop parser
         // and handle errors.
-        ObjLib_AddKey(ObjLib_KvContextType, "parseSignal", ObjDataType_Cell, INVALID_OBJECT);
+        ObjLib_AddKey(ObjLib_KvContextType, "parseState", ObjDataType_Cell, INVALID_OBJECT);
         
         // Object cursor stack. The top object is the current object being
         // written. ADT array used as a stack.
@@ -836,6 +900,13 @@ stock ObjLib_BuildKvContextType()
  * Internal use only!
  * Gets the type of the current section, or the root type if type stack is
  * empty.
+ *
+ * @param parseContext      Object with parser settings.
+ *                          (Type: ObjLib_KvParamsType)
+ *
+ * @return                  Root type or type at the current level. Root type
+ *                          may be INVALID_OBJECT, which means the parser isn't
+ *                          validating against a type descriptor.
  */
 stock ObjectType:ObjLib_KvGetCurrentType(Object:parseContext)
 {
@@ -858,25 +929,29 @@ stock ObjectType:ObjLib_KvGetCurrentType(Object:parseContext)
  * Internal use only!
  * Gets the type of the specified sub section (relative to the current section).
  *
+ * Note: If a type template is returned, only use it to create mutable objects
+ *       from it.
+ *
  * @param sectionName       Name of the sub section to get type of.
- * @param parseParams       Object with parser settings.
+ * @param parseContext      Object with parser settings.
  *                          (Type: ObjLib_KvParamsType)
  *
  * @return                  Type of the specified section. If no type is
  *                          specified it will return the type template
  *                          (ObjLib_KvObjectType).
  */
-stock ObjectType:ObjLib_GetSectionType(const String:sectionName[], Object:parseParams)
+stock ObjectType:ObjLib_GetSectionType(const String:sectionName[], Object:parseContext)
 {
     // Make sure type template is ready.
     ObjLib_BuildKvObjectType();
     
     // Get type of parent section. It is currently on the top of the stack. If
     // the stack is empty it will get rootType in parseParams.
-    new ObjectType:parentType = ObjLib_KvGetCurrentType(Object:parseParams);
+    new ObjectType:parentType = ObjLib_KvGetCurrentType(parseContext);
     
     // Check if no type specified at all.
-    if (parentType == INVALID_OBJECT_TYPE)
+    if (parentType == INVALID_OBJECT_TYPE
+        || !ObjLib_KvHasRootType(parseContext))
     {
         // Not even a root type is available. Use type template.
         return ObjLib_KvObjectType;
@@ -903,6 +978,21 @@ stock ObjectType:ObjLib_GetSectionType(const String:sectionName[], Object:parseP
     
     // No constraints, use type template.
     return ObjLib_KvObjectType;
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Returns whether the parser has a root type specified.
+ *
+ * @param       Object with parser settings.
+ *              (Type: ObjLib_KvParamsType)
+ *
+ * @return      True if root type exist, false otherwise.
+ */
+stock bool:ObjLib_KvHasRootType(Object:parseContext)
+{
+    return ObjLib_GetObjectType(parseContext, "rootType") != INVALID_OBJECT_TYPE;
 }
 
 /*____________________________________________________________________________*/

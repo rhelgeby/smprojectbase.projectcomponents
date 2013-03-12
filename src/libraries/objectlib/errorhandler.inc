@@ -27,8 +27,8 @@
 
 /**
  * Internal use only!
- * General error handler. Calls the error handler if available, or throws a
- * regular error.
+ * General error handler. Calls the error custom handler if available, or throws
+ * a regular error.
  *
  * @param typeDescriptor    Related type descriptor.
  * @param object            Related object, if available.
@@ -69,7 +69,7 @@ stock bool:ObjLib_HandleError(ObjectType:typeDescriptor,
     // Format message.
     decl String:message[255];
     message[0] = 0;
-    VFormat(message, sizeof(message), format, 6);
+    VFormat(message, sizeof(message), format, 8);
     
     if (callback == INVALID_FUNCTION)
     {

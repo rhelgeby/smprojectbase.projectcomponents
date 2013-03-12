@@ -286,6 +286,8 @@ stock ObjLib_AddKey(ObjectType:typeDescriptor, const String:keyName[], ObjectDat
  *
  * @param typeDescriptor    Object type descriptor to remove key from.
  * @param keyName           Name of key to remove. Case sensitive.
+ * @param deleteConstraint  (Optional) Delete constratint object, if any.
+ *                          Default is true.
  *
  * @return                  True if successful, false if type descriptor was
  *                          locked.
@@ -293,7 +295,7 @@ stock ObjLib_AddKey(ObjectType:typeDescriptor, const String:keyName[], ObjectDat
  * @error                   Invalid object type, type is not mutable or key name
  *                          doesn't exist.
  */
-stock bool:ObjLib_RemoveKey(ObjectType:typeDescriptor, const String:keyName[])
+stock bool:ObjLib_RemoveKey(ObjectType:typeDescriptor, const String:keyName[], bool:deleteConstraint = true)
 {
     // Validate.
     ObjLib_ValidateObjectType(typeDescriptor);
@@ -322,6 +324,17 @@ stock bool:ObjLib_RemoveKey(ObjectType:typeDescriptor, const String:keyName[])
     // Get entry index.
     new entryIndex = -1;
     GetTrieValue(nameIndex, keyName, entryIndex);
+    
+    // Delete constraint if enabled and available.
+    if (deleteConstraint)
+    {
+        new Object:constraint = Object:GetArrayCell(constraintList, entryIndex);
+        if (constraint != INVALID_OBJECT)
+        {
+            // Delete constraint object.
+            ObjLib_DeleteObject(constraint);
+        }
+    }
     
     // Remove type descriptor entries.
     RemoveFromArray(keys, entryIndex);                  // Remove key.
