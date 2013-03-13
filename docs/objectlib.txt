@@ -375,7 +375,102 @@ types:
 KEYVALUE PARSER
 ---------------
 
-TODO: Rewrite notes into full text.
+The KeyValue parser may be used to parse elements in a KeyValue tree and store
+them in objects. It's recursive and will parse all sub sections recursively, but
+it doesn't have to start at the root section.
+
+The intented usage is to predefine type descriptors that is matching the
+KeyValue tree and parse it. The object library will handle validation if any
+constraints are defined. This will save a lot of work instead of manually
+implementing a parser, validation and data storage. All is handled by this
+object library.
+
+Due to limits in objects it will not be able to store sections and keys with
+duplicate names. Only the first ones will be stored. We have arrays for that,
+but it's not handled by this library at the moment.
+
+
+PARSER CONTEXT OBJECT
+
+The parser depends on a context object to store settings and states. The
+following settings can be configured by the user:
+
+  * rootType
+    Optional type decriptor to use for validation. If none the parser will store
+    values as strings in mutable objects. Nested types for sub sections will be
+    handled recursively, so it's possible to pass a complete type hierarchy as
+    root type.
+  * ignoreEmptySections
+    Flag for ignoring (skipping) empty sections when parsing. If the empty
+    section has constraints it will still be ignored. The object reference in
+    the parent will stay at null instead.
+  * booleanType
+    What type of boolean words to accept when converting strings to boolean
+    values.
+  * continueOnError
+    Flag for continuing parsing remaining elements if there's a validation
+    error. Sometimes we still need the other elements in the KeyValue tree and
+    skip the invalid elements. A validation error will still be logged.
+  * errorHandler
+    Optional general error handler callback to use so that the user can handle
+    parse and validation errors. When this error handler is available, errors
+    will not be logged, but passed to the handler instead.
+
+The context object must be deleted by the user when parsing is done and it's no
+longer needed.
+
+
+EXAMPLE USAGE
+
+    // Load and prepare a keyvalues file.
+    newHandle:kv = CreateKeyValues("Root");
+    FileToKeyValues(kv, "objectlibtest-kvfull.txt");    // Must be located in root of game directory.
+    KvRewind(kv);
+    
+    // Declare types.
+    
+    // DataType section. Some keys have constraints.
+    new ObjectType:dataTypes = ObjLib_CreateType(16);
+    ObjLib_AddKey(dataTypes, "cell", ObjDataType_Cell, ObjLib_GetCellConstraints(true, true, true, 5, 15));
+    ObjLib_AddKey(dataTypes, "bool", ObjDataType_Bool);
+    ObjLib_AddKey(dataTypes, "float", ObjDataType_Float, ObjLib_GetFloatConstraints(true, true, true, 1.0, 5.0));
+    ObjLib_AddKey(dataTypes, "string", ObjDataType_String);
+    
+    // Root section. NestedSections doesn't use any object constraints so that
+    // the parser will add objects and keys automatically (strings).
+    new ObjectType:rootType = ObjLib_CreateType();
+    ObjLib_AddKey(rootType, "DataTypes", ObjDataType_Object, ObjLib_GetObjectConstraints(true, dataTypes));
+    ObjLib_AddKey(rootType, "NestedSections", ObjDataType_Object);
+    
+    // Get a parser context. This object stores parser state and settings. Most
+    // default settings will do fine in this example, but it's recommended to
+    // give it a name so it can be identified in error logs.
+    new Object:parseContext = ObjLib_GetParseContext("objectlibtest", rootType);
+    
+    // Run parser. Parsed sections are added to a list.
+    new Handle:list = ObjLib_ParseInListMode(kv, parseContext);
+    
+    // All sections (except empty) in the KeyValue file is now parsed,
+    // validated and stored in objects. The objects for the root sections are
+    // added to the list. Sub sections are referenced through keys in objects.
+    
+    // Parser context object must be deleted when no longer in use, otherwise
+    // there might be a memory leak.
+    ObjLib_DeleteParseContext(parseContext);
+
+With just 14 lines this example declare types and constraints for a KeyValue
+tree and parse it. The rest is handled by the object library.
+
+Newer notes
+
+* Define a constraint format for declaring types through KeyValue files. That
+  way we don't need to hard code most constraints. This is a quite complex task
+  to implement and low priority.
+* Automatically store duplicate keys and sections in arrays. Objects only allow
+  unique names, but arrays fixes this.
+
+
+Old notes
 
 Parsing:
 * A KV section loaded into an object.
@@ -400,37 +495,6 @@ New parser:
 * Use a flag to store whether a key was found in the current section. Flag is
   cleared in OnSectionStart and used in OnSectionEnd to detect empty sections.
   (Or just count number of keys in object.)
-
-Parse context object:
-* Stores various settings and states used by the parser:
-* rootType
-    Type decriptor for the current section, if any. If none it will use a
-    template that store values as strings in mutable objects.
-    
-    Nested types for sub sections will be handled if the root type has sub type
-    constraints.
-* ignoreEmptySections
-    Flag for ignoring empty sections when parsing. If the empty section has
-    constraints it will still be ignored. The object reference will be null
-    instead.
-* booleanType
-    What type of boolean words to accept when converting strings to a boolean
-    value.
-* continueOnError
-    Flag for continuing parsing remaining elements if there's a validation
-    error.
-* errorHandler
-    Custom error handler to use so that the user can handle parse and validation
-    errors.
-* parseSignal
-    What the parser should do on next iteration (continue, stop, abort with
-    error).
-* objectStack
-    Stack of objects parsed.
-* typeStack
-    Stack of type tescriptors for objects parsed.
-* nameStack
-    Stack of key names. Used to build a path to the current parse location.
 
 Validation:
 * Sometimes data cannot be validated until all keys are parsed. Provide a

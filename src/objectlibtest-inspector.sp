@@ -41,9 +41,9 @@ stock ParseTypedKv()
     FileToKeyValues(KvFull, "objectlibtest-kvfull.txt");    // Must be located in root of game directory.
     KvRewind(KvFull);
     
-    // Build types.
+    // Declare types.
     
-    // DataType section.
+    // DataType section. Some keys have constraints.
     new ObjectType:dataTypes = ObjLib_CreateType(16);
     ObjLib_AddKey(dataTypes, "cell", ObjDataType_Cell, ObjLib_GetCellConstraints(true, true, true, 5, 15));
     ObjLib_AddKey(dataTypes, "bool", ObjDataType_Bool);
@@ -56,13 +56,20 @@ stock ParseTypedKv()
     ObjLib_AddKey(rootType, "DataTypes", ObjDataType_Object, ObjLib_GetObjectConstraints(true, dataTypes));
     ObjLib_AddKey(rootType, "NestedSections", ObjDataType_Object);
     
-    // Get a parser context. This object stores parser state and settings.
+    // Get a parser context. This object stores parser state and settings. Most
+    // default settings will do fine in this example, but it's recommended to
+    // give it a name so it can be identified in error logs.
     new Object:parseContext = ObjLib_GetParseContext("objectlibtest", rootType);
     
     // Run parser. Parsed sections are added to a list.
     List = ObjLib_ParseInListMode(KvFull, parseContext);
     
-    // Parser context object must be deleted when no longer in use.
+    // All sections (except empty) in the KeyValue file is now parsed,
+    // validated and stored in objects. The objects for the root sections are
+    // added to the list. Sub sections are referenced through keys in objects.
+    
+    // Parser context object must be deleted when no longer in use, otherwise
+    // there might be a memory leak.
     ObjLib_DeleteParseContext(parseContext);
     
     PrintToServer("KeyValue file parsed.");
