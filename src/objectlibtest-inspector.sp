@@ -13,11 +13,13 @@ public OnPluginStart()
     RegConsoleCmd("object_inspect_ex", Command_InspectEx, "Inspect an object's raw data. Usage: object_inspect_ex <object address>");
     RegConsoleCmd("object_inspect_type_ex", Command_InspectTypeEx, "Inspect an object type's raw data. Usage: object_inspect_type_ex <object type address>");
     
-    ParseKv();
+    //ParseUntypedKv();
+    ParseTypedKv();
+    
     Command_List(0, 0);
 }
 
-ParseKv()
+stock ParseUntypedKv()
 {
     KvFull = CreateKeyValues("Root");
     FileToKeyValues(KvFull, "objectlibtest-kvfull.txt");    // Must be located in root of game directory.
@@ -27,6 +29,40 @@ ParseKv()
     
     List = ObjLib_ParseInListMode(KvFull, parseContext);
     
+    ObjLib_DeleteParseContext(parseContext);
+    
+    PrintToServer("KeyValue file parsed.");
+}
+
+stock ParseTypedKv()
+{
+    // Load and prepare a keyvalues file.
+    KvFull = CreateKeyValues("Root");
+    FileToKeyValues(KvFull, "objectlibtest-kvfull.txt");    // Must be located in root of game directory.
+    KvRewind(KvFull);
+    
+    // Build types.
+    
+    // DataType section.
+    new ObjectType:dataTypes = ObjLib_CreateType(16);
+    ObjLib_AddKey(dataTypes, "cell", ObjDataType_Cell, ObjLib_GetCellConstraints(true, true, true, 5, 15));
+    ObjLib_AddKey(dataTypes, "bool", ObjDataType_Bool);
+    ObjLib_AddKey(dataTypes, "float", ObjDataType_Float, ObjLib_GetFloatConstraints(true, true, true, 1.0, 5.0));
+    ObjLib_AddKey(dataTypes, "string", ObjDataType_String);
+    
+    // Root section. NestedSections doesn't use any object constraints so that
+    // the parser will add objects and keys automatically (strings).
+    new ObjectType:rootType = ObjLib_CreateType();
+    ObjLib_AddKey(rootType, "DataTypes", ObjDataType_Object, ObjLib_GetObjectConstraints(true, dataTypes));
+    ObjLib_AddKey(rootType, "NestedSections", ObjDataType_Object);
+    
+    // Get a parser context. This object stores parser state and settings.
+    new Object:parseContext = ObjLib_GetParseContext("objectlibtest", rootType);
+    
+    // Run parser. Parsed sections are added to a list.
+    List = ObjLib_ParseInListMode(KvFull, parseContext);
+    
+    // Parser context object must be deleted when no longer in use.
     ObjLib_DeleteParseContext(parseContext);
     
     PrintToServer("KeyValue file parsed.");

@@ -259,6 +259,14 @@ stock ObjLib_AddKey(ObjectType:typeDescriptor, const String:keyName[], ObjectDat
     // Validate constraints.
     ObjLib_ValidateConstraintOrFail(constraints, dataType);
     
+    // Validate that the constraint object match data type.
+    new ObjectType:expectedConstraintType = ObjLib_DataTypeToConstraintType(dataType);
+    if (constraints != INVALID_OBJECT
+        && ObjLib_GetTypeDescriptor(constraints) != expectedConstraintType)
+    {
+        ThrowError("Invalid constraint type. Data type and constraint type does not match.");
+    }
+    
     new Handle:keys = ObjLib_GetTypeKeys(typeDescriptor);
     new Handle:nameIndex = ObjLib_GetTypeNameIndex(typeDescriptor);
     new Handle:dataTypes = ObjLib_GetTypeDataTypes(typeDescriptor);
