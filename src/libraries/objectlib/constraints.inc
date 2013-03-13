@@ -606,11 +606,23 @@ stock ObjLib_ValidateConstraintOrFail(Object:constraints, ObjectDataType:dataTyp
     }
     
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(constraints);
-    new ObjectType:constraintType = ObjLib_DataTypeToConstraintType(dataType);
+    new ObjectType:expectedConstraintType = ObjLib_DataTypeToConstraintType(dataType);
+    
+    // Always allow custom constraints.
+    if (typeDescriptor == ObjLib_CustomConstraints)
+    {
+        return;
+    }
+    
+    // Allow object type constraints for object keys.
+    if (dataType == ObjDataType_Object
+        && typeDescriptor == ObjLib_ObjectTypeConstraints)
+    {
+        return;
+    }
     
     // Check constraint type against data type.
-    if (typeDescriptor != ObjLib_CustomConstraints      // Custom constraints allowed on all data types.
-        && constraintType == INVALID_OBJECT_TYPE)
+    if (typeDescriptor != expectedConstraintType)
     {
         new String:dataTypeName[32];
         ObjLib_DataTypeToString(dataType, dataTypeName, sizeof(dataTypeName));

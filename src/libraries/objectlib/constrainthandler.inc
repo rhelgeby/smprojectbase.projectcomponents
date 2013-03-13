@@ -136,19 +136,6 @@ stock bool:ObjLib_HandleArrayConstraints(Object:object,
 /*____________________________________________________________________________*/
 
 /** Internal use only! */
-stock bool:ObjLib_HandleConstraintError(const String:constraintName[], Object:object, ObjectType:typeDescriptor, keyIndex, ObjLib_ErrorHandler:errorHandler)
-{
-    // Get Key name.
-    new String:keyName[OBJECT_KEY_NAME_LEN];
-    new Handle:keys = ObjLib_GetTypeKeys(typeDescriptor);
-    GetArrayString(keys, keyIndex, keyName, sizeof(keyName));
-    
-    return ObjLib_HandleError(typeDescriptor, object, ObjLibError_ValidationError, errorHandler, _, _, "Cannot set value in key (\"%s\"). Value violated constraint: %s", keyName, constraintName);
-}
-
-/*____________________________________________________________________________*/
-
-/** Internal use only! */
 stock bool:ObjLib_HandleCustomConstraints(Object:object,
                                           ObjectType:typeDescriptor,
                                           Object:constraints,
@@ -480,6 +467,9 @@ stock bool:ObjLib_HandleObjTypeConstraints(Object:object,
     new Handle:keys = ObjLib_GetHandle(constraints, "keys");
     new Handle:dataTypes = ObjLib_GetHandle(constraints, "dataTypes");
     
+    decl String:constraintName[16];
+    constraintName[0] = 0;
+    
     // Check if zero.
     if (nonzero && value == INVALID_OBJECT_TYPE)
     {
@@ -513,7 +503,8 @@ stock bool:ObjLib_HandleObjTypeConstraints(Object:object,
                 // Check data type.
                 if (GetArrayCell(valueDataTypes, key) != GetArrayCell(dataTypes, i))
                 {
-                    ObjLib_HandleConstraintError("dataTypes", object, typeDescriptor, keyIndex, errorHandler);
+                    Format(constraintName, sizeof(constraintName), "dataTypes[%d]", i);
+                    ObjLib_HandleConstraintError(constraintName, object, typeDescriptor, keyIndex, errorHandler);
                     return false;
                 }
             }
@@ -522,4 +513,17 @@ stock bool:ObjLib_HandleObjTypeConstraints(Object:object,
     
     // Passed validation.
     return true;
+}
+
+/*____________________________________________________________________________*/
+
+/** Internal use only! */
+stock bool:ObjLib_HandleConstraintError(const String:constraintName[], Object:object, ObjectType:typeDescriptor, keyIndex, ObjLib_ErrorHandler:errorHandler)
+{
+    // Get Key name.
+    new String:keyName[OBJECT_KEY_NAME_LEN];
+    new Handle:keys = ObjLib_GetTypeKeys(typeDescriptor);
+    GetArrayString(keys, keyIndex, keyName, sizeof(keyName));
+    
+    return ObjLib_HandleError(typeDescriptor, object, ObjLibError_ValidationError, errorHandler, _, _, "Cannot set value in key (\"%s\"). Value violated constraint: %s", keyName, constraintName);
 }
