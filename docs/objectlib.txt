@@ -461,74 +461,25 @@ EXAMPLE USAGE
 With just 14 lines this example declare types and constraints for a KeyValue
 tree and parse it. The rest is handled by the object library.
 
-Newer notes
+
+TODO/NOTES
 
 * Define a constraint format for declaring types through KeyValue files. That
   way we don't need to hard code most constraints. This is a quite complex task
   to implement and low priority.
+* Add support for named object lookup. If a key in a tree is declared as an
+  object in the type hierarchy, the parser could automatically try look up an
+  object with the value's name through a user defined lookup function. If the
+  object is found it would insert it instead of the value itself. This might
+  need to be done in a post validation process when the tree is parsed.
 * Automatically store duplicate keys and sections in arrays. Objects only allow
   unique names, but arrays fixes this.
-
-
-Old notes
-
-Parsing:
-* A KV section loaded into an object.
-* Sub sections are parsed into another object. The super section store the
-  object reference.
-* Two parse modes:
-    - List mode. Assumes every key in the root section is a sub section. Each
-      section is parsed into an object. The object reference is added to a list.
-    - Object mode. The root itself is parsed into an object.
-* Using recursion when parsing sections.
-* Delegate reading and storing into objects to a separate handler. The parse
-  function should only do traversal and get key names. The rest is taken care of
-  in the handler.
-
-New parser:
-* Separate parser logic and object logic (delegate to separate handlers).
-* Parser will traverse the tree recursively from the current node and call the
-  following handlers:
-  - OnSectionStart(kv, sectionName, parseContext)
-  - OnKeyValue(kv, keyName, parseContext)
-  - OnSectionEnd(kv, parseContext)
-* Use a flag to store whether a key was found in the current section. Flag is
-  cleared in OnSectionStart and used in OnSectionEnd to detect empty sections.
-  (Or just count number of keys in object.)
-
-Validation:
 * Sometimes data cannot be validated until all keys are parsed. Provide a
-  callback for doing full object validation once a section is parsed (not the
-  same as OnSectionEnd, but a user callback).
+  callback for doing post object validation once a section is parsed (not the
+  same as OnSectionEnd, but a user callback). Perhaps a callback in the context
+  object for post validation of specific keys (so it will skip keys already
+  known to be valid).
   (How to handle nested sections?)
-* If a parse error occour, use the object stack to extract key names and build
-  a path to the current location.
-* A tree will usually require multiple type descriptors linked together in a
-  way that's matching the tree structure. The type descriptors need to use
-  object constraints so sub sections can be validated properly.
-* When entering a new section the parser should extract the type descriptor
-  from the constraints of the current section. Push to object type stack. Pop
-  on section end.
-
-Type checking:
-* Match KV file against predefined type descriptor (eventually with nested types
-  for sub sections in KV files.
-* Eventually support references where the KV file store a name (string) of an
-  object. While parsing, this string is replaced by a direct object reference.
-  We already have the Object data type. The parser only need to check
-  constraints on that key to see if a certain object type is required. If there
-  is a type restriction, it could read the name from the KV file and pass it to
-  an external lookup callback handled by the user. If the lookup failed the
-  parser will repsond with an error.
-* Ignore, but warn about undefined keys.
-
-Type builder:
-* Build a type descriptor while parsing.
-* Data type would be string on all keys. Sections will be stored as object
-  references.
-
-How to loop through keys and get both key name and value:
-http://code.google.com/p/zombiereloaded/source/browse/src/zr/modules/gamerules.inc?repo=zr-dev-base#355
 
 
 COMMON MISTAKES
