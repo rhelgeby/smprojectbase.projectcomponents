@@ -466,3 +466,14 @@ Type builder:
 How to loop through keys and get both key name and value:
 http://code.google.com/p/zombiereloaded/source/browse/src/zr/modules/gamerules.inc?repo=zr-dev-base#355
 
+
+COMMON MISTAKES
+---------------
+
+TYPE MISMATCH
+Copy-paste mistake when registering a key that's supposed to be for instance
+float but created as cell. When you later use ObjLib_SetFloat on that key it
+will throw a key type mismatch error.
+
+Check that keys are registered with the intended data types, and that every line
+that access those keys use the correct accessors.

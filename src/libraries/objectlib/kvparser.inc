@@ -591,17 +591,17 @@ stock ObjLib_OnKeyValue(Handle:kv, const String:keyName[], KvDataTypes:kvDataTyp
     
     new ObjectDataType:keyDataType = ObjDataType_String;
     
-    // Check if object has a predefined type descriptor.
-    if (!ObjLib_KvHasRootType(parseContext))
+    // Check if object is using the type template (object is mutable).
+    if (ObjLib_IsMutable(object))
     {
-        // Object has no predefined type descriptor. This means that a mutable
-        // object was created. Add string key with no constraints.
+        // Object has no predefined type descriptor. Add string key with no
+        // constraints.
         ObjLib_AddObjectKey(object, keyName, ObjDataType_String);
         keyDataType = ObjDataType_String;
     }
     else
     {
-        // Object has predefined type descriptor. Get key data type.
+        // Object has a predefined type descriptor. Get key data type.
         
         new ObjectType:typeDescriptor = ObjLib_KvGetCurrentType(parseContext);
         new Handle:keyDataTypes = ObjLib_GetTypeDataTypes(typeDescriptor);
@@ -618,7 +618,7 @@ stock ObjLib_OnKeyValue(Handle:kv, const String:keyName[], KvDataTypes:kvDataTyp
                                    errorHandler,                        // customHandler
                                    result,                              // result
                                    parseContext,                        // data
-                                   "Unexpected key. The \"%s\" key does not exist in the type descriptor.",   // format
+                                   "Unexpected key. The key \"%s\" does not exist in the type descriptor.",   // format
                                    keyName))
             {
                 // Error was handled in customHandler. Update parser state.
@@ -929,6 +929,9 @@ stock ObjectType:ObjLib_KvGetCurrentType(Object:parseContext)
  * Internal use only!
  * Gets the type of the specified sub section (relative to the current section).
  *
+ * If a key with object data type has no constraints, the type template will be
+ * used.
+ *
  * Note: If a type template is returned, only use it to create mutable objects
  *       from it.
  *
@@ -945,8 +948,9 @@ stock ObjectType:ObjLib_GetSectionType(const String:sectionName[], Object:parseC
     // Make sure type template is ready.
     ObjLib_BuildKvObjectType();
     
-    // Get type of parent section. It is currently on the top of the stack. If
-    // the stack is empty it will get rootType in parseParams.
+    // Get type of parent section. It is currently on the top of the stack
+    // (when called from ObjLib_OnSectionStart). If the stack is empty it will
+    // get rootType in parseParams.
     new ObjectType:parentType = ObjLib_KvGetCurrentType(parseContext);
     
     // Check if no type specified at all.
@@ -957,23 +961,42 @@ stock ObjectType:ObjLib_GetSectionType(const String:sectionName[], Object:parseC
         return ObjLib_KvObjectType;
     }
     
-    // Got type. Get constraints of sub section.
+    // Get constraints for this section.
     new keyIndex = ObjLib_GetKeyIndexFromType(parentType, sectionName);
-    new Object:constraints = ObjLib_GetTypeConstraintsAt(parentType, keyIndex);
+    if (keyIndex < 0)
+    {
+        // Key doesn't exist in parent object, it's mutable. Use type template.
+        // TODO: Is this always the case? What if parent is typed, but this
+        //       section is invalid. It is validated at the end of the section,
+        //       but it might be better to make sure it's valid as early as
+        //       possible.
+        return ObjLib_KvObjectType;
+    }
     
-    // Check if sub section has no constraints.
+    // Check if this section has no constraints.
+    new Object:constraints = ObjLib_GetTypeConstraintsAt(parentType, keyIndex);
     if (constraints == INVALID_OBJECT)
     {
         // No constraint object. Use type template.
         return ObjLib_KvObjectType;
     }
     
-    // Check if the specified section is bound by object constraints.
+    // Check if this section is bound by object constraints.
     new ObjectType:constraintType = ObjLib_GetTypeDescriptor(constraints);
     if (constraintType == ObjLib_ObjectConstraints)
     {
         // Use type descriptor specified in the constraint object.
-        return ObjLib_GetObjectType(constraints, "type");
+        new ObjectType:typeDescriptor = ObjLib_GetObjectType(constraints, "type");
+        
+        // Validate type descriptor in constraint.
+        if (typeDescriptor == INVALID_OBJECT_TYPE)
+        {
+            // Constraint object has no type constraint, use type template.
+            return ObjLib_KvObjectType;
+        }
+        
+        // Type is valid.
+        return typeDescriptor;
     }
     
     // No constraints, use type template.
@@ -1029,7 +1052,12 @@ stock ObjLib_KvBuildPath(Object:parseParams, String:buffer[], maxlen)
     {
         GetArrayString(nameStack, i, nameElement, sizeof(nameElement));
         count += StrCat(buffer, maxlen, nameElement);
-        count += StrCat(buffer, maxlen, "/");
+        
+        // Append path separator, except at the end.
+        if (i < len - 1)
+        {
+            count += StrCat(buffer, maxlen, "/");
+        }
     }
     
     return count + 1;

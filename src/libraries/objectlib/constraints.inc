@@ -479,11 +479,11 @@ stock ObjectType:ObjLib_GetFloatConstraintType()
 {
     new ObjectType:constraints = ObjLib_CreateType();
     
-    ObjLib_AddKey(constraints, "min", ObjDataType_Cell);
-    ObjLib_AddKey(constraints, "max", ObjDataType_Cell);
+    ObjLib_AddKey(constraints, "min", ObjDataType_Float);
+    ObjLib_AddKey(constraints, "max", ObjDataType_Float);
     ObjLib_AddKey(constraints, "lowerLimit", ObjDataType_Bool);
     ObjLib_AddKey(constraints, "upperLimit", ObjDataType_Bool);
-    ObjLib_AddKey(constraints, "deltaLimit", ObjDataType_Float);
+    ObjLib_AddKey(constraints, "zeroDelta", ObjDataType_Float);
     ObjLib_AddKey(constraints, "nonzero", ObjDataType_Bool);
     
     return constraints;
@@ -561,7 +561,7 @@ stock ObjectType:ObjLib_GetObjectConstraintType()
 {
     new ObjectType:constraints = ObjLib_CreateType();
     
-    ObjLib_AddKey(constraints, "nonzero", ObjDataType_Cell);
+    ObjLib_AddKey(constraints, "nonzero", ObjDataType_Bool);
     ObjLib_AddKey(constraints, "type", ObjDataType_ObjectType);
     
     return constraints;
@@ -574,7 +574,7 @@ stock ObjectType:ObjLib_GetObjTypeConstraintType()
 {
     new ObjectType:constraints = ObjLib_CreateType();
     
-    ObjLib_AddKey(constraints, "nonzero", ObjDataType_Cell);
+    ObjLib_AddKey(constraints, "nonzero", ObjDataType_Bool);
     ObjLib_AddKey(constraints, "keys", ObjDataType_Handle);
     ObjLib_AddKey(constraints, "dataTypes", ObjDataType_Handle);
     ObjLib_AddKey(constraints, "requireKeys", ObjDataType_Bool);

@@ -1559,8 +1559,8 @@ stock ObjLib_DataTypeToString(ObjectDataType:dataType, String:buffer[], maxlen)
         case ObjDataType_Any:           return strcopy(buffer, maxlen, "Any");
         case ObjDataType_Cell:          return strcopy(buffer, maxlen, "Cell");
         case ObjDataType_Bool:          return strcopy(buffer, maxlen, "Bool");
-        case ObjDataType_Float:         return strcopy(buffer, maxlen, "Handle");
-        case ObjDataType_Handle:        return strcopy(buffer, maxlen, "Float");
+        case ObjDataType_Float:         return strcopy(buffer, maxlen, "Float");
+        case ObjDataType_Handle:        return strcopy(buffer, maxlen, "Handle");
         case ObjDataType_Function:      return strcopy(buffer, maxlen, "Function");
         case ObjDataType_Array:         return strcopy(buffer, maxlen, "Array");
         case ObjDataType_String:        return strcopy(buffer, maxlen, "String");
