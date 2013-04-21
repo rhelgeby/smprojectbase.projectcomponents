@@ -1152,7 +1152,7 @@ stock ObjLib_SetStringAt(Object:object, index, const String:value[], ObjLib_Erro
     }
     
     // Handle constraints.
-    if (!ObjLib_HandleArrayConstraints(object, typeDescriptor, index, value, -1, errorHandler))
+    if (!ObjLib_HandleStringConstraints(object, typeDescriptor, index, value, -1, errorHandler))
     {
         return 0;
     }
