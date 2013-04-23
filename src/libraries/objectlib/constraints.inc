@@ -38,6 +38,7 @@ new ObjectType:ObjLib_ArrayConstraints      = INVALID_OBJECT_TYPE;
 new ObjectType:ObjLib_ObjectConstraints     = INVALID_OBJECT_TYPE;
 new ObjectType:ObjLib_ObjectTypeConstraints = INVALID_OBJECT_TYPE;
 new ObjectType:ObjLib_CustomConstraints     = INVALID_OBJECT_TYPE;
+new ObjectType:ObjLib_LookupConstraints     = INVALID_OBJECT_TYPE;
 new bool:ObjLib_ConstraintTypesBuilt        = false;
 /**
  * @endsection
@@ -390,6 +391,143 @@ stock Object:ObjLib_GetCustomConstraints(ObjLib_KeyValidator:callback)
 /*____________________________________________________________________________*/
 
 /**
+ * Creates a lookup constraint object. This constraint will look up a string
+ * value and convert it to a replacement value (such as an identifier to a
+ * numer).
+ *
+ * Set the value using the ObjLib_SetString function. It will trigger use this
+ * constraint to convert the string according to the constraint parameters
+ * below.
+ *
+ * @param method        Lookup method. See ObjectLookupMethod.
+ *                      * Array    - Search through an array.
+ *                      * Trie     - Look up in a trie.
+ *                      * Callback - Use a lookup callback.
+ * @param entries       (Optional) Lookup entries. Usage depends on method:
+ *                      * Array    - ADT array with entry names as strings.
+ *                      * Trie     - ADT trie with entry names mapped to
+ *                                   replacement values.
+ *                      * Callback - (Ignored)
+ * @param values        (Optional) Replacement values (matching the data type).
+ *                      Usage depends on method:
+ *                      * Array    - ADT array with replacement values at
+ *                                   matching indexes as entry names in entries
+ *                                   array. Strings and one-dimensional arrays
+ *                                   are supported too.
+ *                      * Trie     - (Ignored)
+ *                      * Callback - (Ignored)
+ * @param callback      Lookup callback to use, if callback method is used. The
+ *                      callback must match the data type (value, array, or
+ *                      string). Ignored when using other methods.
+ * @param subConstraints    (Optional) Constraint object to use on destination
+ *                          data type.
+ *
+ * @return              Constraint object. Use this once when adding a key.
+ *                      Object must be deleted if not used anywhere.
+ *
+ * @error               Empty list of entries/values. Entry and value list size
+ *                      doesn't match. Invalid callback. Invalid sub constraint
+ *                      object.
+ */
+stock Object:ObjLib_GetLookupConstraints(
+        ObjectLookupMethod:method,
+        Handle:entries = INVALID_HANDLE,
+        Handle:values = INVALID_HANDLE,
+        ObjLibLookupCallback:callback = INVALID_FUNCTION,
+        Object:subConstraints = INVALID_OBJECT)
+{
+    // Make sure constraint types exist.
+    ObjLib_BuildConstraintTypes();
+    
+    // Validate sub constraints (disallow lookup constraints, allow others).
+    if (subConstraints != INVALID_OBJECT)
+    {
+        new ObjectType:constraintsType = ObjLib_GetTypeDescriptor(subConstraints);
+        
+        if (!ObjLib_IsConstraintType(constraintsType))
+        {
+            ThrowError("Invalid sub constraint object.");
+            return INVALID_OBJECT;
+        }
+        
+        if (constraintsType == ObjLib_LookupConstraints)
+        {
+            ThrowError("Parameter subConstraint cannot be a lookup constraint object.");
+            return INVALID_OBJECT;
+        }
+    }
+    
+    // Validate parameters.
+    switch (method)
+    {
+        case ObjLookupMethod_Array:
+        {
+            if (entries == INVALID_HANDLE)
+            {
+                ThrowError("Invalid entry list.");
+                return INVALID_OBJECT;
+            }
+            if (values == INVALID_HANDLE)
+            {
+                ThrowError("Invalid value list.");
+                return INVALID_OBJECT;
+            }
+            
+            new numEntries = GetArraySize(entries);
+            new numValues = GetArraySize(values);
+            
+            if (numEntries == 0)
+            {
+                ThrowError("Empty entry list.");
+                return INVALID_OBJECT;
+            }
+            if (numValues == 0)
+            {
+                ThrowError("Empty value list.");
+            }
+            if (numEntries != numValues)
+            {
+                ThrowError("Entry and value list size doesn't match.");
+                return INVALID_OBJECT;
+            }
+        }
+        case ObjLookupMethod_Trie:
+        {
+            if (entries == INVALID_HANDLE)
+            {
+                ThrowError("Invalid entry trie structure.");
+                return INVALID_OBJECT;
+            }
+        }
+        case ObjLookupMethod_Callback:
+        {
+            if (callback == INVALID_FUNCTION)
+            {
+                ThrowError("Invalid callback.");
+                return INVALID_OBJECT;
+            }
+        }
+        default:
+        {
+            ThrowError("Invalid lookup method (%d)", method);
+            return INVALID_OBJECT;
+        }
+    }
+    
+    new Object:constraint = ObjLib_CreateObject(ObjLib_LookupConstraints, false);
+    
+    ObjLib_SetCell(constraint, "method", method);
+    ObjLib_SetHandle(constraint, "entries", entries);
+    ObjLib_SetHandle(constraint, "values", values);
+    ObjLib_SetFunction(constraint, "callback", callback);
+    ObjLib_SetObject(constraint, "subConstraints", subConstraints);
+    
+    return constraint;
+}
+
+/*____________________________________________________________________________*/
+
+/**
  * Returns whether the specified object is a constraints object.
  *
  * @param constraints   Object to check.
@@ -421,7 +559,8 @@ stock bool:ObjLib_IsConstraintType(ObjectType:typeDescriptor)
         || typeDescriptor == ObjLib_ArrayConstraints
         || typeDescriptor == ObjLib_ObjectConstraints
         || typeDescriptor == ObjLib_ObjectTypeConstraints
-        || typeDescriptor == ObjLib_CustomConstraints)
+        || typeDescriptor == ObjLib_CustomConstraints
+        || typeDescriptor == ObjLib_LookupConstraints)
     {
         return true;
     }
@@ -452,6 +591,7 @@ stock ObjLib_BuildConstraintTypes()
     ObjLib_ObjectConstraints        = ObjLib_GetObjectConstraintType();
     ObjLib_ObjectTypeConstraints    = ObjLib_GetObjTypeConstraintType();
     ObjLib_CustomConstraints        = ObjLib_GetCustomConstraintType();
+    ObjLib_LookupConstraints        = ObjLib_GetLookupConstraintType();
     
     ObjLib_ConstraintTypesBuilt = true;
 }
@@ -597,7 +737,36 @@ stock ObjectType:ObjLib_GetCustomConstraintType()
 /*____________________________________________________________________________*/
 
 /* Internal use only! */
-stock ObjLib_ValidateConstraintOrFail(Object:constraints, ObjectDataType:dataType = ObjDataType_Any)
+stock ObjectType:ObjLib_GetLookupConstraintType()
+{
+    new ObjectType:constraints = ObjLib_CreateType();
+    
+    // Lookup method (ADT Array, ADT Trie, callback).
+    ObjLib_AddKey(constraints, "method", ObjDataType_Cell);
+    
+    // List of lookup entries if using an ADT Array. Or a trie with entries
+    // mapped to values if using a ADT Trie ("values" key below is ignored).
+    ObjLib_AddKey(constraints, "entries", ObjDataType_Handle);
+    
+    // List of replacement values (matching indexes of entries).
+    ObjLib_AddKey(constraints, "values", ObjDataType_Handle);
+    
+    // Custom lookup callback to use if using a callback. See
+    // ObjLibLookupCallback in objectlib.inc. Callback must match dataType.
+    ObjLib_AddKey(constraints, "callback", ObjDataType_Function);
+    
+    // Constraints for the actual value stored. This constraint object is used
+    // if set functions for other types than string is used. Cannot be a lookup
+    // constraint object (obviously).
+    ObjLib_AddKey(constraints, "subConstraints", ObjDataType_Object);
+    
+    return constraints;
+}
+
+/*____________________________________________________________________________*/
+
+/* Internal use only! */
+stock ObjLib_ValidateConstraintOrFail(Object:constraints, ObjectDataType:dataType = ObjDataType_Any, bool:allowLookupConstraints = true)
 {
     if (constraints == INVALID_OBJECT)
     {
@@ -614,7 +783,15 @@ stock ObjLib_ValidateConstraintOrFail(Object:constraints, ObjectDataType:dataTyp
         return;
     }
     
-    // Allow object type constraints for object keys.
+    // Allow lookup constraints if enabled.
+    if (allowLookupConstraints && typeDescriptor == ObjLib_LookupConstraints)
+    {
+        return;
+    }
+    
+    // Allow object type constraints for object keys. Makes it possible to
+    // require the object to have certain keys without requiring it to be a
+    // certain object type.
     if (dataType == ObjDataType_Object
         && typeDescriptor == ObjLib_ObjectTypeConstraints)
     {

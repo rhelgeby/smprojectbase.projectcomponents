@@ -108,6 +108,7 @@ stock ObjLib_DeleteType(&ObjectType:typeDescriptor, bool:resetReference = true)
         new Object:constraintObject = Object:GetArrayCell(constraintList, i);
         if (constraintObject != INVALID_OBJECT)
         {
+            // TODO: Close handles stored in keys.
             ObjLib_DeleteObject(constraintObject);
         }
     }

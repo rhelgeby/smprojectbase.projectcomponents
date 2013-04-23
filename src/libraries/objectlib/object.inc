@@ -158,6 +158,8 @@ stock ObjLib_DeleteObject(&Object:object, resetReference = true)
     // Validate.
     ObjLib_ValidateObject(object);
     
+    // TODO: Add support for closing handles stored in keys.
+    
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     new Object:parent = ObjLib_GetTypeParentObject(typeDescriptor);
     if (parent != INVALID_OBJECT)

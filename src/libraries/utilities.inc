@@ -502,16 +502,22 @@ stock bool:Util_BoolParserHandler(const String:value[], const String:trueWord[],
  *
  * @param function      Function to call (no parameters).
  * @param message       Error message if function is not specified.
+ *
+ * @return              Result of function call if called.
  */
-stock Util_CallFunctionOrFail(Function:function, const String:message[])
+stock any:Util_CallFunctionOrFail(Function:function, const String:message[])
 {
     if (function)
     {
+        new any:result;
         Call_StartFunction(GetMyHandle(), function);
+        Call_Finish(result);
+        return result;
     }
     else
     {
         ThrowError(message);
+        return 0;
     }
 }
 
