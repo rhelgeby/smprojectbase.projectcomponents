@@ -93,6 +93,49 @@ enum ObjectDataType
 /*____________________________________________________________________________*/
 
 /**
+ * Results from constraint handlers.
+ *
+ * Some constraint handlers may override the value being set, such as when
+ * converting from string names to identifiers (numbers).
+ */
+enum ObjectConstraintResult
+{
+    ObjConstraintResult_Invalid,    /** Value is invalid. */
+    ObjConstraintResult_Valid,      /** Value is valid. */
+    ObjConstraintResult_Overridden  /** Value is valid and overridden by constraint handler. */
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Available lookup methods for lookup constraint handlers.
+ */
+enum ObjectLookupMethod
+{
+    /**
+     * Use two ADT arrays where one contains entry names (strings) and the other
+     * contains replacement values at the same indexes as entries in the first
+     * array. The handler will search through the arrays for matches.
+     */
+    ObjLookupMethod_Array,
+    
+    /**
+     * Use an ADT Trie where entry names (strings) are mapped to the replacement
+     * value. Much faster than searching an array.
+     */
+    ObjLookupMethod_Trie,
+    
+    /**
+     * Use a custom callback where the callback decides which value to use.
+     * Useful for more advanced lookups (such as using a database). See the
+     * ObjLib_StringLookup callback for more details.
+     */
+    ObjLookupMethod_Callback
+}
+
+/*____________________________________________________________________________*/
+
+/**
  * Internal use only!
  * Object entries. Used internally to name array indexes.
  *
@@ -189,15 +232,81 @@ functag public Action:ObjLib_ErrorHandler(ObjectType:typeDescriptor, ObjLibError
 /**
  * Custom key validation callback.
  *
+ * Use this to do custom validation of a key.
+ *
+ * It's also possible to override the value being stored by setting new values
+ * in the specified object through the set-accessor functions. Remember to
+ * return ObjConstraintResult_Overridden in this case.
+ *
+ * Note that all other custom constraints are disabled inside this callback.
+ * This prevents infinite recursion if the value is overridden.
+ *
  * @param object            Object being validated.
+ * @param typeDescriptor    Object type (meta data).
  * @param keyName           Key being validated.
  * @param dataType          Type of key.
  * @param values            Value(s) to validate. If the value is a single value
  *                          it's stored at index 0.
  * @param size              Number of elements in values parameter.
- * @param typeDescriptor    Object type (meta data).
+ *
+ * @return                  See ObjectConstraintResult. It returns whether the
+ *                          value is valid, invalid or overridden.
  */
-functag public bool:ObjLib_KeyValidator(Object:object, const String:keyName[], ObjectDataType:dataType, const any:values[], size, ObjectType:typeDescriptor);
+functag public ObjectConstraintResult:ObjLib_KeyValidator(Object:object, ObjectType:typeDescriptor, const String:keyName[], ObjectDataType:dataType, const any:values[], size);
+
+/*____________________________________________________________________________*/
+
+/**
+ * Available lookup callbacks for the lookup constraint handler. Make sure you
+ * use a callback that match the destination type (data type of replacement
+ * parameter matching key data type in the object).
+ */
+funcenum ObjLibLookupCallback
+{
+    /**
+     * Lookup callback for value lookup constraint handler. Used to convert a
+     * string into a value.
+     *
+     * @param object            Object being validated.
+     * @param keyName           Key being validated.
+     * @param lookup            String value to look up.
+     * @param replacement       (Output). Replacement value to store in object.
+     *
+     * @return                  True if lookup value was valid and successfully
+     *                          converted, false otherwise.
+     */
+    bool:public(Object:object, const String:keyName[], const String:lookup[], &any:replacement),
+    
+    /**
+     * Lookup callback for array lookup constraint handler. Used to convert a
+     * string into an array.
+     *
+     * @param object            Object being validated.
+     * @param keyName           Key being validated.
+     * @param lookup            String value to look up.
+     * @param replacement       (Output). Replacement array to store in object.
+     * @param maxlen            Size of replacement array.
+     *
+     * @return                  Number of cells copied to replacement array if
+     *                          value was valid, or -1 if value was invalid.
+     */
+    public(Object:object, const String:keyName[], const String:lookup[], any:replacement[], maxlen),
+    
+    /**
+     * Lookup callback for string lookup constraint handler. Used to convert a
+     * string into another string.
+     *
+     * @param object            Object being validated.
+     * @param keyName           Key being validated.
+     * @param lookup            String value to look up.
+     * @param replacement       (Output). Replacement string to store in object.
+     * @param maxlen            Size of replacement array.
+     *
+     * @return                  Number of characters copied to replacement array
+     *                          if value was valid, or -1 if value was invalid.
+     */
+    public(Object:object, const String:keyName[], const String:lookup[], String:replacement[], maxlen)
+};
 
 /*____________________________________________________________________________*/
 
@@ -240,11 +349,16 @@ stock Handle:ObjLib_CloneTrie(Handle:trie, Handle:keys, keySize)
 
 /*____________________________________________________________________________*/
 
+// Object library core modules.
 #include "libraries/objectlib/objecttype"
 #include "libraries/objectlib/object"
-#include "libraries/objectlib/accessors"
 #include "libraries/objectlib/constraints"
 #include "libraries/objectlib/constrainthandler"
 #include "libraries/objectlib/errorhandler"
+#include "libraries/objectlib/accessors"
+
+// Parser modules.
 #include "libraries/objectlib/kvparser"
+
+// Inspector tool modules.
 #include "libraries/objectlib/inspector"

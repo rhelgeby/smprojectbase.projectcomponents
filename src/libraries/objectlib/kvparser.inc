@@ -630,8 +630,21 @@ stock ObjLib_OnKeyValue(Handle:kv, const String:keyName[], KvDataTypes:kvDataTyp
             }
         }
         
-        // Get data type of key.
-        keyDataType = ObjectDataType:GetArrayCell(keyDataTypes, keyIndex);
+        // Get key constraints.
+        new ObjectType:constraintsType = ObjLib_GetTypeDescriptor(ObjLib_GetTypeConstraintsAt(typeDescriptor, keyIndex));
+        
+        // Override type to string if using lookup constraints.
+        if (constraintsType == ObjLib_LookupConstraints)
+        {
+            // This will trigger a lookup case when using lookup constraints and
+            // a SetString function.
+            keyDataType = ObjDataType_String;
+        }
+        else
+        {
+            // Get data type of key.
+            keyDataType = ObjectDataType:GetArrayCell(keyDataTypes, keyIndex);
+        }
     }
     
     // Get and store value. Objectlib will handle type mismatch or constraint
@@ -685,6 +698,10 @@ stock ObjLib_StoreKvValue(Handle:kv, Object:object, const String:keyName[], Obje
         }
         case ObjDataType_Bool:
         {
+            // TODO: This is very simlar to lookup constraints. Use it here.
+            //       Make a boolean lookup constraint handler that users can
+            //       use, with predefined boolean words and various settings.
+            
             /* TODO: Too complicated, simplify boolean parser with better error
                handling. Need two return values: the converted value and whether
                the value was converted successfully so the error can be
@@ -737,18 +754,9 @@ stock ObjLib_StoreKvValue(Handle:kv, Object:object, const String:keyName[], Obje
         }
         case ObjDataType_Object:
         {
-            // This shouldn't happen. Objects should be read as kv sections.
+            // This shouldn't happen. Objects should be read as kv sections or
+            // handled as named lookups when available.
             ThrowError("[BUG] Can't read key as an object. The parser should check if this key is a sub section, if not it's a bug in objectlib.");
-            
-            // TODO: Support named object lookup through a user defined lookup
-            //       callback. It will automatically look up an object by name
-            //       here and replace it with the object reference.
-            //
-            //       When the parser see a key that's supposed to be stored as
-            //       an object, but is a string, check if named lookup is
-            //       enabled. The lookup callback should return an object
-            //       reference that will be stored (INVALID_OBJECT should be
-            //       accepted too, external validators will handle these).
         }
         case ObjDataType_ObjectType:
         {
