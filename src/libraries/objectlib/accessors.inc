@@ -1118,7 +1118,7 @@ stock ObjLib_SetStringAt(Object:object, index, const String:value[], ObjLib_Erro
     
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
-    new Object:constraints = ObjLib_GetTypeConstraintsAt(ObjectType:typeDescriptor, index);
+    new Object:constraints = ObjLib_GetTypeConstraintsAt(typeDescriptor, index);
     new ObjectType:constraintsType = ObjLib_GetTypeDescriptor(constraints);
     new bool:isLookup = false;
     

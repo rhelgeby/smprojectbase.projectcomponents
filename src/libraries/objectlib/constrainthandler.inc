@@ -443,19 +443,12 @@ stock ObjLib_HandleArrayLookup(
         return -1;
     }
     
-    // Entry buffer.
-    decl String:entry[OBJLIB_MAX_STRING_LEN];
-    entry[0] = 0;
-    
     // Search the entry array for the lookup string.
     new entryIndex = FindStringInArray(entries, lookup);
     
     // Check if found.
     if (entryIndex >= 0)
     {
-        // Get entry.
-        GetArrayString(entries, entryIndex, entry, sizeof(entry));
-        
         // Copy replacement value to result buffer.
         if (dataType == ObjDataType_Array)
         {
@@ -510,10 +503,6 @@ stock ObjLib_HandleTrieLookup(
         ThrowError("Buffer size cannot be zero.");
         return -1;
     }
-    
-    // Entry buffer.
-    decl String:entry[OBJLIB_MAX_STRING_LEN];
-    entry[0] = 0;
     
     new bool:found = false;
     new numWritten = 0;
