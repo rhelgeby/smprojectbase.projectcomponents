@@ -5,32 +5,33 @@
 
 new Handle:Profiler;
 
+// Don't set too high. It's used to create arrays in some tests.
 #define ITERATIONS  1000
 
 public OnPluginStart()
 {
     Profiler = CreateProfiler();
     
-    RegConsoleCmd("objectlib_benchmark_object", Command_BenchmarkObject, "Run a benchmark on objects. Usage: object_benchmark_object [iterations]");
-    RegConsoleCmd("objectlib_benchmark_object_report", Command_BenchmarkObjectReport, "Run a benchmark on objects and print a formatted report. Usage: object_benchmark_object_report [max iterations]");
+    RegConsoleCmd("objectlib_benchmark_object", Command_BenchmarkObject, "Run a benchmark on objects. Usage: object_benchmark_object [iterations] [short iterations]");
+    RegConsoleCmd("objectlib_benchmark_object_report", Command_BenchmarkObjectReport, "Run a benchmark on objects and print a formatted report. Usage: object_benchmark_object_report [max iterations] [max short iterations]");
 }
 
-GetIterations(argc)
+GetArg(argc, arg = 1)
 {
-    if (argc > 0)
+    if (argc >= arg)
     {
         new String:argBuffer[32];
-        new iterations;
+        new value;
         
-        GetCmdArg(1, argBuffer, sizeof(argBuffer));
-        iterations = StringToInt(argBuffer);
+        GetCmdArg(arg, argBuffer, sizeof(argBuffer));
+        value = StringToInt(argBuffer);
         
-        if (iterations <= 0)
+        if (value <= 0)
         {
             return ITERATIONS;
         }
         
-        return iterations;
+        return value;
     }
     else
     {
@@ -53,7 +54,8 @@ Report(iterations, bool:report, const String:name[])
 
 public Action:Command_BenchmarkObject(client, argc)
 {
-    new iterations = GetIterations(argc);
+    new iterations = GetArg(argc);
+    new shortIterations = GetArg(argc, 2);
     
     PrintToServer("Running objectlib benchmarks with %d iterations\n-------------------------------------------------------", iterations);
     
@@ -67,6 +69,10 @@ public Action:Command_BenchmarkObject(client, argc)
     SetShortString(iterations);
     GetLongString(iterations);
     SetLongString(iterations);
+    AddKey(shortIterations);
+    RemoveKey(shortIterations);
+    CreateBasicType(shortIterations);
+    LookupKey(iterations);
     
     PrintToServer("Objectlib benchmarks done.");
     
@@ -75,14 +81,16 @@ public Action:Command_BenchmarkObject(client, argc)
 
 public Action:Command_BenchmarkObjectReport(client, argc)
 {
-    new max = GetIterations(argc);
+    new max = GetArg(argc);
+    new shortMax = GetArg(argc, 2);
     
     PrintToServer("Running objectlib benchmark report. Max iterations: %d", max);
     PrintToServer("Format: <iterations> <total time> <iteration time>");
     PrintToServer("This may take a few minutes...");
     
     // Double iterations per loop iteration.
-    #define REPORT_LOOP     for(new i = 64; i < max; i *= 2)
+    #define REPORT_LOOP         for(new i = 64; i < max; i *= 2)
+    #define REPORT_LOOP_SHORT   for(new i = 64; i < shortMax; i *= 2)
     
     PrintToServer("CreateDelete");
     REPORT_LOOP {CreateDelete(i, true);}
@@ -114,9 +122,42 @@ public Action:Command_BenchmarkObjectReport(client, argc)
     PrintToServer("SetLongString");
     REPORT_LOOP {SetLongString(i, true);}
     
+    PrintToServer("AddKey");
+    REPORT_LOOP_SHORT {AddKey(i, true);}
+    
+    PrintToServer("RemoveKey");
+    REPORT_LOOP_SHORT {RemoveKey(i, true);}
+    
+    PrintToServer("CreateBasicType");
+    REPORT_LOOP_SHORT {CreateBasicType(i, true);}
+    
+    PrintToServer("LookupKey");
+    REPORT_LOOP {LookupKey(i, true);}
+    
     PrintToServer("Objectlib benchmarks done.");
     
     return Plugin_Handled;
+}
+
+GetRandomCharacters(numChars, String:buffer[], maxlen)
+{
+    if (numChars > maxlen)
+    {
+        numChars = maxlen - 1;
+    }
+    
+    new count = 0;
+    for (new i = 0; i < numChars; i++)
+    {
+        // Write random letter.
+        buffer[count] = (GetURandomInt() % 27) + 97;
+        count++;
+    }
+    
+    // Terminate string.
+    buffer[count] = 0;
+    
+    return count;
 }
 
 CreateDelete(iterations, bool:report = false)
@@ -369,4 +410,147 @@ SetLongString(iterations, bool:report = false)
     ObjLib_DeleteType(typeDescriptor);
     
     Report(iterations, report, "SetLongString");
+}
+
+AddKey(iterations, bool:report = false)
+{
+    decl ObjectType:typeDescriptor[iterations];
+    
+    if (!report) PrintToServer("Preparing AddKey...");
+    
+    // Create type descriptors.
+    for (new i = 0; i < iterations; i++)
+    {
+        if (!report && ObjectTypeCount % 64 == 0)
+        {
+            PrintToServer("%d type descriptors...", ObjectTypeCount);
+        }
+        typeDescriptor[i] = ObjLib_CreateType();
+    }
+    
+    if (!report) PrintToServer("Running AddKey, %d iterations...", iterations);
+    
+    // Add key to each type descriptor.
+    StartProfiling(Profiler);
+    for (new i = 0; i < iterations; i++)
+    {
+        ObjLib_AddKey(typeDescriptor[i], "testKey", ObjDataType_Cell);
+    }
+    StopProfiling(Profiler);
+    
+    // Cleanup.
+    if (!report) PrintToServer("Cleanup AddKey...");
+    for (new i = 0; i < iterations; i++)
+    {
+        ObjLib_DeleteType(typeDescriptor[i]);
+    }
+    
+    Report(iterations, report, "AddKey");
+}
+
+RemoveKey(iterations, bool:report = false)
+{
+    decl ObjectType:typeDescriptor[iterations];
+    
+    if (!report) PrintToServer("Preparing AddKey...");
+    
+    // Create type descriptors.
+    for (new i = 0; i < iterations; i++)
+    {
+        if (!report && ObjectTypeCount % 64 == 0)
+        {
+            PrintToServer("%d type descriptors...", ObjectTypeCount);
+        }
+        
+        typeDescriptor[i] = ObjLib_CreateType();
+        ObjLib_AddKey(typeDescriptor[i], "testKey", ObjDataType_Cell);
+    }
+    
+    if (!report) PrintToServer("Running AddKey, %d iterations...", iterations);
+    
+    // Add key to each type descriptor.
+    StartProfiling(Profiler);
+    for (new i = 0; i < iterations; i++)
+    {
+        ObjLib_RemoveKey(typeDescriptor[i], "testKey");
+    }
+    StopProfiling(Profiler);
+    
+    // Cleanup.
+    if (!report) PrintToServer("Cleanup AddKey...");
+    for (new i = 0; i < iterations; i++)
+    {
+        ObjLib_DeleteType(typeDescriptor[i]);
+    }
+    
+    Report(iterations, report, "AddKey");
+}
+
+CreateBasicType(iterations, bool:report = false)
+{
+    decl ObjectType:typeDescriptor[iterations];
+    new ObjectType:type;
+    
+    if (!report) PrintToServer("Running CreateBasicType, %d iterations...", iterations);
+    
+    // Create type descriptors.
+    StartProfiling(Profiler);
+    for (new i = 0; i < iterations; i++)
+    {
+        type = ObjLib_CreateType();
+        ObjLib_AddKey(type, "valueA", ObjDataType_Cell);
+        ObjLib_AddKey(type, "valueB", ObjDataType_Float);
+        ObjLib_AddKey(type, "valueC", ObjDataType_Handle);
+        ObjLib_AddKey(type, "stringA", ObjDataType_String);
+        ObjLib_AddKey(type, "stringB", ObjDataType_String);
+        
+        typeDescriptor[i] = type;
+    }
+    StopProfiling(Profiler);
+    
+    // Cleanup.
+    if (!report) PrintToServer("Cleanup CreateBasicType...");
+    for (new i = 0; i < iterations; i++)
+    {
+        ObjLib_DeleteType(typeDescriptor[i]);
+    }
+    
+    Report(iterations, report, "CreateBasicType");
+}
+
+LookupKey(iterations, bool:report = false)
+{
+    new ObjectType:typeDescriptor = ObjLib_CreateType();
+    new String:keyName[32];
+    
+    if (!report) PrintToServer("Preparing LookupKey...");
+    
+    // Add lots of dummy keys of random characters. 256 random keys.
+    for (new i = 0; i < 256; i++)
+    {
+        GetRandomCharacters(30, keyName, sizeof(keyName) - 1);
+        ObjLib_AddKey(typeDescriptor, keyName, ObjDataType_Cell);
+    }
+    
+    // The key we're looking up.
+    ObjLib_AddKey(typeDescriptor, "testKey", ObjDataType_Cell);
+    
+    new Object:object = ObjLib_CreateObject(typeDescriptor);
+    ObjLib_SetCell(object, "testKey", 10);  // Dummy value.
+    
+    if (!report) PrintToServer("Running LookupKey...");
+    
+    // Get cell value from object, implies looking up a key.
+    StartProfiling(Profiler);
+    for (new i = 0; i < iterations; i++)
+    {
+        ObjLib_GetCell(object, "testKey");
+    }
+    StopProfiling(Profiler);
+    
+    // Cleanup.
+    ObjLib_DeleteObject(object);
+    ObjLib_DeleteType(typeDescriptor);
+    
+    Report(iterations, report, "LookupKey");
 }

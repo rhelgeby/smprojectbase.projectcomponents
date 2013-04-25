@@ -66,6 +66,7 @@ stock ObjectType:ObjLib_CreateType(blockSize = 1, keySzie = 8, ObjLib_ErrorHandl
     ObjLib_SetTypeConstraints(typeDescriptor,   constraintList);
     ObjLib_SetTypeErrorHandler(typeDescriptor,  errorHandler);
     
+    ObjectTypeCount++;
     return typeDescriptor;
 }
 
@@ -130,6 +131,8 @@ stock ObjLib_DeleteType(&ObjectType:typeDescriptor, bool:resetReference = true, 
     {
         typeDescriptor = INVALID_OBJECT_TYPE;
     }
+    
+    ObjectTypeCount--;
 }
 
 /*____________________________________________________________________________*/
@@ -211,6 +214,7 @@ stock ObjectType:ObjLib_CloneType(ObjectType:typeDescriptor, bool:locked = false
     ObjLib_SetTypeConstraints(newType,  constraintList);
     ObjLib_SetTypeErrorHandler(newType, newErrorHandler);
     
+    ObjectTypeCount++;
     return newType;
 }
 
@@ -311,14 +315,14 @@ stock bool:ObjLib_RemoveKey(ObjectType:typeDescriptor, const String:keyName[], b
     
     // Check if not mutable.
     if (!ObjLib_IsTypeMutable(typeDescriptor)
-        && ObjLib_HandleError(typeDescriptor, parent, ObjLibError_Immutable, _, "This object type descriptor is immutable (%x).", typeDescriptor))
+        && ObjLib_HandleError(typeDescriptor, parent, ObjLibError_Immutable, _, _, _, "This object type descriptor is immutable (%x).", typeDescriptor))
     {
         return;
     }
     
     // Check if key doesn't exist.
     if (!ObjLib_KeyExist(typeDescriptor, keyName)
-        && ObjLib_HandleError(typeDescriptor, parent, ObjLibError_InvalidKey, _, "Key doesn't exist (\"%s\").", keyName))
+        && ObjLib_HandleError(typeDescriptor, parent, ObjLibError_InvalidKey, _, _, _, "Key doesn't exist (\"%s\").", keyName))
     {
         return;
     }
