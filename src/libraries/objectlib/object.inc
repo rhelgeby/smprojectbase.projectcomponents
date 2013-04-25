@@ -96,6 +96,7 @@ stock Object:ObjLib_CreateObject(ObjectType:typeTemplate, bool:mutableObject = f
     ObjLib_SetObjectNullKey(object,     nullKey);
     ObjLib_SetTypeDescriptor(object,    type);
     
+    ObjectCount++;
     return object;
 }
 
@@ -214,6 +215,8 @@ stock ObjLib_DeleteObject(&Object:object, bool:resetReference = true, bool:close
     {
         object = INVALID_OBJECT;
     }
+    
+    ObjectCount--;
 }
 
 /*____________________________________________________________________________*/
@@ -326,6 +329,7 @@ stock Object:ObjLib_CloneObject(Object:objectTemplate, bool:mutableObject = true
         }
     }
     
+    ObjectCount++;
     return object;
 }
 
