@@ -3,15 +3,16 @@
 #include <profiler>
 #include "libraries/objectlib"
 
-new Handle:profiler;
+new Handle:Profiler;
 
 #define ITERATIONS  1000
 
 public OnPluginStart()
 {
-    profiler = CreateProfiler();
+    Profiler = CreateProfiler();
     
     RegConsoleCmd("objectlib_benchmark_object", Command_BenchmarkObject, "Run a benchmark on objects. Usage: object_benchmark_object [iterations]");
+    RegConsoleCmd("objectlib_benchmark_object_report", Command_BenchmarkObjectReport, "Run a benchmark on objects and print a formatted report. Usage: object_benchmark_object_report [max iterations]");
 }
 
 GetIterations(argc)
@@ -37,6 +38,19 @@ GetIterations(argc)
     }
 }
 
+Report(iterations, bool:report, const String:name[])
+{
+    if (report)
+    {
+        PrintToServer("%d\t%f\t%f", iterations, GetProfilerTime(Profiler), GetProfilerTime(Profiler) / float(iterations));
+    }
+    else
+    {
+        PrintToServer("%s total:     %f", name, GetProfilerTime(Profiler));
+        PrintToServer("%s iteration: %f", name, GetProfilerTime(Profiler) / float(iterations));
+    }
+}
+
 public Action:Command_BenchmarkObject(client, argc)
 {
     new iterations = GetIterations(argc);
@@ -59,15 +73,61 @@ public Action:Command_BenchmarkObject(client, argc)
     return Plugin_Handled;
 }
 
-CreateDelete(iterations)
+public Action:Command_BenchmarkObjectReport(client, argc)
+{
+    new max = GetIterations(argc);
+    
+    PrintToServer("Running objectlib benchmark report. Max iterations: %d", max);
+    PrintToServer("Format: <iterations> <total time> <iteration time>");
+    PrintToServer("This may take a few minutes...");
+    
+    // Double iterations per loop iteration.
+    #define REPORT_LOOP     for(new i = 64; i < max; i *= 2)
+    
+    PrintToServer("CreateDelete");
+    REPORT_LOOP {CreateDelete(i, true);}
+    
+    PrintToServer("CreateDeleteMutable");
+    REPORT_LOOP {CreateDeleteMutable(i, true);}
+    
+    PrintToServer("GetCell");
+    REPORT_LOOP {GetCell(i, true);}
+    
+    PrintToServer("SetCell");
+    REPORT_LOOP {SetCell(i, true);}
+    
+    PrintToServer("SetCellWithConstraints");
+    REPORT_LOOP {SetCellWithConstraints(i, true);}
+    
+    PrintToServer("GetCellLongKey");
+    REPORT_LOOP {GetCellLongKey(i, true);}
+    
+    PrintToServer("GetShortString");
+    REPORT_LOOP {GetShortString(i, true);}
+    
+    PrintToServer("SetShortString");
+    REPORT_LOOP {SetShortString(i, true);}
+    
+    PrintToServer("GetLongString");
+    REPORT_LOOP {GetLongString(i, true);}
+    
+    PrintToServer("SetLongString");
+    REPORT_LOOP {SetLongString(i, true);}
+    
+    PrintToServer("Objectlib benchmarks done.");
+    
+    return Plugin_Handled;
+}
+
+CreateDelete(iterations, bool:report = false)
 {
     new ObjectType:typeDescriptor = ObjLib_CreateType();
     new Object:object;
     
-    PrintToServer("Running CreateDelete...", iterations);
+    if (!report) PrintToServer("Running CreateDelete...");
     
     // Create and delete empty objects.
-    StartProfiling(profiler);
+    StartProfiling(Profiler);
     for (new i = 0; i < iterations; i++)
     {
         // Create an immutable object.
@@ -76,24 +136,23 @@ CreateDelete(iterations)
         // Delete it.
         ObjLib_DeleteObject(object);
     }
-    StopProfiling(profiler);
+    StopProfiling(Profiler);
     
     // Cleanup.
     ObjLib_DeleteType(typeDescriptor);
     
-    PrintToServer("CreateDelete total:     %f", GetProfilerTime(profiler));
-    PrintToServer("CreateDelete iteration: %f", GetProfilerTime(profiler) / float(iterations));
+    Report(iterations, report, "CreateDelete");
 }
 
-CreateDeleteMutable(iterations)
+CreateDeleteMutable(iterations, bool:report = false)
 {
     new ObjectType:typeDescriptor = ObjLib_CreateType();
     new Object:object;
     
-    PrintToServer("Running CreateDeleteMutable...", iterations);
+    if (!report) PrintToServer("Running CreateDeleteMutable...");
     
     // Create and delete empty objects.
-    StartProfiling(profiler);
+    StartProfiling(Profiler);
     for (new i = 0; i < iterations; i++)
     {
         // Create a mutable object.
@@ -102,16 +161,15 @@ CreateDeleteMutable(iterations)
         // Delete it.
         ObjLib_DeleteObject(object);
     }
-    StopProfiling(profiler);
+    StopProfiling(Profiler);
     
     // Cleanup.
     ObjLib_DeleteType(typeDescriptor);
     
-    PrintToServer("CreateDeleteMutable total:     %f", GetProfilerTime(profiler));
-    PrintToServer("CreateDeleteMutable iteration: %f", GetProfilerTime(profiler) / float(iterations));
+    Report(iterations, report, "CreateDeleteMutable");
 }
 
-GetCell(iterations)
+GetCell(iterations, bool:report = false)
 {
     new ObjectType:typeDescriptor = ObjLib_CreateType();
     ObjLib_AddKey(typeDescriptor, "testKey", ObjDataType_Cell);
@@ -119,50 +177,48 @@ GetCell(iterations)
     new Object:object = ObjLib_CreateObject(typeDescriptor);
     ObjLib_SetCell(object, "testKey", 10);
     
-    PrintToServer("Running GetCell...", iterations);
+    if (!report) PrintToServer("Running GetCell...");
     
     // Get cell value from object.
-    StartProfiling(profiler);
+    StartProfiling(Profiler);
     for (new i = 0; i < iterations; i++)
     {
         ObjLib_GetCell(object, "testKey");
     }
-    StopProfiling(profiler);
+    StopProfiling(Profiler);
     
     // Cleanup.
     ObjLib_DeleteObject(object);
     ObjLib_DeleteType(typeDescriptor);
     
-    PrintToServer("GetCell total:     %f", GetProfilerTime(profiler));
-    PrintToServer("GetCell iteration: %f", GetProfilerTime(profiler) / float(iterations));
+    Report(iterations, report, "GetCell");
 }
 
-SetCell(iterations)
+SetCell(iterations, bool:report = false)
 {
     new ObjectType:typeDescriptor = ObjLib_CreateType();
     ObjLib_AddKey(typeDescriptor, "testKey", ObjDataType_Cell);
     
     new Object:object = ObjLib_CreateObject(typeDescriptor);
     
-    PrintToServer("Running SetCell...", iterations);
+    if (!report) PrintToServer("Running SetCell...");
     
     // Set cell value in object.
-    StartProfiling(profiler);
+    StartProfiling(Profiler);
     for (new i = 0; i < iterations; i++)
     {
         ObjLib_SetCell(object, "testKey", 10);
     }
-    StopProfiling(profiler);
+    StopProfiling(Profiler);
     
     // Cleanup.
     ObjLib_DeleteObject(object);
     ObjLib_DeleteType(typeDescriptor);
     
-    PrintToServer("SetCell total:     %f", GetProfilerTime(profiler));
-    PrintToServer("SetCell iteration: %f", GetProfilerTime(profiler) / float(iterations));
+    Report(iterations, report, "SetCell");
 }
 
-SetCellWithConstraints(iterations)
+SetCellWithConstraints(iterations, bool:report = false)
 {
     new ObjectType:typeDescriptor = ObjLib_CreateType();
     
@@ -171,25 +227,24 @@ SetCellWithConstraints(iterations)
     
     new Object:object = ObjLib_CreateObject(typeDescriptor);
     
-    PrintToServer("Running SetCellWithConstraints...", iterations);
+    if (!report) PrintToServer("Running SetCellWithConstraints...");
     
     // Set cell value in object with constraints.
-    StartProfiling(profiler);
+    StartProfiling(Profiler);
     for (new i = 0; i < iterations; i++)
     {
         ObjLib_SetCell(object, "testKey", 10);
     }
-    StopProfiling(profiler);
+    StopProfiling(Profiler);
     
     // Cleanup.
     ObjLib_DeleteObject(object);
     ObjLib_DeleteType(typeDescriptor);
     
-    PrintToServer("SetCellWithConstraints total:     %f", GetProfilerTime(profiler));
-    PrintToServer("SetCellWithConstraints iteration: %f", GetProfilerTime(profiler) / float(iterations));
+    Report(iterations, report, "SetCellWithConstraints");
 }
 
-GetCellLongKey(iterations)
+GetCellLongKey(iterations, bool:report = false)
 {
     new ObjectType:typeDescriptor = ObjLib_CreateType(1, ByteCountToCells(48));
     ObjLib_AddKey(typeDescriptor, "aVeryLongTestKeyWithLotsOfCharacters", ObjDataType_Cell);
@@ -197,25 +252,24 @@ GetCellLongKey(iterations)
     new Object:object = ObjLib_CreateObject(typeDescriptor);
     ObjLib_SetCell(object, "aVeryLongTestKeyWithLotsOfCharacters", 10);
     
-    PrintToServer("Running GetCellLongKey...", iterations);
+    if (!report) PrintToServer("Running GetCellLongKey...");
     
     // Get cell value from object.
-    StartProfiling(profiler);
+    StartProfiling(Profiler);
     for (new i = 0; i < iterations; i++)
     {
         ObjLib_GetCell(object, "aVeryLongTestKeyWithLotsOfCharacters");
     }
-    StopProfiling(profiler);
+    StopProfiling(Profiler);
     
     // Cleanup.
     ObjLib_DeleteObject(object);
     ObjLib_DeleteType(typeDescriptor);
     
-    PrintToServer("GetCellLongKey total:     %f", GetProfilerTime(profiler));
-    PrintToServer("GetCellLongKey iteration: %f", GetProfilerTime(profiler) / float(iterations));
+    Report(iterations, report, "GetCellLongKey");
 }
 
-GetShortString(iterations)
+GetShortString(iterations, bool:report = false)
 {
     new ObjectType:typeDescriptor = ObjLib_CreateType(ByteCountToCells(16));
     ObjLib_AddKey(typeDescriptor, "testKey", ObjDataType_String);
@@ -223,52 +277,50 @@ GetShortString(iterations)
     new Object:object = ObjLib_CreateObject(typeDescriptor);
     ObjLib_SetString(object, "testKey", "A test string.");
     
-    PrintToServer("Running GetShortString...", iterations);
+    if (!report) PrintToServer("Running GetShortString...");
     
     new String:buffer[64];
     
     // Get cell value from object.
-    StartProfiling(profiler);
+    StartProfiling(Profiler);
     for (new i = 0; i < iterations; i++)
     {
         ObjLib_GetString(object, "testKey", buffer, sizeof(buffer));
     }
-    StopProfiling(profiler);
+    StopProfiling(Profiler);
     
     // Cleanup.
     ObjLib_DeleteObject(object);
     ObjLib_DeleteType(typeDescriptor);
     
-    PrintToServer("GetShortString total:     %f", GetProfilerTime(profiler));
-    PrintToServer("GetShortString iteration: %f", GetProfilerTime(profiler) / float(iterations));
+    Report(iterations, report, "GetShortString");
 }
 
-SetShortString(iterations)
+SetShortString(iterations, bool:report = false)
 {
     new ObjectType:typeDescriptor = ObjLib_CreateType(ByteCountToCells(16));
     ObjLib_AddKey(typeDescriptor, "testKey", ObjDataType_String);
     
     new Object:object = ObjLib_CreateObject(typeDescriptor);
     
-    PrintToServer("Running SetShortString...", iterations);
+    if (!report) PrintToServer("Running SetShortString...");
     
     // Set cell value in object.
-    StartProfiling(profiler);
+    StartProfiling(Profiler);
     for (new i = 0; i < iterations; i++)
     {
         ObjLib_SetString(object, "testKey", "A test string.");
     }
-    StopProfiling(profiler);
+    StopProfiling(Profiler);
     
     // Cleanup.
     ObjLib_DeleteObject(object);
     ObjLib_DeleteType(typeDescriptor);
     
-    PrintToServer("SetShortString total:     %f", GetProfilerTime(profiler));
-    PrintToServer("SetShortString iteration: %f", GetProfilerTime(profiler) / float(iterations));
+    Report(iterations, report, "SetShortString");
 }
 
-GetLongString(iterations)
+GetLongString(iterations, bool:report = false)
 {
     new ObjectType:typeDescriptor = ObjLib_CreateType(ByteCountToCells(256));
     ObjLib_AddKey(typeDescriptor, "testKey", ObjDataType_String);
@@ -276,47 +328,45 @@ GetLongString(iterations)
     new Object:object = ObjLib_CreateObject(typeDescriptor);
     ObjLib_SetString(object, "testKey", "A test string. ABCDEFGHIJKLMNOPQRSTUVWXYZ. 0123456789. This is a much longer string that may be used as a description for something.");
     
-    PrintToServer("Running GetLongString...", iterations);
+    if (!report) PrintToServer("Running GetLongString...");
     
     new String:buffer[64];
     
     // Get cell value from object.
-    StartProfiling(profiler);
+    StartProfiling(Profiler);
     for (new i = 0; i < iterations; i++)
     {
         ObjLib_GetString(object, "testKey", buffer, sizeof(buffer));
     }
-    StopProfiling(profiler);
+    StopProfiling(Profiler);
     
     // Cleanup.
     ObjLib_DeleteObject(object);
     ObjLib_DeleteType(typeDescriptor);
     
-    PrintToServer("GetLongString total:     %f", GetProfilerTime(profiler));
-    PrintToServer("GetLongString iteration: %f", GetProfilerTime(profiler) / float(iterations));
+    Report(iterations, report, "GetLongString");
 }
 
-SetLongString(iterations)
+SetLongString(iterations, bool:report = false)
 {
     new ObjectType:typeDescriptor = ObjLib_CreateType(ByteCountToCells(256));
     ObjLib_AddKey(typeDescriptor, "testKey", ObjDataType_String);
     
     new Object:object = ObjLib_CreateObject(typeDescriptor);
     
-    PrintToServer("Running SetLongString...", iterations);
+    if (!report) PrintToServer("Running SetLongString...");
     
     // Set cell value in object.
-    StartProfiling(profiler);
+    StartProfiling(Profiler);
     for (new i = 0; i < iterations; i++)
     {
         ObjLib_SetString(object, "testKey", "A test string. ABCDEFGHIJKLMNOPQRSTUVWXYZ. 0123456789. This is a much longer string that may be used as a description for something.");
     }
-    StopProfiling(profiler);
+    StopProfiling(Profiler);
     
     // Cleanup.
     ObjLib_DeleteObject(object);
     ObjLib_DeleteType(typeDescriptor);
     
-    PrintToServer("SetLongString total:     %f", GetProfilerTime(profiler));
-    PrintToServer("SetLongString iteration: %f", GetProfilerTime(profiler) / float(iterations));
+    Report(iterations, report, "SetLongString");
 }
