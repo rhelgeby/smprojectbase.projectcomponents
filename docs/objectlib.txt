@@ -492,3 +492,15 @@ will throw a key type mismatch error.
 
 Check that keys are registered with the intended data types, and that every line
 that access those keys use the correct accessors.
+
+INVALID HANDLE ERROR WHEN DELETING OBJECT
+If the stack trace is:
+[0] ObjLib_GetTypeParentObject()
+[1] ObjLib_DeleteObject()
+[2] ...
+
+This means that it's trying to access a type descriptor that no longer exist.
+It's a common mistake to delete the type before objects. It will cause this
+error.
+
+Always delete objects first, then delete type descriptors.
