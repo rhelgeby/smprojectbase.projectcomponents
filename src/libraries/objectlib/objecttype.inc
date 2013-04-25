@@ -72,7 +72,7 @@ stock ObjectType:ObjLib_CreateType(blockSize = 1, keySzie = 8, ObjLib_ErrorHandl
 /*____________________________________________________________________________*/
 
 /**
- * Deletes an object type descriptor.
+ * Deletes an object type descriptor, and constraint objects attached to it.
  *
  * Warning: If there are objects refering to this type descriptor they may
  *          trigger an error when trying to use it. Delete objects first.
@@ -80,10 +80,12 @@ stock ObjectType:ObjLib_CreateType(blockSize = 1, keySzie = 8, ObjLib_ErrorHandl
  * @param typeDescriptor    Type descriptor to delete.
  * @param resetReference    (Optional) Reset typeDescriptor to
  *                          INVALID_OBJECT_TYPE when deleted. Default is true.
+ * @param deleteConstraints (Optional) Delete constraint objects attached to
+ *                          keys. Default is true.
  *
  * @error                   Invalid object type.
  */
-stock ObjLib_DeleteType(&ObjectType:typeDescriptor, bool:resetReference = true)
+stock ObjLib_DeleteType(&ObjectType:typeDescriptor, bool:resetReference = true, bool:deleteConstraints = true)
 {
     // Validate.
     ObjLib_ValidateObjectType(typeDescriptor);
@@ -102,14 +104,18 @@ stock ObjLib_DeleteType(&ObjectType:typeDescriptor, bool:resetReference = true)
     new Handle:constraintList = ObjLib_GetTypeConstraints(typeDescriptor);
     new len = GetArraySize(constraintList);
     
-    // Delete constraint objects, if any.
-    for (new i = 0; i < len; i++)
+    // Delete constraint objects, if enabled and they exist.
+    if (deleteConstraints)
     {
-        new Object:constraintObject = Object:GetArrayCell(constraintList, i);
-        if (constraintObject != INVALID_OBJECT)
+        for (new i = 0; i < len; i++)
         {
-            // TODO: Close handles stored in keys.
-            ObjLib_DeleteObject(constraintObject);
+            new Object:constraintObject = Object:GetArrayCell(constraintList, i);
+            if (constraintObject != INVALID_OBJECT)
+            {
+                // Delete constraint. Also close handles stored in keys. Some
+                // constraints store handles to stuff no longer in use.
+                ObjLib_DeleteObject(constraintObject, true, true);
+            }
         }
     }
     

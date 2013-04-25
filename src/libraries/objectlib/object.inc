@@ -150,17 +150,41 @@ stock Object:ObjLib_CreateObjectEx(ObjectType:primaryType = INVALID_OBJECT_TYPE,
  * @param object            Object to delete.
  * @param resetReference    (Optional) Reset object to INVALID_OBJECT when
  *                          deleted. Default is true.
+ * @param closeHandles      (Optional) Close handles stored in keys of handle
+ *                          data type. Default is false.
  *
  * @error                   Invalid object.
  */
-stock ObjLib_DeleteObject(&Object:object, resetReference = true)
+stock ObjLib_DeleteObject(&Object:object, bool:resetReference = true, bool:closeHandles = false)
 {
     // Validate.
     ObjLib_ValidateObject(object);
     
-    // TODO: Add support for closing handles stored in keys.
-    
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
+    new Handle:data = ObjLib_GetObjectData(object);
+    
+    // Close handles in keys if enabled.
+    if (closeHandles)
+    {
+        new numKeys = GetArraySize(data);
+        new Handle:keyTypes = ObjLib_GetTypeDataTypes(typeDescriptor);
+        
+        // Loop through keys.
+        for (new key = 0; key < numKeys; key++)
+        {
+            // Check if key is a handle.
+            if (ObjectDataType:GetArrayCell(keyTypes, key) == ObjDataType_Handle)
+            {
+                // Close handle if nonzero.
+                new Handle:value = Handle:GetArrayCell(data, key);
+                if (value != INVALID_HANDLE)
+                {
+                    CloseHandle(value);
+                }
+            }
+        }
+    }
+    
     new Object:parent = ObjLib_GetTypeParentObject(typeDescriptor);
     if (parent != INVALID_OBJECT)
     {
@@ -178,7 +202,7 @@ stock ObjLib_DeleteObject(&Object:object, resetReference = true)
     }
     
     // Delete data array.
-    CloseHandle(ObjLib_GetObjectData(object));
+    CloseHandle(data);
     
     // Delete object.
     CloseHandle(Handle:object);

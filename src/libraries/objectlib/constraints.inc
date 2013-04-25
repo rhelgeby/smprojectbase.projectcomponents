@@ -399,6 +399,11 @@ stock Object:ObjLib_GetCustomConstraints(ObjLib_KeyValidator:callback)
  * constraint to convert the string according to the constraint parameters
  * below.
  *
+ * Warning: Handles passed to this builder are automatically closed when the
+ *          type descriptor this constraint is attached to is deleted. If you
+ *          don't want handles to be closed, use CloneHandle and pass the cloned
+ *          handles to this function.
+ *
  * @param method        Lookup method. See ObjectLookupMethod.
  *                      * Array    - Search through an array.
  *                      * Trie     - Look up in a trie.
@@ -423,7 +428,9 @@ stock Object:ObjLib_GetCustomConstraints(ObjLib_KeyValidator:callback)
  *                          data type.
  *
  * @return              Constraint object. Use this once when adding a key.
- *                      Object must be deleted if not used anywhere.
+ *                      Object must be deleted if not used anywhere. You may set
+ *                      the closeHandles flag when deleting the object, if you
+ *                      don't use the arrays/trie anymore.
  *
  * @error               Empty list of entries/values. Entry and value list size
  *                      doesn't match. Invalid callback. Invalid sub constraint
