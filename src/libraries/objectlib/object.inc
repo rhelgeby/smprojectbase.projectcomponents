@@ -162,6 +162,7 @@ stock ObjLib_DeleteObject(&Object:object, bool:resetReference = true, bool:close
     
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     new Handle:data = ObjLib_GetObjectData(object);
+    new Handle:nullKey = ObjLib_GetObjectNullKey(object);
     
     // Close handles in keys if enabled.
     if (closeHandles)
@@ -201,8 +202,9 @@ stock ObjLib_DeleteObject(&Object:object, bool:resetReference = true, bool:close
         ObjLib_DeleteType(typeDescriptor);
     }
     
-    // Delete data array.
+    // Delete data arrays.
     CloseHandle(data);
+    CloseHandle(nullKey);
     
     // Delete object.
     CloseHandle(Handle:object);
