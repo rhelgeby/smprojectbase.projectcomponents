@@ -79,11 +79,11 @@ enum ObjLibParseState
 /*____________________________________________________________________________*/
 
 /**
- * Temporary global storage for simple error handler. Used to wrap error handler
- * in boolean word parser (utilities.inc).
+ * Temporary global storage for parser context. Used when the parser context
+ * can't be passed to the error handler directly, such as in general objectlib
+ * errors.
  */
-//new ObjLib_ErrorHandler:TempErrorHandler = INVALID_FUNCTION;
-//new ObjectType:TempType = INVALID_OBJECT_TYPE;
+new Object:TempParseContext = INVALID_OBJECT;
 
 /*____________________________________________________________________________*/
 
@@ -437,13 +437,7 @@ stock Object:ObjLib_OnSectionEnd(Handle:kv, const String:sectionName[], Object:p
     new Handle:nameStack = ObjLib_GetHandle(parseContext, "nameStack");
     
     // Get error handler.
-    new ObjLib_ErrorHandler:errorHandler = ObjLib_GetFunction(parseContext, "errorHandler");
-    if (errorHandler == INVALID_FUNCTION)
-    {
-        // No error handler specified. Replace with fallback error
-        // handler.
-        errorHandler = ObjLib_KvErrorHandler;
-    }
+    new ObjLib_ErrorHandler:errorHandler = ObjLib_KvGetErrorHandler(parseContext);
     
     // Pop current section from name stack.
     Array_Pop(nameStack);
@@ -581,13 +575,7 @@ stock ObjLib_OnKeyValue(Handle:kv, const String:keyName[], KvDataTypes:kvDataTyp
     }
     
     // Get error handler.
-    new ObjLib_ErrorHandler:errorHandler = ObjLib_GetFunction(parseContext, "errorHandler");
-    if (errorHandler == INVALID_FUNCTION)
-    {
-        // No error handler specified. Replace with fallback error
-        // handler.
-        errorHandler = ObjLib_KvErrorHandler;
-    }
+    new ObjLib_ErrorHandler:errorHandler = ObjLib_KvGetErrorHandler(parseContext);
     
     new ObjectDataType:keyDataType = ObjDataType_String;
     
@@ -680,13 +668,7 @@ stock ObjLib_StoreKvValue(Handle:kv, Object:object, const String:keyName[], Obje
     //       parser).
     
     // Get error handler.
-    new ObjLib_ErrorHandler:errorHandler = ObjLib_GetFunction(parseContext, "errorHandler");
-    if (errorHandler == INVALID_FUNCTION)
-    {
-        // No error handler specified. Replace with fallback error
-        // handler.
-        errorHandler = ObjLib_KvErrorHandler;
-    }
+    new ObjLib_ErrorHandler:errorHandler = ObjLib_KvGetErrorHandler(parseContext);
     
     // Read value from KeyValue tree according to the expected data type.
     // Objectlib will validate type and constraints.
@@ -767,7 +749,7 @@ stock ObjLib_StoreKvValue(Handle:kv, Object:object, const String:keyName[], Obje
  * @param errorType         Type of error.
  * @param message           Error message.
  * @param object            Related object, if available.
- * @param parseContext      Object with parser settings.
+ * @param data              Object with parser settings.
  *                          (Type: ObjLib_KvParamsType)
  *
  * @return                  What to do next:
@@ -775,8 +757,9 @@ stock ObjLib_StoreKvValue(Handle:kv, Object:object, const String:keyName[], Obje
  *                          Plugin_Continue - Skip current element, continue
  *                          parsing remaining keys.
  */
-public Action:ObjLib_KvErrorHandler(ObjectType:typeDescriptor, ObjLibError:errorType, const String:message[], Object:object, Object:parseContext)
+public Action:ObjLib_KvErrorHandler(ObjectType:typeDescriptor, ObjLibError:errorType, const String:message[], Object:object, Object:data)
 {
+    new Object:parseContext = ObjLib_KvGetStoredParseContext(data);
     new bool:continueOnError = ObjLib_GetBool(parseContext, "continueOnError");
     
     // Get path to current location in keyvalue tree.
@@ -797,6 +780,9 @@ public Action:ObjLib_KvErrorHandler(ObjectType:typeDescriptor, ObjLibError:error
     
     // Log general parse error.
     LogError("[%s] Error parsing element in %s: %s", name, path, message);
+    
+    // Remove parse context from temp storage.
+    TempParseContext = INVALID_OBJECT;
     
     // Check if parser should continue.
     if (continueOnError)
@@ -1055,6 +1041,62 @@ stock ObjLib_KvBuildPath(Object:parseParams, String:buffer[], maxlen)
     }
     
     return count + 1;
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Returns the error handler from the parse context, or a fallback error
+ * handler.
+ */
+stock ObjLib_ErrorHandler:ObjLib_KvGetErrorHandler(Object:parseContext)
+{
+    // Get error handler.
+    new ObjLib_ErrorHandler:errorHandler = ObjLib_GetFunction(parseContext, "errorHandler");
+    
+    if (errorHandler == INVALID_FUNCTION)
+    {
+        // No error handler specified. Replace with fallback error
+        // handler. Store parser context.
+        TempParseContext = parseContext;
+        errorHandler = ObjLib_KvErrorHandler;
+    }
+    
+    return errorHandler;
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Returns the parse context or parse context in temp storage.
+ */
+stock Object:ObjLib_KvGetStoredParseContext(Object:parseContext)
+{
+    if (parseContext != INVALID_OBJECT)
+    {
+        // Validate type.
+        if (ObjLib_GetTypeDescriptor(parseContext) == ObjLib_KvContextType)
+        {
+            return parseContext;
+        }
+        else
+        {
+            ThrowError("[BUG] Invalid object type, expected parse context. This is a bug in objectlib.");
+            return INVALID_OBJECT;
+        }
+    }
+    else
+    {
+        if (TempParseContext != INVALID_OBJECT)
+        {
+            return TempParseContext;
+        }
+        else
+        {
+            ThrowError("[BUG] Missing parse context in temp storage. This is a bug in objectlib.");
+            return INVALID_OBJECT;
+        }
+    }
 }
 
 /*____________________________________________________________________________*/
