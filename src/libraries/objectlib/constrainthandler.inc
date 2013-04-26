@@ -342,12 +342,13 @@ stock ObjectConstraintResult:ObjLib_HandleLookupConstraints(
     // Check if failed.
     if (numWritten < 0)
     {
+        ObjLib_InLookupHandler = false;
+        
         // Throw constraint error. Format a nice message matching the constraint
         // error handler. ("Value violated constraint: <buffer>")
         Format(buffer, sizeof(buffer), "Lookup. Invalid lookup entry (\"%s\").", lookup);
-        ObjLib_HandleConstraintError(lookup, object, typeDescriptor, keyIndex, errorHandler);
+        ObjLib_HandleConstraintError(buffer, object, typeDescriptor, keyIndex, errorHandler);
         
-        ObjLib_InLookupHandler = false;
         return ObjConstraintResult_Invalid;
     }
     
@@ -397,6 +398,7 @@ stock ObjectConstraintResult:ObjLib_HandleLookupConstraints(
         default:
         {
             // Unexpected type.
+            ObjLib_InLookupHandler = false;
             ThrowError("[BUG] Unexpected data type. This is a bug in objectlib.");
         }
     }

@@ -535,6 +535,81 @@ stock Object:ObjLib_GetLookupConstraints(
 /*____________________________________________________________________________*/
 
 /**
+ * Builds a lookup constraint object for converting boolean words into boolean
+ * values. Can only be used on boolean keys.
+ *
+ * Warning: You must set the closeHandles flag when deleting this object.
+ *
+ * @param wordType          Type of boolean words to accept, except for
+ *                          BoolType_Any.
+ * @param subConstraints    (Optional) Constraint object to use on destination
+ *                          data type, to allow further custom validation.
+ *
+ * @return              Constraint object. Use this once when adding a boolean
+ *                      key. Object must be deleted if not used anywhere.
+ *
+ * @error               Invalid word type. Invalid sub constraint object.
+ */
+stock Object:ObjLib_GetBooleanLookupConstraints(
+        Util_BoolStringType:wordType = BoolType_YesNo,
+        Object:subConstraints = INVALID_OBJECT)
+{
+    if (wordType == BoolType_Any)
+    {
+        ThrowError("BoolType_Any is not supported, this constraint is explicit. Don't use boolean constraints if parsing a numeric string.");
+        return INVALID_OBJECT;
+    }
+    
+    // Lookup arrays. Handles will be closed when constraint object is deleted
+    // with closeHandles flag set.
+    new Handle:words = CreateArray(8, 2);
+    new Handle:values = CreateArray(1, 2);
+    
+    // Add words for the specified method.
+    switch (wordType)
+    {
+        case BoolType_TrueFalse:
+        {
+            PushArrayString(words, "true");
+            PushArrayString(words, "false");
+        }
+        case BoolType_OnOff:
+        {
+            PushArrayString(words, "on");
+            PushArrayString(words, "off");
+        }
+        case BoolType_YesNo:
+        {
+            PushArrayString(words, "yes");
+            PushArrayString(words, "no");
+        }
+        default:
+        {
+            CloseHandle(words);
+            CloseHandle(values);
+            ThrowError("Invalid word type.");
+            return INVALID_OBJECT;
+        }
+    }
+    
+    // Add replacement values.
+    PushArrayCell(values, true);
+    PushArrayCell(values, false);
+    
+    // Build lookup constraint object.
+    new Object:constraint = ObjLib_GetLookupConstraints(
+            ObjLookupMethod_Array,      // method
+            words,                      // entries
+            values,                     // values
+            INVALID_FUNCTION,           // callback
+            subConstraints);            // subConstraints
+    
+    return constraint;
+}
+
+/*____________________________________________________________________________*/
+
+/**
  * Returns whether the specified object is a constraints object.
  *
  * @param constraints   Object to check.

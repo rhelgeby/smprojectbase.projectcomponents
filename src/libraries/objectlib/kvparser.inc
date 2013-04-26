@@ -630,10 +630,16 @@ stock ObjLib_OnKeyValue(Handle:kv, const String:keyName[], KvDataTypes:kvDataTyp
             }
         }
         
-        // Get key constraints.
-        new ObjectType:constraintsType = ObjLib_GetTypeDescriptor(ObjLib_GetTypeConstraintsAt(typeDescriptor, keyIndex));
+        // Get constraint type.
+        new Object:constraints = ObjLib_GetTypeConstraintsAt(typeDescriptor, keyIndex);
+        new ObjectType:constraintsType = INVALID_OBJECT_TYPE;
+        if (constraints != INVALID_OBJECT)
+        {
+            constraintsType = ObjLib_GetTypeDescriptor(constraints);
+        }
         
-        // Override type to string if using lookup constraints.
+        // Check if this is a lookup case. Override type to string if using
+        // lookup constraints.
         if (constraintsType == ObjLib_LookupConstraints)
         {
             // This will trigger a lookup case when using lookup constraints and
@@ -642,7 +648,7 @@ stock ObjLib_OnKeyValue(Handle:kv, const String:keyName[], KvDataTypes:kvDataTyp
         }
         else
         {
-            // Get data type of key.
+            // Not a lookup case. Get data type of key.
             keyDataType = ObjectDataType:GetArrayCell(keyDataTypes, keyIndex);
         }
     }
@@ -698,29 +704,9 @@ stock ObjLib_StoreKvValue(Handle:kv, Object:object, const String:keyName[], Obje
         }
         case ObjDataType_Bool:
         {
-            // TODO: This is very simlar to lookup constraints. Use it here.
-            //       Make a boolean lookup constraint handler that users can
-            //       use, with predefined boolean words and various settings.
-            
-            /* TODO: Too complicated, simplify boolean parser with better error
-               handling. Need two return values: the converted value and whether
-               the value was converted successfully so the error can be
-               forwarded to errorHandler.
-            
-            decl String:value[16];
-            value[0] = 0;
-            KvGetString(kv, NULL_STRING, value, sizeof(value));
-            
-            TempErrorHandler = errorHandler;
-            TempType = ObjLib_GetTypeDescriptor(object);
-            
-            // Parse boolean string.
-            new bool:boolValue = Util_StringToBool(value, booleanType, ObjLib_BoolParseErrorHandler);
-            
-            TempErrorHandler = INVALID_FUNCTION;
-            TempType = INVALID_OBJECT_TYPE;
-            */
-            
+            // Note: This does direct conversion, from string to integer. The
+            //       user may use a boolean lookup constraint for converting
+            //       boolean words and call SetString instead.
             new bool:value = bool:KvGetNum(kv, NULL_STRING);
             ObjLib_SetBool(object, keyName, value, errorHandler);
         }
