@@ -46,7 +46,7 @@ stock ParseTypedKv()
     // DataType section. Some keys have constraints.
     new ObjectType:dataTypes = ObjLib_CreateType(16);
     ObjLib_AddKey(dataTypes, "cell", ObjDataType_Cell, ObjLib_GetCellConstraints(true, true, true, 5, 15));
-    ObjLib_AddKey(dataTypes, "bool", ObjDataType_Bool);
+    ObjLib_AddKey(dataTypes, "bool", ObjDataType_Bool, ObjLib_GetBooleanLookupConstraints(BoolType_TrueFalse));
     ObjLib_AddKey(dataTypes, "float", ObjDataType_Float, ObjLib_GetFloatConstraints(true, true, true, 1.0, 5.0));
     ObjLib_AddKey(dataTypes, "string", ObjDataType_String);
     
