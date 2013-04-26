@@ -1143,7 +1143,7 @@ stock ObjLib_SetStringAt(Object:object, index, const String:value[], ObjLib_Erro
     }
     
     // Handle constraints.
-    switch (ObjLib_HandleArrayConstraints(object, typeDescriptor, index, value, -1, errorHandler, isLookup))
+    switch (ObjLib_HandleArrayConstraints(object, typeDescriptor, index, value, strlen(value), errorHandler, isLookup))
     {
         case ObjConstraintResult_Invalid:
         {
