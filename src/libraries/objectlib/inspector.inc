@@ -223,10 +223,22 @@ stock ObjLib_ValueToString(Object:object, keyIndex, String:buffer[], maxlen)
     
     switch (dataType)
     {
-        case ObjDataType_Any, ObjDataType_Cell, ObjDataType_Bool:
+        case ObjDataType_Any, ObjDataType_Cell:
         {
             new value = GetArrayCell(data, keyIndex);
             return IntToString(value, buffer, maxlen);
+        }
+        case ObjDataType_Bool:
+        {
+            new bool:value = bool:GetArrayCell(data, keyIndex);
+            if (value)
+            {
+                return strcopy(buffer, maxlen, "true");
+            }
+            else
+            {
+                return strcopy(buffer, maxlen, "false");
+            }
         }
         case ObjDataType_Float:
         {
