@@ -237,11 +237,14 @@ stock Handle:ObjLib_ParseInListMode(Handle:kv, Object:parseContext)
         }
         else
         {
-            // TODO: Empty section. Check if they should be added.
-            if (!ObjLib_GetBool(parseContext, "ignoreEmptySections"))
+            PrintToServer("List mode: Found empty section.");
+            // Section is empty.
+            new Object:subObject = ObjLib_OnEmptySection(kv, keyName, parseContext);
+            
+            // Add object to result list, is empty sections are included.
+            if (subObject != INVALID_OBJECT)
             {
-                // Add empty section.
-                // TODO: How to avoid duplicated code?
+                PushArrayCell(sections, subObject);
             }
         }
     } while (KvGotoNextKey(kv));    // Go to next section.
@@ -353,15 +356,7 @@ stock Object:ObjLib_ParseSection(Handle:kv, Object:parseContext)
             {
                 // Found an empty section.
                 PrintToServer("Found empty section.");
-                
-                // Check if empty sections are included.
-                if (!ObjLib_GetBool(parseContext, "ignoreEmptySections"))
-                {
-                    // Add empty section object. The empty object will use a
-                    // type if available in constraints.
-                    ObjLib_OnSectionStart(kv, keyName, parseContext);
-                    ObjLib_OnSectionEnd(kv, keyName, parseContext);
-                }
+                ObjLib_OnEmptySection(kv, keyName, parseContext);
             }
         }
     } while (KvGotoNextKey(kv, false));     // Go to next key or section.
@@ -544,6 +539,37 @@ stock Object:ObjLib_OnSectionEnd(Handle:kv, const String:sectionName[], Object:p
     
     // Add object to parent.
     ObjLib_SetObject(parent, sectionName, object, errorHandler);
+    
+    return INVALID_OBJECT;
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Handles an empty section. Reads the parser context to see if it should be
+ * included.
+ *
+ * @param kv                Handle to keyvalue tree.
+ * @param sectionName       Name of the empty section.
+ * @param parseContext      Parse context object. (Type: ObjLib_KvParamsType)
+ *
+ * @return                  Parsed section object if stack is empty (there is
+ *                          no parent that can store it) - or on errors.
+ *                          Otheriwse INVALID_OBJECT (the object was stored
+ *                          in the parent object).
+ */
+stock Object:ObjLib_OnEmptySection(Handle:kv, const String:sectionName[], Object:parseContext)
+{
+    // TODO: Validate. Check if this section is expected. Get type.
+    
+    // Check if empty sections are included.
+    if (!ObjLib_GetBool(parseContext, "ignoreEmptySections"))
+    {
+        // Add empty section object. The empty object will use a type if
+        // available in constraints.
+        ObjLib_OnSectionStart(kv, sectionName, parseContext);
+        return ObjLib_OnSectionEnd(kv, sectionName, parseContext);
+    }
     
     return INVALID_OBJECT;
 }
