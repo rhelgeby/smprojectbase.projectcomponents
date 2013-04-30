@@ -487,6 +487,8 @@ stock Object:ObjLib_OnSectionEnd(Handle:kv, const String:sectionName[], Object:p
         constraints = ObjLib_GetTypeConstraintsAt(parentType, keyIndex);
     }
     
+    // TODO: Validate that key type in parent is an object.
+    
     // Check if section has constraints.
     if (constraints != INVALID_OBJECT)
     {
