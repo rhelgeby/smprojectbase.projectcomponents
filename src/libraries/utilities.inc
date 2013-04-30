@@ -56,16 +56,29 @@ enum Util_BoolStringType
 }
 
 /**
+ * General client filter callback.
+ *
+ * @param client        Client index.
+ * @param filters       General filter flags. See UTILS_FILTER_*.
+ * @param targetClient  Target client that use the filter. Use 0 if no target
+ *                      client.
+ *
+ * @return              True if client pass filter, false otherwise.
+ */
+functag public bool:Util_ClientFilter(client, filters, targetClient);
+
+/**
  * Build an array of clients that pass the filters.
  * 
  * @param adtClients    The handle of the array.
  *                      Don't forget to call CloseHandle on it when finished!
  * @param filters       A bit field made up of UTILS_FILTER_* defines.  See top of file.
+ * @prarm customFilter  Optional callback for custom filter conditions.
  * @param targetclient  Creating the list for this client.  Can use filters such as UTILS_FILTER_CANTARGET if valid client is given.*  *                       
  * 
  * @return              Number of eligible clients.
  */
-stock Util_BuildClientList(&Handle:adtClients, filters, targetclient = 0)
+stock Util_BuildClientList(&Handle:adtClients, filters, Util_ClientFilter:customFilter = INVALID_FUNCTION, targetclient = 0)
 {
     adtClients = CreateArray();
     
@@ -101,9 +114,24 @@ stock Util_BuildClientList(&Handle:adtClients, filters, targetclient = 0)
                 continue;
         }
         
-        // Check if the menu recipient can target this client, if not then don't add to the menu.
+        // Check if the recipient can target this client, if not then don't add to the list.
         if (Util_IsClientInGame(targetclient) && (filters & UTILS_FILTER_CANTARGET && !CanUserTarget(targetclient, client)))
             continue;
+        
+        // Check custom filter.
+        if (customFilter != INVALID_FUNCTION)
+        {
+            new bool:result;
+            
+            Call_StartFunction(GetMyHandle(), customFilter);
+            Call_PushCell(client);
+            Call_PushCell(filters);
+            Call_PushCell(targetclient);
+            Call_Finish(result);
+            
+            if (result)
+                continue;
+        }
         
         // Add eligible client to array.
         PushArrayCell(adtClients, client);

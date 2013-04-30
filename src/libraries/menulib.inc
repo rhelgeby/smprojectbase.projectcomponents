@@ -902,7 +902,7 @@ stock Handle:MenuLib_CreateClientListMenu(client, const String:title[], bool:tra
     new menuclient;
     
     new Handle:adtClients;
-    new count = Util_BuildClientList(adtClients, filters, client);
+    new count = Util_BuildClientList(adtClients, filters, INVALID_FUNCTION, client);
     for (new cindex = 0; cindex < count; cindex++)
     {
         // Get the client index from the array.
