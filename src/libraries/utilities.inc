@@ -129,7 +129,7 @@ stock Util_BuildClientList(&Handle:adtClients, filters, Util_ClientFilter:custom
             Call_PushCell(targetclient);
             Call_Finish(result);
             
-            if (result)
+            if (!result)
                 continue;
         }
         
