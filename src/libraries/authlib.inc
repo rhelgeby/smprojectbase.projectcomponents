@@ -33,17 +33,17 @@
 /**
  * Max size of group list.
  */
-const AUTHLIB_MAX_GROUPS = 64;
+#define AUTHLIB_MAX_GROUPS = 64;
 
 /**
  * Size of group name buffer.
  */
-const AUTHLIB_GROUP_LEN = 64;
+#define AUTHLIB_GROUP_LEN = 64;
 
 /**
  * Size of flag name buffer.
  */
-const AUTHLIB_FLAG_LEN = 16;
+#define AUTHLIB_FLAG_LEN = 16;
 
 /**
  * Authorization modes.
