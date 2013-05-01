@@ -30,6 +30,8 @@
 #endif
 #define _authlib_included
 
+#include "libraries/objectlib"
+
 /**
  * Max size of group list.
  */
@@ -381,4 +383,58 @@ stock Auth_ValidateGroups(const String:groupList[], const String:separator[])
     
     // All groups valid.
     return -1;
+}
+
+/**
+ * Builds an auth mode lookup constraint object for objectlib.
+ *
+ * @param buildSubConstraints   Also build a sub constraint (cell type) for raw
+ *                              data validation.
+ *
+ * @return      Constraint object. Must be deleted with closeHandles flag set
+ *              when no longer used.
+ */
+stock Object:Auth_GetModeLookupConstraints(bool:buildSubConstraints = true)
+{
+    new Handle:modeNames = CreateArray(8, 3);
+    new Handle:modeIDs = CreateArray(1, 3);
+    
+    // Valid mode names.
+    PushArrayString(modeNames, "either");
+    PushArrayString(modeNames, "both");
+    PushArrayString(modeNames, "all");
+    
+    // Matching mode IDs.
+    PushArrayCell(modeIDs, Auth_Either);
+    PushArrayCell(modeIDs, Auth_Both);
+    PushArrayCell(modeIDs, Auth_All);
+    
+    new Object:subConstraints = INVALID_OBJECT;
+    if (buildSubConstraints)
+    {
+        subConstraints = Auth_GetModeConstraints();
+    }
+    
+    return ObjLib_GetLookupConstraints(
+            ObjLookupMethod_Array,      // method
+            modeNames,                  // entries
+            modeIDs,                    // values
+            _,                          // callback
+            subConstraints);            // subConstraints
+}
+
+/**
+ * Builds an auth mode constraint object for objectlib.
+ *
+ * @return      Constraint object. Must be deleted with closeHandles flag set
+ *              when no longer used.
+ */
+stock Object:Auth_GetModeConstraints()
+{
+    return ObjLib_GetCellConstraints(
+            false,          // nonzero
+            true,           // lowerLimit
+            true,           // upperLimit
+            _:Auth_Either,  // min - first entry in Auth_Modes
+            _:Auth_All);    // max - last entry in Auth_Modes
 }
