@@ -36,7 +36,6 @@
 #include <sdktools>
 
 // Include libraries
-#include "<project>/libraries/sdktoolslib"
 #include "<project>/libraries/utilities"
 
 /**
@@ -228,12 +227,6 @@ stock WepLib_RemoveAllWeapons(client, bool:weapons[WEPLIB_SLOT_COUNT] = {true, .
  */
 stock WepLib_DropAllWeapons(client, bool:weapons[WEPLIB_SLOT_COUNT] = {true, ...})
 {
-    // Check if CBasePlayer::CSWeaponDrop is available before trying to use it.
-    if (!SDKToolsLib_IsAvailable(SDKLibCall_CSWeaponDrop))
-    {
-        ThrowError("WepLib_DropAllWeapons requires SDKCall \"CSWeaponDrop\".");
-    }
-    
     new weaponindex;
     for (new weaponslot = 0; weaponslot < WEPLIB_SLOT_COUNT; weaponslot++)
     {
@@ -244,7 +237,7 @@ stock WepLib_DropAllWeapons(client, bool:weapons[WEPLIB_SLOT_COUNT] = {true, ...
         weaponindex = GetPlayerWeaponSlot(client, weaponslot);
         if (weaponindex != -1)
         {
-            SDKToolsLib_CSWeaponDrop(client, weaponindex);
+            CS_DropWeapon(client, weaponindex, true);
         }
     }
     
@@ -357,7 +350,7 @@ stock WepLib_SetAmmoEx(client, index, value, bool:add = false)
     if (add)
         ammovalue = WeaponAmmoGetGrenadeCount(client, type);
     
-    SetEntData(client, offsAmmo + (index * 4), ammovalue + value, _, true);
+    SetEntData(client, offsAmmo + (index * 4), ammovalue + value, 4, true);
 }
 
 // **********************************************
@@ -387,17 +380,11 @@ stock WepLib_GrenadeStripAll(client)
  */
 stock WepLib_GrenadeDropAll(client)
 {
-    // Check if CBasePlayer::CSWeaponDrop is available before trying to use it.
-    if (!SDKToolsLib_IsAvailable(SDKLibCall_CSWeaponDrop))
-    {
-        ThrowError("WepLib_GrenadeDropAll requires SDKCall \"CSWeaponDrop\".");
-    }
-    
     // While GetPlayerWeaponSlot returns a valid projectile, remove it and then test again.
     new grenade = GetPlayerWeaponSlot(client, _:Slot_Projectile);
     while (grenade != -1)
     {
-        SDKToolsLib_CSWeaponDrop(client, grenade);
+        CS_DropWeapon(client, grenade, true);
         grenade = GetPlayerWeaponSlot(client, _:Slot_Projectile);
     }
 }
