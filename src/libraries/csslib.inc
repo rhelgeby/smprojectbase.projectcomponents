@@ -33,9 +33,9 @@
 #include <sdktools>
 
 new Handle:CSSLib_GameConfig = INVALID_HANDLE;
-new Handle:CSSLib_FlashlightIsOn = INVALID_HANDLE;
-new Handle:CSSLib_FlashlightTurnOn = INVALID_HANDLE;
-new Handle:CSSLib_FlashlightTurnOff = INVALID_HANDLE;
+new Handle:CSSLib_CallFlashlightIsOn = INVALID_HANDLE;
+new Handle:CSSLib_CallFlashlightTurnOn = INVALID_HANDLE;
+new Handle:CSSLib_CallFlashlightTurnOff = INVALID_HANDLE;
 new bool:CSSLib_SDKCallsPrepared = false;
 
 /*____________________________________________________________________________*/
@@ -60,30 +60,30 @@ stock CSSLib_SetupSDKCalls()
     
     // Prepare SDK calls.
     
-    if (CSSLib_FlashlightIsOn == INVALID_HANDLE)
+    if (CSSLib_CallFlashlightIsOn == INVALID_HANDLE)
     {
         StartPrepSDKCall(SDKCall_Player);
         PrepSDKCall_SetFromConf(CSSLib_GameConfig, SDKConf_Virtual, "FlashlightIsOn");
         PrepSDKCall_SetReturnInfo(SDKType_Bool, SDKPass_Plain);
-        CSSLib_FlashlightIsOn = EndPrepSDKCall();
+        CSSLib_CallFlashlightIsOn = EndPrepSDKCall();
         
-        CSSLib_ValidateCallOrFail(CSSLib_FlashlightIsOn, "CCSPlayer", "FlashlightIsOn");
+        CSSLib_ValidateCallOrFail(CSSLib_CallFlashlightIsOn, "CCSPlayer", "FlashlightIsOn");
     }
-    if (CSSLib_FlashlightTurnOn == INVALID_HANDLE)
+    if (CSSLib_CallFlashlightTurnOn == INVALID_HANDLE)
     {
         StartPrepSDKCall(SDKCall_Player);
         PrepSDKCall_SetFromConf(CSSLib_GameConfig, SDKConf_Virtual, "FlashlightTurnOn");
-        CSSLib_FlashlightTurnOn = EndPrepSDKCall();
+        CSSLib_CallFlashlightTurnOn = EndPrepSDKCall();
         
-        CSSLib_ValidateCallOrFail(CSSLib_FlashlightTurnOn, "CCSPlayer", "FlashlightTurnOn");
+        CSSLib_ValidateCallOrFail(CSSLib_CallFlashlightTurnOn, "CCSPlayer", "FlashlightTurnOn");
     }
-    if (CSSLib_FlashlightTurnOff == INVALID_HANDLE)
+    if (CSSLib_CallFlashlightTurnOff == INVALID_HANDLE)
     {
         StartPrepSDKCall(SDKCall_Player);
         PrepSDKCall_SetFromConf(CSSLib_GameConfig, SDKConf_Virtual, "FlashlightTurnOff");
-        CSSLib_FlashlightTurnOff = EndPrepSDKCall();
+        CSSLib_CallFlashlightTurnOff = EndPrepSDKCall();
         
-        CSSLib_ValidateCallOrFail(CSSLib_FlashlightTurnOff, "CCSPlayer", "FlashlightTurnOff");
+        CSSLib_ValidateCallOrFail(CSSLib_CallFlashlightTurnOff, "CCSPlayer", "FlashlightTurnOff");
     }
     
     CSSLib_SDKCallsPrepared = true;
@@ -251,7 +251,7 @@ stock bool:CSSLib_FlashlightIsOn(client)
 {
     CSSLib_CheckPreparedOrFail();
     
-    return bool:SDKCall(SDKLibCall_FlashlightIsOn, client);
+    return bool:SDKCall(CSSLib_CallFlashlightIsOn, client);
 }
 
 /*____________________________________________________________________________*/
@@ -265,7 +265,7 @@ stock CSSLib_FlashlightOn(client)
 {
     CSSLib_CheckPreparedOrFail();
     
-    SDKCall(CSSLib_FlashlightTurnOn, client);
+    SDKCall(CSSLib_CallFlashlightTurnOn, client);
 }
 
 /*____________________________________________________________________________*/
@@ -279,7 +279,7 @@ stock CSSLib_FlashlightOff(client)
 {
     CSSLib_CheckPreparedOrFail();
     
-    SDKCall(CSSLib_FlashlightTurnOff, client);
+    SDKCall(CSSLib_CallFlashlightTurnOff, client);
 }
 
 /*____________________________________________________________________________*/
