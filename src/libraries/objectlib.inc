@@ -74,6 +74,16 @@ enum ObjectType
 /*____________________________________________________________________________*/
 
 /**
+ * Collection object tag.
+ */
+enum Collection
+{
+    INVALID_COLLECTION = 0
+}
+
+/*____________________________________________________________________________*/
+
+/**
  * Data types that objects can store.
  */
 enum ObjectDataType
