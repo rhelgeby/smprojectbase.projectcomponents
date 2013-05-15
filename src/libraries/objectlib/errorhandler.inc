@@ -105,3 +105,23 @@ stock ObjLib_ErrorHandler:ObjLib_GetErrorHandler(ObjectType:typeDescriptor, ObjL
     
     return ObjLib_GetTypeErrorHandler(typeDescriptor);
 }
+
+/*____________________________________________________________________________*/
+
+/**
+ * Internal use only!
+ * Throws a general type mismatch error.
+ *
+ * @return      True if error was handled. If not handled this function does not
+ *              return.
+ */
+stock bool:ObjLib_TypeMismatchError(ObjectType:typeDescriptor, Object:object, ObjectDataType:actual, ObjectDataType:expected, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+{
+    new String:actualName[16];
+    new String:expectedName[16];
+    
+    ObjLib_DataTypeToString(actual, actualName, sizeof(actualName));
+    ObjLib_DataTypeToString(expected, expectedName, sizeof(expectedName));
+    
+    return ObjLib_HandleError(typeDescriptor, object, ObjLibError_TypeMismatch, errorHandler, _, _, "Data type mismatch. Expected \"%s\", but \"%s\" was used.", expectedName, actualName);
+}

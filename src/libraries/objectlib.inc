@@ -74,7 +74,8 @@ enum ObjectType
 /*____________________________________________________________________________*/
 
 /**
- * Collection object tag.
+ * Collection tag. Collections are objects, but with its own tag so the compiler
+ * will be able to distinguish them.
  */
 enum Collection
 {
@@ -196,7 +197,7 @@ enum ObjectTypeData
 enum ObjLibError
 {
     ObjLibError_InvalidKey,         /** Key name or index is invalid. */
-    ObjLibError_InvalidKeyType,     /** Key type mismatch. */
+    ObjLibError_TypeMismatch,       /** Data type does not match the expected type. */
     ObjLibError_NullDataKey,        /** Attempted to read from uninitialized key. */
     ObjLibError_KeyExist,           /** Attempted to create a key with an existing name. */
     ObjLibError_Immutable,          /** Object or Object type is immutable. */
