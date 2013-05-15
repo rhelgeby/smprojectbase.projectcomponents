@@ -27,8 +27,9 @@
  */
 
 /**
- * Global type descriptor for collection objects. Do not delete this type once
- * created.
+ * Global type descriptor for collection objects. Do not delete this type. You
+ * can compare object types against this type to see if it's a collection
+ * object (by using ObjLib_TypeOf).
  */
 new ObjectType:ObjLibCollectionType = IVNALID_OBJECT_TYPE;
 new bool:ObjLibCollectionTypeBuilt = false;
@@ -42,8 +43,9 @@ new bool:ObjLibCollectionTypeBuilt = false;
  *                          Default is ObjDataType_Object.
  * @param blockSize         Number of cells each element can hold. Only useful
  *                          for string and array types. Default is 1 cell.
- * @param constraints       (Optional) Element constraints. Must be a constraint
- *                          object. Default is no constraints.
+ * @param constraints       (Optional) NOT IMPLEMENTED! Element constraints.
+ *                          Must be a constraint object. Default is no
+ *                          constraints.
  *
  * @return                  Reference to new collection object. Must be deleted
  *                          with ObjLib_DeleteCollection when no longer in use.
@@ -67,7 +69,6 @@ stock Collection:ObjLib_CreateCollection(ObjectDataType:dataType = ObjDataType_O
     // Initialize collection.
     ObjLib_SetCell(collection, "dataType", dataType);
     ObjLib_SetHandle(collection, "elements", elements);
-    ObjLib_SetCell(collection, "size", 0);
     ObjLib_SetObject(collection, "constraints", constraints);
     
     return Collection:collection;
@@ -116,12 +117,54 @@ stock ObjLib_BuildCollectionType()
         // Handle to array of elements.
         ObjLib_AddKey(ObjLibCollectionType, "elements", ObjDataType_Handle);
         
-        // Number of elements.
-        ObjLib_AddKey(ObjLibCollectionType, "size", ObjDataType_Cell);
-        
         // Element constraints (applies to all elements in the collection).
         ObjLib_AddKey(ObjLibCollectionType, "constraints", ObjDataType_Object);
         
         ObjLibCollectionTypeBuilt = true;
     }
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Internal use only!
+ */
+stock ObjLib_ValidateCollection(Collection:collection)
+{
+    if (collection == INVALID_COLLECTION
+        || !ObjLib_TypeOf(Object:collection, ObjLibCollectionType))
+    {
+        ThrowError("Invalid collection (%x).", collection);
+    }
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Internal use only!
+ * Validates a data type against a collection's data type at the specified.
+ *
+ * This function will throw an validation error on type mismatch.
+ *
+ * @param collection        Collection object.
+ * @param dataType          Data type to validate.
+ * @param errorHandler      Custom error handler. Overrides error handler in
+ *                          type descriptor if specified.
+ *
+ * @return                  True if passed, false otherwise.
+ */
+stock bool:ObjLib_CollectionTypeCheck(Collection:collection, ObjectDataType:dataType, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+{
+    // Get collection data type.
+    new ObjectDataType:collectionType = ObjectDataType:ObjLib_GetCell(collection, "dataType");
+    
+    // Check for type mismatch.
+    if (dataType != collectionType)
+    {
+        new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(Object:collection);
+        ObjLib_TypeMismatchError(typeDescriptor, Object:collection, dataType, collectionType, errorHandler);
+        return false;
+    }
+    
+    return true;
 }

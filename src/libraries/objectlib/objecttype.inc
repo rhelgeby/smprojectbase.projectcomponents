@@ -404,25 +404,6 @@ stock ObjLib_ValidateObjectType(ObjectType:typeDescriptor)
 
 /**
  * Internal use only!
- *
- * @return      True if error was handled. If not handled this function does not
- *              return.
- */
-stock bool:ObjLib_KeyTypeMismatchError(ObjectType:typeDescriptor, Object:object, ObjectDataType:actual, ObjectDataType:expected, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
-{
-    new String:actualName[16];
-    new String:expectedName[16];
-    
-    ObjLib_DataTypeToString(actual, actualName, sizeof(actualName));
-    ObjLib_DataTypeToString(expected, expectedName, sizeof(expectedName));
-    
-    return ObjLib_HandleError(typeDescriptor, object, ObjLibError_InvalidKeyType, errorHandler, _, _, "Key type mismatch. Expected \"%s\", but \"%s\" was used.", expectedName, actualName);
-}
-
-/*____________________________________________________________________________*/
-
-/**
- * Internal use only!
  * Validates a key type against an object's key type at the specified index.
  *
  * This function will throw an validation error on key type mismatch.
@@ -451,7 +432,7 @@ stock bool:ObjLib_KeyTypeCheck(ObjectType:typeDescriptor, Object:object, keyInde
     if (keyType != destType)
     {
         // Key mismatch. Throw error.
-        ObjLib_KeyTypeMismatchError(typeDescriptor, object, keyType, destType);
+        ObjLib_TypeMismatchError(typeDescriptor, object, keyType, destType, errorHandler);
         return false;
     }
     
