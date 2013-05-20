@@ -279,21 +279,23 @@ funcenum ObjLibLookupCallback
      * string into a value.
      *
      * @param object            Object being validated.
-     * @param keyName           Key being validated.
+     * @param index             Index of key, or index where collection element
+     *                          will be added.
      * @param lookup            String value to look up.
      * @param replacement       (Output). Replacement value to store in object.
      *
      * @return                  True if lookup value was valid and successfully
      *                          converted, false otherwise.
      */
-    bool:public(Object:object, const String:keyName[], const String:lookup[], &any:replacement),
+    bool:public(Object:object, index, const String:lookup[], &any:replacement),
     
     /**
      * Lookup callback for array lookup constraint handler. Used to convert a
      * string into an array.
      *
      * @param object            Object being validated.
-     * @param keyName           Key being validated.
+     * @param index             Index of key, or index where collection element
+     *                          will be added.
      * @param lookup            String value to look up.
      * @param replacement       (Output). Replacement array to store in object.
      * @param maxlen            Size of replacement array.
@@ -301,14 +303,15 @@ funcenum ObjLibLookupCallback
      * @return                  Number of cells copied to replacement array if
      *                          value was valid, or -1 if value was invalid.
      */
-    public(Object:object, const String:keyName[], const String:lookup[], any:replacement[], maxlen),
+    public(Object:object, index, const String:lookup[], any:replacement[], maxlen),
     
     /**
      * Lookup callback for string lookup constraint handler. Used to convert a
      * string into another string.
      *
      * @param object            Object being validated.
-     * @param keyName           Key being validated.
+     * @param index             Index of key, or index where collection element
+     *                          will be added.
      * @param lookup            String value to look up.
      * @param replacement       (Output). Replacement string to store in object.
      * @param maxlen            Size of replacement array.
@@ -316,7 +319,7 @@ funcenum ObjLibLookupCallback
      * @return                  Number of characters copied to replacement array
      *                          if value was valid, or -1 if value was invalid.
      */
-    public(Object:object, const String:keyName[], const String:lookup[], String:replacement[], maxlen)
+    public(Object:object, index, const String:lookup[], String:replacement[], maxlen)
 };
 
 /*____________________________________________________________________________*/
@@ -368,10 +371,12 @@ stock Handle:ObjLib_CloneTrie(Handle:trie, Handle:keys, keySize)
 // Object library core modules.
 #include "libraries/objectlib/objecttype"
 #include "libraries/objectlib/object"
+#include "libraries/objectlib/collection"
 #include "libraries/objectlib/constraints"
 #include "libraries/objectlib/constrainthandler"
 #include "libraries/objectlib/errorhandler"
 #include "libraries/objectlib/accessors"
+#include "libraries/objectlib/collectionaccessors"
 
 // Parser modules.
 #include "libraries/objectlib/kvparser"
