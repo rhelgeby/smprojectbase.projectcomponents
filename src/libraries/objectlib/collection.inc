@@ -31,7 +31,7 @@
  * can compare object types against this type to see if it's a collection
  * object (by using ObjLib_TypeOf).
  */
-new ObjectType:ObjLibCollectionType = IVNALID_OBJECT_TYPE;
+new ObjectType:ObjLibCollectionType = INVALID_OBJECT_TYPE;
 new bool:ObjLibCollectionTypeBuilt = false;
 
 /*____________________________________________________________________________*/
@@ -156,7 +156,7 @@ stock ObjLib_ValidateCollection(Collection:collection)
 stock bool:ObjLib_CollectionTypeCheck(Collection:collection, ObjectDataType:dataType, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
 {
     // Get collection data type.
-    new ObjectDataType:collectionType = ObjectDataType:ObjLib_GetCell(collection, "dataType");
+    new ObjectDataType:collectionType = ObjectDataType:ObjLib_GetCell(Object:collection, "dataType");
     
     // Check for type mismatch.
     if (dataType != collectionType)

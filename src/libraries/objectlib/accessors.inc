@@ -610,8 +610,13 @@ stock ObjLib_SetAnyAt(Object:object, index, any:value, ObjLib_ErrorHandler:error
         return;
     }
     
+    // Copy the value into an array so it can be passed directly to the general
+    // constraint handler.
+    new any:values[1];
+    values[0] = value;
+    
     // Handle constraints, sets value if valid and not overridden.
-    ObjLib_ApplyValueConstraints(object, typeDescriptor, index, value, errorHandler);
+    ObjLib_ApplyConstraints(object, typeDescriptor, index, values, 1, errorHandler);
 }
 
 /*____________________________________________________________________________*/
@@ -678,8 +683,13 @@ stock ObjLib_SetCellAt(Object:object, index, value, ObjLib_ErrorHandler:errorHan
         return;
     }
     
+    // Copy the value into an array so it can be passed directly to the general
+    // constraint handler.
+    new any:values[1];
+    values[0] = value;
+    
     // Handle constraints, sets value if valid and not overridden.
-    ObjLib_ApplyValueConstraints(object, typeDescriptor, index, value, errorHandler);
+    ObjLib_ApplyConstraints(object, typeDescriptor, index, values, 1, errorHandler);
 }
 
 /*____________________________________________________________________________*/
@@ -746,8 +756,13 @@ stock ObjLib_SetBoolAt(Object:object, index, bool:value, ObjLib_ErrorHandler:err
         return;
     }
     
+    // Copy the value into an array so it can be passed directly to the general
+    // constraint handler.
+    new any:values[1];
+    values[0] = value;
+    
     // Handle constraints, sets value if valid and not overridden.
-    ObjLib_ApplyValueConstraints(object, typeDescriptor, index, value, errorHandler);
+    ObjLib_ApplyConstraints(object, typeDescriptor, index, values, 1, errorHandler);
 }
 
 /*____________________________________________________________________________*/
@@ -814,8 +829,13 @@ stock ObjLib_SetFloatAt(Object:object, index, Float:value, ObjLib_ErrorHandler:e
         return;
     }
     
+    // Copy the value into an array so it can be passed directly to the general
+    // constraint handler.
+    new any:values[1];
+    values[0] = value;
+    
     // Handle constraints, sets value if valid and not overridden.
-    ObjLib_ApplyValueConstraints(object, typeDescriptor, index, value, errorHandler);
+    ObjLib_ApplyConstraints(object, typeDescriptor, index, values, 1, errorHandler);
 }
 
 /*____________________________________________________________________________*/
@@ -882,8 +902,13 @@ stock ObjLib_SetHandleAt(Object:object, index, Handle:value, ObjLib_ErrorHandler
         return;
     }
     
+    // Copy the value into an array so it can be passed directly to the general
+    // constraint handler.
+    new any:values[1];
+    values[0] = value;
+    
     // Handle constraints, sets value if valid and not overridden.
-    ObjLib_ApplyValueConstraints(object, typeDescriptor, index, value, errorHandler);
+    ObjLib_ApplyConstraints(object, typeDescriptor, index, values, 1, errorHandler);
 }
 
 /*____________________________________________________________________________*/
@@ -950,8 +975,13 @@ stock ObjLib_SetFunctionAt(Object:object, index, Function:value, ObjLib_ErrorHan
         return;
     }
     
+    // Copy the value into an array so it can be passed directly to the general
+    // constraint handler.
+    new any:values[1];
+    values[0] = value;
+    
     // Handle constraints, sets value if valid and not overridden.
-    ObjLib_ApplyValueConstraints(object, typeDescriptor, index, value, errorHandler);
+    ObjLib_ApplyConstraints(object, typeDescriptor, index, values, 1, errorHandler);
 }
 
 /*____________________________________________________________________________*/
@@ -1012,6 +1042,12 @@ stock ObjLib_GetArrayAt(Object:object, index, any:buffer[], maxlen, ObjLib_Error
  */
 stock ObjLib_SetArrayAt(Object:object, index, const any:values[], size, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
 {
+    // Validate size.
+    if (size <= 0)
+    {
+        ThrowError("Cannot insert an empty array.");
+    }
+    
     // Validate object.
     ObjLib_ValidateObject(object);
     
@@ -1023,36 +1059,8 @@ stock ObjLib_SetArrayAt(Object:object, index, const any:values[], size, ObjLib_E
         return 0;
     }
     
-    // Handle constraints.
-    switch (ObjLib_HandleArrayConstraints(object, typeDescriptor, index, values, size, errorHandler))
-    {
-        case ObjConstraintResult_Invalid:
-        {
-            return 0;
-        }
-        case ObjConstraintResult_Overridden:
-        {
-            // We should never receive "overridden" here. Something is wrong if
-            // it does.
-            ThrowError("[BUG] Lookup constraints is only supported by SetString. This is a bug in objectlib.");
-            return -1;
-        }
-        case ObjConstraintResult_Valid:
-        {
-            // Set value.
-            new Handle:data = ObjLib_GetObjectData(object);
-            ObjLib_SetKeyNull(object, index, false);
-            return SetArrayArray(data, index, values, size);
-        }
-        default:
-        {
-            ThrowError("[BUG] Unexpected constraint result. This is a bug in objectlib.");
-            return 0;
-        }
-    }
-    
-    // To satisfy compiler (even though the swich statement has a default case.)
-    return 0;
+    // Handle constraints, sets value if valid and not overridden.
+    return ObjLib_ApplyConstraints(object, typeDescriptor, index, values, size, errorHandler);
 }
 
 /*____________________________________________________________________________*/
@@ -1119,11 +1127,12 @@ stock ObjLib_SetStringAt(Object:object, index, const String:value[], ObjLib_Erro
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     new bool:isLookup = false;
+    new bool:isString = true;
     
-    // Special check fo lookup constraints. Get constraints, if any.
+    // Special check for lookup constraints. Get constraints, if any.
     new Object:constraints = ObjLib_GetTypeConstraintsAt(typeDescriptor, index);
-    if (constraints != INVALID_OBJECT
-        && !ObjLib_InLookupHandler)
+    if (constraints != INVALID_OBJECT   // Has constraints.
+        && !ObjLib_InLookupHandler)     // Not already in lookup handler.
     {
         new ObjectType:constraintsType = ObjLib_GetTypeDescriptor(constraints);
         if (constraintsType == ObjLib_LookupConstraints)
@@ -1142,33 +1151,8 @@ stock ObjLib_SetStringAt(Object:object, index, const String:value[], ObjLib_Erro
         }
     }
     
-    // Handle constraints.
-    switch (ObjLib_HandleArrayConstraints(object, typeDescriptor, index, value, strlen(value), errorHandler, isLookup))
-    {
-        case ObjConstraintResult_Invalid:
-        {
-            return 0;
-        }
-        case ObjConstraintResult_Overridden:
-        {
-            return -1;
-        }
-        case ObjConstraintResult_Valid:
-        {
-            // Set value.
-            new Handle:data = ObjLib_GetObjectData(object);
-            ObjLib_SetKeyNull(object, index, false);
-            return SetArrayString(data, index, value);
-        }
-        default:
-        {
-            ThrowError("[BUG] Unexpected constraint result. This is a bug in objectlib.");
-            return 0;
-        }
-    }
-    
-    // To satisfy compiler (even though the swich statement has a default case.)
-    return 0;
+    // Handle constraints, sets value if valid and not overridden.
+    return ObjLib_ApplyConstraints(object, typeDescriptor, index, value, strlen(value), errorHandler, isLookup, isString);
 }
 
 /*____________________________________________________________________________*/
@@ -1235,16 +1219,13 @@ stock ObjLib_SetObjectAt(Object:object, index, Object:value, ObjLib_ErrorHandler
         return;
     }
     
-    // Handle constraints.
-    if (!ObjLib_HandleValueConstraints(object, typeDescriptor, index, value, errorHandler))
-    {
-        return;
-    }
+    // Copy the value into an array so it can be passed directly to the general
+    // constraint handler.
+    new any:values[1];
+    values[0] = value;
     
-    // Set value.
-    new Handle:data = ObjLib_GetObjectData(object);
-    SetArrayCell(data, index, value);
-    ObjLib_SetKeyNull(object, index, false);
+    // Handle constraints, sets value if valid and not overridden.
+    ObjLib_ApplyConstraints(object, typeDescriptor, index, values, 1, errorHandler);
 }
 
 /*____________________________________________________________________________*/
@@ -1311,16 +1292,13 @@ stock ObjLib_SetObjectTypeAt(Object:object, index, ObjectType:value, ObjLib_Erro
         return;
     }
     
-    // Handle constraints.
-    if (!ObjLib_HandleValueConstraints(object, typeDescriptor, index, value, errorHandler))
-    {
-        return;
-    }
+    // Copy the value into an array so it can be passed directly to the general
+    // constraint handler.
+    new any:values[1];
+    values[0] = value;
     
-    // Set value.
-    new Handle:data = ObjLib_GetObjectData(object);
-    SetArrayCell(data, index, value);
-    ObjLib_SetKeyNull(object, index, false);
+    // Handle constraints, sets value if valid and not overridden.
+    ObjLib_ApplyConstraints(object, typeDescriptor, index, values, 1, errorHandler);
 }
 
 /*____________________________________________________________________________*/
@@ -1764,4 +1742,70 @@ stock ObjLib_SetKeyNull(Object:object, keyIndex, bool:null)
 {
     new Handle:nullKey = ObjLib_GetObjectNullKey(object);
     SetArrayCell(nullKey, keyIndex, null);
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Internal use only!
+ * Sets a value in an object using the appropriate public functions.
+ *
+ * @param object                The object.
+ * @param dataType              Data type of value to set.
+ * @param index                 Key index.
+ * @param values                Values to insert. Only the first value is used
+ *                              for non-array types.
+ * @param size                  Number of values.
+ * @param errorHandler          Error handler to use for general object errors.
+ */
+stock ObjLib_SetValue(Object:object, ObjectDataType:dataType, keyIndex, const any:values[], size, ObjLib_ErrorHandler:errorHandler)
+{
+    switch (dataType)
+    {
+        case ObjDataType_Any:
+        {
+            ObjLib_SetAnyAt(object, keyIndex, values[0], errorHandler);
+        }
+        case ObjDataType_Cell:
+        {
+            ObjLib_SetCellAt(object, keyIndex, values[0], errorHandler);
+        }
+        case ObjDataType_Bool:
+        {
+            ObjLib_SetBoolAt(object, keyIndex, values[0], errorHandler);
+        }
+        case ObjDataType_Float:
+        {
+            ObjLib_SetFloatAt(object, keyIndex, values[0], errorHandler);
+        }
+        case ObjDataType_Handle:
+        {
+            ObjLib_SetHandleAt(object, keyIndex, values[0], errorHandler);
+        }
+        case ObjDataType_Function:
+        {
+            ObjLib_SetFunctionAt(object, keyIndex, values[0], errorHandler);
+        }
+        case ObjDataType_Array:
+        {
+            ObjLib_SetArrayAt(object, keyIndex, values, size, errorHandler);
+        }
+        case ObjDataType_String:
+        {
+            ObjLib_SetStringAt(object, keyIndex, values, errorHandler);
+        }
+        case ObjDataType_Object:
+        {
+            ObjLib_SetObjectAt(object, keyIndex, values[0], errorHandler);
+        }
+        case ObjDataType_ObjectType:
+        {
+            ObjLib_SetObjectTypeAt(object, keyIndex, values[0], errorHandler);
+        }
+        default:
+        {
+            // Unexpected type.
+            ThrowError("[BUG] Unexpected data type. This is a bug in objectlib.");
+        }
+    }
 }
