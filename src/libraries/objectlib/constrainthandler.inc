@@ -79,7 +79,7 @@ stock ObjLib_ApplyConstraints(
     }
     
     // Get constraint object.
-    new Object:constraints = ObjLib_GetConstraints(Object:object, ObjectType:typeDescriptor);
+    new Object:constraints = ObjLib_GetConstraints(object, typeDescriptor, index);
     
     switch (ObjLib_RunConstraintHandler(constraints, object, typeDescriptor, index, values, size, errorHandler, isLookup))
     {
