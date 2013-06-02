@@ -43,7 +43,14 @@ stock ObjLib_AddCell(Collection:collection, any:value, ObjLib_ErrorHandler:error
         return;
     }
     
-    ObjLib_CollectionAddCell(collection, value);
+    // Copy the value into an array so it can be passed directly to the general
+    // constraint handler.
+    new any:values[1];
+    values[0] = value;
+    
+    // Handle constraints, sets value if valid and not overridden.
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(Object:collection);
+    ObjLib_ApplyConstraints(Object:collection, typeDescriptor, -1, values, 1, errorHandler);
 }
 
 /*____________________________________________________________________________*/
@@ -69,7 +76,14 @@ stock ObjLib_AddCellAt(Collection:collection, index, any:value, ObjLib_ErrorHand
         return;
     }
     
-    ObjLib_CollectionInsertCellAt(collection, index, value);
+    // Copy the value into an array so it can be passed directly to the general
+    // constraint handler.
+    new any:values[1];
+    values[0] = value;
+    
+    // Handle constraints, sets value if valid and not overridden.
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(Object:collection);
+    ObjLib_ApplyConstraints(Object:collection, typeDescriptor, index, values, 1, errorHandler);
 }
 
 /*____________________________________________________________________________*/
@@ -92,7 +106,14 @@ stock ObjLib_AddBool(Collection:collection, bool:value, ObjLib_ErrorHandler:erro
         return;
     }
     
-    ObjLib_CollectionAddCell(collection, value);
+    // Copy the value into an array so it can be passed directly to the general
+    // constraint handler.
+    new any:values[1];
+    values[0] = value;
+    
+    // Handle constraints, sets value if valid and not overridden.
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(Object:collection);
+    ObjLib_ApplyConstraints(Object:collection, typeDescriptor, -1, values, 1, errorHandler);
 }
 
 /*____________________________________________________________________________*/
@@ -118,7 +139,14 @@ stock ObjLib_AddBoolAt(Collection:collection, index, bool:value, ObjLib_ErrorHan
         return;
     }
     
-    ObjLib_CollectionInsertCellAt(collection, index, value);
+    // Copy the value into an array so it can be passed directly to the general
+    // constraint handler.
+    new any:values[1];
+    values[0] = value;
+    
+    // Handle constraints, sets value if valid and not overridden.
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(Object:collection);
+    ObjLib_ApplyConstraints(Object:collection, typeDescriptor, index, values, 1, errorHandler);
 }
 
 /*____________________________________________________________________________*/
@@ -141,7 +169,14 @@ stock ObjLib_AddFloat(Collection:collection, Float:value, ObjLib_ErrorHandler:er
         return;
     }
     
-    ObjLib_CollectionAddCell(collection, value);
+    // Copy the value into an array so it can be passed directly to the general
+    // constraint handler.
+    new any:values[1];
+    values[0] = value;
+    
+    // Handle constraints, sets value if valid and not overridden.
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(Object:collection);
+    ObjLib_ApplyConstraints(Object:collection, typeDescriptor, -1, values, 1, errorHandler);
 }
 
 /*____________________________________________________________________________*/
@@ -167,7 +202,14 @@ stock ObjLib_AddFloatAt(Collection:collection, index, Float:value, ObjLib_ErrorH
         return;
     }
     
-    ObjLib_CollectionInsertCellAt(collection, index, value);
+    // Copy the value into an array so it can be passed directly to the general
+    // constraint handler.
+    new any:values[1];
+    values[0] = value;
+    
+    // Handle constraints, sets value if valid and not overridden.
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(Object:collection);
+    ObjLib_ApplyConstraints(Object:collection, typeDescriptor, index, values, 1, errorHandler);
 }
 
 /*____________________________________________________________________________*/
@@ -190,7 +232,14 @@ stock ObjLib_AddHandle(Collection:collection, Handle:value, ObjLib_ErrorHandler:
         return;
     }
     
-    ObjLib_CollectionAddCell(collection, value);
+    // Copy the value into an array so it can be passed directly to the general
+    // constraint handler.
+    new any:values[1];
+    values[0] = value;
+    
+    // Handle constraints, sets value if valid and not overridden.
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(Object:collection);
+    ObjLib_ApplyConstraints(Object:collection, typeDescriptor, -1, values, 1, errorHandler);
 }
 
 /*____________________________________________________________________________*/
@@ -216,7 +265,14 @@ stock ObjLib_AddHandleAt(Collection:collection, index, Handle:value, ObjLib_Erro
         return;
     }
     
-    ObjLib_CollectionInsertCellAt(collection, index, value);
+    // Copy the value into an array so it can be passed directly to the general
+    // constraint handler.
+    new any:values[1];
+    values[0] = value;
+    
+    // Handle constraints, sets value if valid and not overridden.
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(Object:collection);
+    ObjLib_ApplyConstraints(Object:collection, typeDescriptor, index, values, 1, errorHandler);
 }
 
 /*____________________________________________________________________________*/
@@ -239,7 +295,14 @@ stock ObjLib_AddFunction(Collection:collection, Function:value, ObjLib_ErrorHand
         return;
     }
     
-    ObjLib_CollectionAddCell(collection, value);
+    // Copy the value into an array so it can be passed directly to the general
+    // constraint handler.
+    new any:values[1];
+    values[0] = value;
+    
+    // Handle constraints, sets value if valid and not overridden.
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(Object:collection);
+    ObjLib_ApplyConstraints(Object:collection, typeDescriptor, -1, values, 1, errorHandler);
 }
 
 /*____________________________________________________________________________*/
@@ -265,7 +328,14 @@ stock ObjLib_AddFunctionAt(Collection:collection, index, Function:value, ObjLib_
         return;
     }
     
-    ObjLib_CollectionInsertCellAt(collection, index, value);
+    // Copy the value into an array so it can be passed directly to the general
+    // constraint handler.
+    new any:values[1];
+    values[0] = value;
+    
+    // Handle constraints, sets value if valid and not overridden.
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(Object:collection);
+    ObjLib_ApplyConstraints(Object:collection, typeDescriptor, index, values, 1, errorHandler);
 }
 
 /*____________________________________________________________________________*/
@@ -289,7 +359,9 @@ stock ObjLib_AddArray(Collection:collection, const any:values[], size, ObjLib_Er
         return;
     }
     
-    stock ObjLib_CollectionAddArray(collection, values, size);
+    // Handle constraints, sets value if valid and not overridden.
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(Object:collection);
+    ObjLib_ApplyConstraints(Object:collection, typeDescriptor, -1, values, size, errorHandler);
 }
 
 /*____________________________________________________________________________*/
@@ -316,7 +388,9 @@ stock ObjLib_AddArrayAt(Collection:collection, index, const any:values[], size, 
         return;
     }
     
-    ObjLib_CollectionInsertArrayAt(collection, index, values, size);
+    // Handle constraints, sets value if valid and not overridden.
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(Object:collection);
+    ObjLib_ApplyConstraints(Object:collection, typeDescriptor, index, values, size, errorHandler);
 }
 
 /*____________________________________________________________________________*/
@@ -333,13 +407,18 @@ stock ObjLib_AddString(Collection:collection, const String:value[], ObjLib_Error
 {
     ObjLib_ValidateCollection(collection);
     
-    // Validate type.
-    if (!ObjLib_CollectionTypeCheck(collection, ObjDataType_String, errorHandler))
+    new bool:isString = true;
+    new bool:isLookup = false;
+    
+    // Validate type and lookup case.
+    if (!ObjLib_CollectionLookupTypeCheck(collection, ObjDataType_String, isLookup, errorHandler))
     {
         return;
     }
     
-    ObjLib_CollectionAddString(collection, value);
+    // Handle constraints, sets value if valid and not overridden.
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(Object:collection);
+    ObjLib_ApplyConstraints(Object:collection, typeDescriptor, -1, value, 1, errorHandler, isLookup, isString);
 }
 
 /*____________________________________________________________________________*/
@@ -359,13 +438,18 @@ stock ObjLib_AddStringAt(Collection:collection, index, const String:value[], Obj
 {
     ObjLib_ValidateCollection(collection);
     
-    // Validate type.
-    if (!ObjLib_CollectionTypeCheck(collection, ObjDataType_String, errorHandler))
+    new bool:isString = true;
+    new bool:isLookup = false;
+    
+    // Validate type and lookup case.
+    if (!ObjLib_CollectionLookupTypeCheck(collection, ObjDataType_String, isLookup, errorHandler))
     {
         return;
     }
     
-    ObjLib_CollectionInsertStringAt(collection, index, value);
+    // Handle constraints, sets value if valid and not overridden.
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(Object:collection);
+    ObjLib_ApplyConstraints(Object:collection, typeDescriptor, index, value, strlen(value), errorHandler, isLookup, isString);
 }
 
 /*____________________________________________________________________________*/
@@ -388,7 +472,14 @@ stock ObjLib_AddObject(Collection:collection, Object:value, ObjLib_ErrorHandler:
         return;
     }
     
-    ObjLib_CollectionAddCell(collection, value);
+    // Copy the value into an array so it can be passed directly to the general
+    // constraint handler.
+    new any:values[1];
+    values[0] = value;
+    
+    // Handle constraints, sets value if valid and not overridden.
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(Object:collection);
+    ObjLib_ApplyConstraints(Object:collection, typeDescriptor, -1, values, 1, errorHandler);
 }
 
 /*____________________________________________________________________________*/
@@ -414,7 +505,14 @@ stock ObjLib_AddObjectAt(Collection:collection, index, Object:value, ObjLib_Erro
         return;
     }
     
-    ObjLib_CollectionInsertCellAt(collection, index, value);
+    // Copy the value into an array so it can be passed directly to the general
+    // constraint handler.
+    new any:values[1];
+    values[0] = value;
+    
+    // Handle constraints, sets value if valid and not overridden.
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(Object:collection);
+    ObjLib_ApplyConstraints(Object:collection, typeDescriptor, index, values, 1, errorHandler);
 }
 
 /*____________________________________________________________________________*/
@@ -437,7 +535,14 @@ stock ObjLib_AddObjectType(Collection:collection, ObjectType:value, ObjLib_Error
         return;
     }
     
-    ObjLib_CollectionAddCell(collection, value);
+    // Copy the value into an array so it can be passed directly to the general
+    // constraint handler.
+    new any:values[1];
+    values[0] = value;
+    
+    // Handle constraints, sets value if valid and not overridden.
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(Object:collection);
+    ObjLib_ApplyConstraints(Object:collection, typeDescriptor, -1, values, 1, errorHandler);
 }
 
 /*____________________________________________________________________________*/
@@ -463,7 +568,14 @@ stock ObjLib_AddObjectTypeAt(Collection:collection, index, ObjectType:value, Obj
         return;
     }
     
-    ObjLib_CollectionInsertCellAt(collection, index, value);
+    // Copy the value into an array so it can be passed directly to the general
+    // constraint handler.
+    new any:values[1];
+    values[0] = value;
+    
+    // Handle constraints, sets value if valid and not overridden.
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(Object:collection);
+    ObjLib_ApplyConstraints(Object:collection, typeDescriptor, index, values, 1, errorHandler);
 }
 
 /*____________________________________________________________________________*/
@@ -505,7 +617,7 @@ stock ObjLib_CollectionSetValue(Collection:collection, ObjectDataType:dataType, 
     // Whether to insert or add.
     new bool:insert = (index >= 0);
     
-    // Use appropriate add function according to the data type.
+    // Use appropriate add function according to the data type and index.
     switch (dataType)
     {
         case ObjDataType_Any:
@@ -520,41 +632,96 @@ stock ObjLib_CollectionSetValue(Collection:collection, ObjectDataType:dataType, 
             }
             else
             {
-                ThrowError("Not implemented!");
-                //ObjLib_AddCell(collection, index, values[0], errorHandler);
+                ObjLib_AddCell(collection, values[0], errorHandler);
             }
         }
         case ObjDataType_Bool:
         {
-            ThrowError("Not implemented!");
+            if (insert)
+            {
+                ObjLib_AddBoolAt(collection, index, values[0], errorHandler);
+            }
+            else
+            {
+                ObjLib_AddBool(collection, values[0], errorHandler);
+            }
         }
         case ObjDataType_Float:
         {
-            ThrowError("Not implemented!");
+            if (insert)
+            {
+                ObjLib_AddFloatAt(collection, index, values[0], errorHandler);
+            }
+            else
+            {
+                ObjLib_AddFloat(collection, values[0], errorHandler);
+            }
         }
         case ObjDataType_Handle:
         {
-            ThrowError("Not implemented!");
+            if (insert)
+            {
+                ObjLib_AddHandleAt(collection, index, values[0], errorHandler);
+            }
+            else
+            {
+                ObjLib_AddHandle(collection, values[0], errorHandler);
+            }
         }
         case ObjDataType_Function:
         {
-            ThrowError("Not implemented!");
+            if (insert)
+            {
+                ObjLib_AddFunctionAt(collection, index, values[0], errorHandler);
+            }
+            else
+            {
+                ObjLib_AddFunction(collection, values[0], errorHandler);
+            }
         }
         case ObjDataType_Array:
         {
-            ThrowError("Not implemented!");
+            if (insert)
+            {
+                ObjLib_AddArrayAt(collection, index, values, size, errorHandler);
+            }
+            else
+            {
+                ObjLib_AddArray(collection, values, size, errorHandler);
+            }
         }
         case ObjDataType_String:
         {
-            ThrowError("Not implemented!");
+            if (insert)
+            {
+                ObjLib_AddStringAt(collection, index, values, errorHandler);
+            }
+            else
+            {
+                ObjLib_AddString(collection, values, errorHandler);
+            }
         }
         case ObjDataType_Object:
         {
-            ThrowError("Not implemented!");
+            if (insert)
+            {
+                ObjLib_AddObjectAt(collection, index, values[0], errorHandler);
+            }
+            else
+            {
+                ObjLib_AddObject(collection, values[0], errorHandler);
+            }
         }
         case ObjDataType_ObjectType:
         {
-            ThrowError("Not implemented!");
+            if (insert)
+            {
+                ObjLib_AddObjectTypeAt(collection, index, values[0], errorHandler);
+            }
+            else
+            {
+                ObjLib_AddObjectType(collection, values[0], errorHandler);
+            }
         }
         default:
         {
@@ -566,7 +733,10 @@ stock ObjLib_CollectionSetValue(Collection:collection, ObjectDataType:dataType, 
 
 /*____________________________________________________________________________*/
 
-/** Internal use only! */
+/**
+ * Internal use only!
+ * Low level helper. Skips constraints.
+ */
 stock ObjLib_CollectionInsertCellAt(Collection:collection, index, any:value)
 {
     // Get array.

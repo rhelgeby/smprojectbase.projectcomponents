@@ -27,12 +27,12 @@
  */
 
 /**
- * Global type descriptor for collection objects. Do not delete this type. You
+ * Type descriptor for collection objects. Do not delete this type. You
  * can compare object types against this type to see if it's a collection
- * object (by using ObjLib_TypeOf).
+ * object by using ObjLib_IsCollectionType).
  */
-new ObjectType:ObjLibCollectionType = INVALID_OBJECT_TYPE;
-new bool:ObjLibCollectionTypeBuilt = false;
+static ObjectType:ObjLibCollectionType = INVALID_OBJECT_TYPE;
+static bool:ObjLibCollectionTypeBuilt = false;
 
 /*____________________________________________________________________________*/
 
@@ -142,7 +142,7 @@ stock ObjLib_ValidateCollection(Collection:collection)
 
 /**
  * Internal use only!
- * Validates a data type against a collection's data type at the specified.
+ * Validates a data type against a collection's data type.
  *
  * This function will throw an validation error on type mismatch.
  *
@@ -167,4 +167,53 @@ stock bool:ObjLib_CollectionTypeCheck(Collection:collection, ObjectDataType:data
     }
     
     return true;
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Internal use only!
+ * Validates a data type against a collection's data type at the specified.
+ *
+ * This function will throw an validation error on type mismatch.
+ *
+ * @param collection        Collection object.
+ * @param dataType          Data type to validate.
+ * @param isLookup          (Output) Whether this is a lookup case.
+ * @param errorHandler      Custom error handler. Overrides error handler in
+ *                          type descriptor if specified.
+ *
+ * @return                  True if passed type check, false otherwise.
+ */
+stock bool:ObjLib_CollectionLookupTypeCheck(Collection:collection, ObjectDataType:dataType, &bool:isLookup = false, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+{
+    // Special check for lookup constraints. Get constraints, if any.
+    new Object:constraints = ObjLib_GetObject(Object:collection, "constraints");
+    if (constraints != INVALID_OBJECT   // Has constraints.
+        && !ObjLib_IsInLookupHandler()) // Not already in lookup handler.
+    {
+        new ObjectType:constraintsType = ObjLib_GetTypeDescriptor(constraints);
+        if (constraintsType == ObjLib_LookupConstraints)
+        {
+            // Set lookup flag for constraint handler. Skip type check.
+            isLookup = true;
+        }
+        return true;
+    }
+    else
+    {
+        // Not using lookup constraints or already in lookup handler. Validate
+        // type.
+        return ObjLib_CollectionTypeCheck(collection, ObjDataType_String, errorHandler);
+    }
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Returns whether the specified type is a collection type.
+ */
+stock bool:ObjLib_IsCollectionType(ObjectType:typeDescriptor)
+{
+    return typeDescriptor == ObjLibCollectionType;
 }

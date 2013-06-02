@@ -264,6 +264,8 @@ builders. The following builders are available:
     * ObjLib_GetObjectConstraints
     * ObjLib_GetObjTypeConstraints
     * ObjLib_GetCustomConstraints   - Can be used with any data type.
+    * ObjLib_GetLookupConstraints   - Can be used with any data type.
+    * ObjLib_GetBooleanLookupConstraints
 
 The constraint object used must match the data type of the key.
 
@@ -323,6 +325,81 @@ requiring the entire object to be a certain type. As the name describes,
 "object type constraint", it's only putting constraints on the type itself, not
 the whole object, and is less strict. As long as the object has the required
 keys, it's valid.
+
+TODO: The naming is bad and should be inverted.
+
+
+LOOKUP CONSTRAINTS
+
+Sometimes you need to store values as strings in configuration files and convert
+them to a numeric value when loading the file. This can be handled automatically
+by using lookup constraints.
+
+A lookup constraint is a special constraint that will look up a string value in
+a user defined data source and replace it with a numeric value (also user
+defined). For instance it can be used to convert a state name string (such as
+"running" to a state value.
+
+
+EXAMPLE USAGE
+
+    ObjLib_AddKey(personType, "hasImmunity", ObjDataType_Boolean, ObjLib_GetBooleanLookupConstraints(BoolType_YesNo));
+    
+    (...)
+    
+    // Note the use of SetString and not SetBool.
+    ObjLib_SetString(somePersonObject, "hasImmunity", "yes");
+
+This is the most simple example of lookup constraints. It's adding a boolean key
+to an object type descriptor with a boolean lookup constraint object that
+accepts "yes" and "no" strings.
+
+To trigger a lookup, use ObjLib_SetString instead of ObjLib_SetBool. When
+ObjLib_SetString is called, it will check if the key has a lookup constraint and
+run the lookup handler if it exists.
+
+The general behavior of a lookup constraint is that it has a matrix of strings
+mapped to replacement values. It looks up the string in the matrix and returns
+the replacement value. The replacement value is automatically stored using the
+appropriate accessor function, as you would usually store it. In this example
+the final result is a call to ObjLib_SetBool.
+
+Another example from the Zombie:Reloaded plugin. This converts an autorization
+mode string to a predefined enum value in the plugin:
+
+    stock Object:Model_GetAuthLookupConstraints()
+    {
+        // Create matrix, sized as small as possible.
+        new Handle:authModes = CreateArray(9, 6);
+        new Handle:authIDs = CreateArray(1, 6);
+        
+        // Valid model auth modes.
+        PushArrayString(authModes, "disabled");
+        PushArrayString(authModes, "flag");
+        PushArrayString(authModes, "group");
+        PushArrayString(authModes, "either");
+        PushArrayString(authModes, "both");
+        PushArrayString(authModes, "all");
+        
+        // Matching auth mode IDs. (ModelAuth values are defined somewhere else).
+        PushArrayCell(authIDs, ModelAuth_Disabled);
+        PushArrayCell(authIDs, ModelAuth_Flag);
+        PushArrayCell(authIDs, ModelAuth_Group);
+        PushArrayCell(authIDs, ModelAuth_Either);
+        PushArrayCell(authIDs, ModelAuth_Both);
+        PushArrayCell(authIDs, ModelAuth_All);
+        
+        return ObjLib_GetLookupConstraints(ObjLookupMethod_Array, authModes, authIDs);
+    }
+
+When we add the key, we just need to attach the constraint object:
+
+    ObjLib_AddKey(ModelType, "auth_mode", ObjDataType_Cell, Model_GetAuthLookupConstraints());
+
+This also works with the KeyValue parser, so it will automatically convert
+values in the KeyValue tree to appropriate replacement values in the lookp
+matrix. All you have to do is to make a simple a lookup constraint and attach it
+to the key.
 
 
 MEMORY MANAGEMENT
@@ -386,8 +463,9 @@ implementing a parser, validation and data storage. All is handled by this
 object library.
 
 Due to limits in objects it will not be able to store sections and keys with
-duplicate names. Only the first ones will be stored. We have arrays for that,
-but it's not handled by this library at the moment.
+duplicate names. Only the first ones will be stored, the rest will cause an
+error. We have arrays for that, but it's not handled by this library at the
+moment.
 
 
 PARSER CONTEXT OBJECT
@@ -473,7 +551,7 @@ TODO/NOTES
   object is found it would insert it instead of the value itself. This might
   need to be done in a post validation process when the tree is parsed.
 * Automatically store duplicate keys and sections in arrays. Objects only allow
-  unique names, but arrays fixes this.
+  unique names, but arrays fixes this. (Use collections)
 * Sometimes data cannot be validated until all keys are parsed. Provide a
   callback for doing post object validation once a section is parsed (not the
   same as OnSectionEnd, but a user callback). Perhaps a callback in the context
@@ -486,6 +564,7 @@ COMMON MISTAKES
 ---------------
 
 TYPE MISMATCH
+
 Copy-paste mistake when registering a key that's supposed to be for instance
 float but created as cell. When you later use ObjLib_SetFloat on that key it
 will throw a key type mismatch error.
@@ -493,7 +572,9 @@ will throw a key type mismatch error.
 Check that keys are registered with the intended data types, and that every line
 that access those keys use the correct accessors.
 
+
 INVALID HANDLE ERROR WHEN DELETING OBJECT
+
 If the stack trace is:
 [0] ObjLib_GetTypeParentObject()
 [1] ObjLib_DeleteObject()
