@@ -32,9 +32,11 @@
  *
  *          This only applies to handlers that may override values or have user
  *          callbacks.
+ *
+ *          Use ObjLib_IsInCustomHandler and similar to read these values.
  */
-static ObjLib_InCustomHandler = false;
-new ObjLib_InLookupHandler = false;
+static bool:ObjLib_InCustomHandler = false;
+static bool:ObjLib_InLookupHandler = false;
 /**
  * @endsection
  */
@@ -43,9 +45,11 @@ new ObjLib_InLookupHandler = false;
 
 /**
  * Internal use only!
- * Helper for accessor functions. It will call constraint handlers and set value
- * if valid and not overridden. This code was repeated in a lot of accessors
- * and moved here.
+ * Entry point for constraint handler. Accessor functions will use this instead
+ * of storing values themself.
+ *
+ * This function will call appropriate constraint handlers and set values if
+ * valid and not overridden.
  *
  * @param object            The object or collection being validated.
  * @param objectType        The object's type descriptor.
@@ -72,12 +76,6 @@ stock ObjLib_ApplyConstraints(
         bool:isLookup = false,
         bool:isString = false)
 {
-    // Bug check in case we forgot to update some code.
-    if (size <= 0)
-    {
-        ThrowError("[BUG] No value passed to constraint handler. This is a bug in objectlib.");
-    }
-    
     // Get constraint object.
     new Object:constraints = ObjLib_GetConstraints(object, typeDescriptor, index);
     
@@ -145,7 +143,7 @@ stock ObjLib_ApplyValue(
         index,
         any:value)
 {
-    if (typeDescriptor == ObjLibCollectionType)
+    if (ObjLib_IsCollectionType(typeDescriptor))
     {
         // Object is a collection.
         
@@ -198,7 +196,7 @@ stock ObjLib_ApplyArray(
 {
     new count = 0;
     
-    if (typeDescriptor == ObjLibCollectionType)
+    if (ObjLib_IsCollectionType(typeDescriptor))
     {
         // Object is a collection. Get colletion data type.
         
@@ -248,7 +246,7 @@ stock ObjLib_ApplyString(
 {
     new count = 0;
     
-    if (typeDescriptor == ObjLibCollectionType)
+    if (ObjLib_IsCollectionType(typeDescriptor))
     {
         // Object is a collection. Get colletion data type.
         
@@ -442,7 +440,7 @@ stock ObjectConstraintResult:ObjLib_HandleLookupConstraints(
     
     // Get raw data type.
     new ObjectDataType:dataType;
-    if (typeDescriptor == ObjLibCollectionType)
+    if (ObjLib_IsCollectionType(typeDescriptor))
     {
         // Get data type of collection.
         dataType = ObjectDataType:ObjLib_GetCell(object, "dataType");
@@ -496,7 +494,7 @@ stock ObjectConstraintResult:ObjLib_HandleLookupConstraints(
     }
     
     // Set value using public functions to recheck sub constraints if available.
-    if (typeDescriptor == ObjLibCollectionType)
+    if (ObjLib_IsCollectionType(typeDescriptor))
     {
         // Collection.
         ObjLib_CollectionSetValue(Collection:object, dataType, keyIndex, buffer, sizeof(buffer), errorHandler);
@@ -1089,7 +1087,7 @@ stock bool:ObjLib_HandleConstraintError(const String:constraintName[], Object:ob
  */
 stock Object:ObjLib_GetConstraints(Object:object, ObjectType:typeDescriptor, keyIndex = 0)
 {
-    if (typeDescriptor == ObjLibCollectionType)
+    if (ObjLib_IsCollectionType(typeDescriptor))
     {
         // Object is a collection. Get constraint object.
         return ObjLib_GetObject(object, "constraints");
@@ -1100,4 +1098,26 @@ stock Object:ObjLib_GetConstraints(Object:object, ObjectType:typeDescriptor, key
         // key.
         return ObjLib_GetTypeConstraintsAt(typeDescriptor, keyIndex);
     }
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Returns whether the constraint handler is currently handling a custom
+ * constraint.
+ */
+stock bool:ObjLib_IsInCustomHandler()
+{
+    return ObjLib_InCustomHandler;
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Returns whether the constraint handler is currently handling a lookup
+ * constraint.
+ */
+stock bool:ObjLib_IsInLookupHandler()
+{
+    return ObjLib_InLookupHandler;
 }

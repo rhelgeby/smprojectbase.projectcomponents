@@ -1132,7 +1132,7 @@ stock ObjLib_SetStringAt(Object:object, index, const String:value[], ObjLib_Erro
     // Special check for lookup constraints. Get constraints, if any.
     new Object:constraints = ObjLib_GetTypeConstraintsAt(typeDescriptor, index);
     if (constraints != INVALID_OBJECT   // Has constraints.
-        && !ObjLib_InLookupHandler)     // Not already in lookup handler.
+        && !ObjLib_IsInLookupHandler()) // Not already in lookup handler.
     {
         new ObjectType:constraintsType = ObjLib_GetTypeDescriptor(constraints);
         if (constraintsType == ObjLib_LookupConstraints)

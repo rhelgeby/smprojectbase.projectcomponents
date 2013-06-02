@@ -371,10 +371,15 @@ stock Handle:ObjLib_CloneTrie(Handle:trie, Handle:keys, keySize)
 // Object library core modules.
 #include "libraries/objectlib/objecttype"
 #include "libraries/objectlib/object"
-#include "libraries/objectlib/collection"
+
 #include "libraries/objectlib/constraints"
 #include "libraries/objectlib/constrainthandler"
+
+#include "libraries/objectlib/collection"
+
 #include "libraries/objectlib/errorhandler"
+
+// Accessors.
 #include "libraries/objectlib/accessors"
 #include "libraries/objectlib/collectionaccessors"
 

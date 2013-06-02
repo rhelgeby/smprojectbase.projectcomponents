@@ -127,7 +127,7 @@ stock Object:ObjLib_GetParseContext(const String:name[] = "",
     // Set parameters.
     ObjLib_SetObjectType(parseContext, "rootType", rootType);
     ObjLib_SetBool(parseContext, "ignoreEmptySections", ignoreEmptySections);
-    ObjLib_SetCell(parseContext, "booleanType", booleanType);
+    ObjLib_SetCell(parseContext, "booleanType", booleanType);   // TODO: Obsolete, replaced by lookup constraints.
     ObjLib_SetBool(parseContext, "continueOnError", continueOnError);
     ObjLib_SetFunction(parseContext, "errorHandler", errorHandler);
     ObjLib_SetCell(parseContext, "parseState", ObjLibState_Running);
