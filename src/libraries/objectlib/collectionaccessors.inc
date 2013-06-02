@@ -26,6 +26,29 @@
  */
 
 /**
+ * Adds a cell value at end of the collection.
+ *
+ * @param collection    Collection object to add to.
+ * @param value         Value to add.
+ * @param errorHandler  Custom error handler. Overrides any other error handler
+ *                      if specified.
+ */
+stock ObjLib_AddCell(Collection:collection, any:value, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+{
+    ObjLib_ValidateCollection(collection);
+    
+    // Validate type.
+    if (!ObjLib_CollectionTypeCheck(collection, ObjDataType_Cell, errorHandler))
+    {
+        return;
+    }
+    
+    ObjLib_CollectionAddCell(collection, value);
+}
+
+/*____________________________________________________________________________*/
+
+/**
  * Inserts a cell value at the specified index in the collection.
  *
  * @param collection    Collection object to add to.
@@ -46,7 +69,419 @@ stock ObjLib_AddCellAt(Collection:collection, index, any:value, ObjLib_ErrorHand
         return;
     }
     
-    ObjLib_CollectionInsertCellAt(collection, index, any:value);
+    ObjLib_CollectionInsertCellAt(collection, index, value);
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Adds a boolean value at end of the collection.
+ *
+ * @param collection    Collection object to add to.
+ * @param value         Value to add.
+ * @param errorHandler  Custom error handler. Overrides any other error handler
+ *                      if specified.
+ */
+stock ObjLib_AddBool(Collection:collection, bool:value, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+{
+    ObjLib_ValidateCollection(collection);
+    
+    // Validate type.
+    if (!ObjLib_CollectionTypeCheck(collection, ObjDataType_Bool, errorHandler))
+    {
+        return;
+    }
+    
+    ObjLib_CollectionAddCell(collection, value);
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Inserts a boolean value at the specified index in the collection.
+ *
+ * @param collection    Collection object to add to.
+ * @param index         Index where value will be inserted.
+ * @param value         Value to insert.
+ * @param errorHandler  Custom error handler. Overrides any other error handler
+ *                      if specified.
+ *
+ * @error               Invalid index.
+ */
+stock ObjLib_AddBoolAt(Collection:collection, index, bool:value, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+{
+    ObjLib_ValidateCollection(collection);
+    
+    // Validate type.
+    if (!ObjLib_CollectionTypeCheck(collection, ObjDataType_Bool, errorHandler))
+    {
+        return;
+    }
+    
+    ObjLib_CollectionInsertCellAt(collection, index, value);
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Adds a float value at end of the collection.
+ *
+ * @param collection    Collection object to add to.
+ * @param value         Value to add.
+ * @param errorHandler  Custom error handler. Overrides any other error handler
+ *                      if specified.
+ */
+stock ObjLib_AddFloat(Collection:collection, Float:value, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+{
+    ObjLib_ValidateCollection(collection);
+    
+    // Validate type.
+    if (!ObjLib_CollectionTypeCheck(collection, ObjDataType_Float, errorHandler))
+    {
+        return;
+    }
+    
+    ObjLib_CollectionAddCell(collection, value);
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Inserts a float value at the specified index in the collection.
+ *
+ * @param collection    Collection object to add to.
+ * @param index         Index where value will be inserted.
+ * @param value         Value to insert.
+ * @param errorHandler  Custom error handler. Overrides any other error handler
+ *                      if specified.
+ *
+ * @error               Invalid index.
+ */
+stock ObjLib_AddFloatAt(Collection:collection, index, Float:value, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+{
+    ObjLib_ValidateCollection(collection);
+    
+    // Validate type.
+    if (!ObjLib_CollectionTypeCheck(collection, ObjDataType_Float, errorHandler))
+    {
+        return;
+    }
+    
+    ObjLib_CollectionInsertCellAt(collection, index, value);
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Adds a handle value at end of the collection.
+ *
+ * @param collection    Collection object to add to.
+ * @param value         Value to add.
+ * @param errorHandler  Custom error handler. Overrides any other error handler
+ *                      if specified.
+ */
+stock ObjLib_AddHandle(Collection:collection, Handle:value, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+{
+    ObjLib_ValidateCollection(collection);
+    
+    // Validate type.
+    if (!ObjLib_CollectionTypeCheck(collection, ObjDataType_Handle, errorHandler))
+    {
+        return;
+    }
+    
+    ObjLib_CollectionAddCell(collection, value);
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Inserts a handle value at the specified index in the collection.
+ *
+ * @param collection    Collection object to add to.
+ * @param index         Index where value will be inserted.
+ * @param value         Value to insert.
+ * @param errorHandler  Custom error handler. Overrides any other error handler
+ *                      if specified.
+ *
+ * @error               Invalid index.
+ */
+stock ObjLib_AddHandleAt(Collection:collection, index, Handle:value, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+{
+    ObjLib_ValidateCollection(collection);
+    
+    // Validate type.
+    if (!ObjLib_CollectionTypeCheck(collection, ObjDataType_Handle, errorHandler))
+    {
+        return;
+    }
+    
+    ObjLib_CollectionInsertCellAt(collection, index, value);
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Adds a function value at end of the collection.
+ *
+ * @param collection    Collection object to add to.
+ * @param value         Value to add.
+ * @param errorHandler  Custom error handler. Overrides any other error handler
+ *                      if specified.
+ */
+stock ObjLib_AddFunction(Collection:collection, Function:value, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+{
+    ObjLib_ValidateCollection(collection);
+    
+    // Validate type.
+    if (!ObjLib_CollectionTypeCheck(collection, ObjDataType_Function, errorHandler))
+    {
+        return;
+    }
+    
+    ObjLib_CollectionAddCell(collection, value);
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Inserts a function value at the specified index in the collection.
+ *
+ * @param collection    Collection object to add to.
+ * @param index         Index where value will be inserted.
+ * @param value         Value to insert.
+ * @param errorHandler  Custom error handler. Overrides any other error handler
+ *                      if specified.
+ *
+ * @error               Invalid index.
+ */
+stock ObjLib_AddFunctionAt(Collection:collection, index, Function:value, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+{
+    ObjLib_ValidateCollection(collection);
+    
+    // Validate type.
+    if (!ObjLib_CollectionTypeCheck(collection, ObjDataType_Function, errorHandler))
+    {
+        return;
+    }
+    
+    ObjLib_CollectionInsertCellAt(collection, index, value);
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Adds an array at end of the collection.
+ *
+ * @param collection    Collection object to add to.
+ * @param values        Values to insert.
+ * @param size          Size of array.
+ * @param errorHandler  Custom error handler. Overrides any other error handler
+ *                      if specified.
+ */
+stock ObjLib_AddArray(Collection:collection, const any:values[], size, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+{
+    ObjLib_ValidateCollection(collection);
+    
+    // Validate type.
+    if (!ObjLib_CollectionTypeCheck(collection, ObjDataType_Array, errorHandler))
+    {
+        return;
+    }
+    
+    stock ObjLib_CollectionAddArray(collection, values, size);
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Inserts an array at the specified index in the collection.
+ *
+ * @param collection    Collection object to add to.
+ * @param index         Index where value will be inserted.
+ * @param values        Values to insert.
+ * @param size          Size of array.
+ * @param errorHandler  Custom error handler. Overrides any other error handler
+ *                      if specified.
+ *
+ * @error               Invalid index.
+ */
+stock ObjLib_AddArrayAt(Collection:collection, index, const any:values[], size, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+{
+    ObjLib_ValidateCollection(collection);
+    
+    // Validate type.
+    if (!ObjLib_CollectionTypeCheck(collection, ObjDataType_Array, errorHandler))
+    {
+        return;
+    }
+    
+    ObjLib_CollectionInsertArrayAt(collection, index, values, size);
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Adds a string value at end of the collection.
+ *
+ * @param collection    Collection object to add to.
+ * @param value         Value to add.
+ * @param errorHandler  Custom error handler. Overrides any other error handler
+ *                      if specified.
+ */
+stock ObjLib_AddString(Collection:collection, const String:value[], ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+{
+    ObjLib_ValidateCollection(collection);
+    
+    // Validate type.
+    if (!ObjLib_CollectionTypeCheck(collection, ObjDataType_String, errorHandler))
+    {
+        return;
+    }
+    
+    ObjLib_CollectionAddString(collection, value);
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Inserts a string value at the specified index in the collection.
+ *
+ * @param collection    Collection object to add to.
+ * @param index         Index where value will be inserted.
+ * @param value         Value to insert.
+ * @param errorHandler  Custom error handler. Overrides any other error handler
+ *                      if specified.
+ *
+ * @error               Invalid index.
+ */
+stock ObjLib_AddStringAt(Collection:collection, index, const String:value[], ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+{
+    ObjLib_ValidateCollection(collection);
+    
+    // Validate type.
+    if (!ObjLib_CollectionTypeCheck(collection, ObjDataType_String, errorHandler))
+    {
+        return;
+    }
+    
+    ObjLib_CollectionInsertStringAt(collection, index, value);
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Adds an object reference at end of the collection.
+ *
+ * @param collection    Collection object to add to.
+ * @param value         Value to add.
+ * @param errorHandler  Custom error handler. Overrides any other error handler
+ *                      if specified.
+ */
+stock ObjLib_AddObject(Collection:collection, Object:value, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+{
+    ObjLib_ValidateCollection(collection);
+    
+    // Validate type.
+    if (!ObjLib_CollectionTypeCheck(collection, ObjDataType_Object, errorHandler))
+    {
+        return;
+    }
+    
+    ObjLib_CollectionAddCell(collection, value);
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Inserts an object reference at the specified index in the collection.
+ *
+ * @param collection    Collection object to add to.
+ * @param index         Index where value will be inserted.
+ * @param value         Value to insert.
+ * @param errorHandler  Custom error handler. Overrides any other error handler
+ *                      if specified.
+ *
+ * @error               Invalid index.
+ */
+stock ObjLib_AddObjectAt(Collection:collection, index, Object:value, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+{
+    ObjLib_ValidateCollection(collection);
+    
+    // Validate type.
+    if (!ObjLib_CollectionTypeCheck(collection, ObjDataType_Object, errorHandler))
+    {
+        return;
+    }
+    
+    ObjLib_CollectionInsertCellAt(collection, index, value);
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Adds a type descriptor reference at end of the collection.
+ *
+ * @param collection    Collection object to add to.
+ * @param value         Value to add.
+ * @param errorHandler  Custom error handler. Overrides any other error handler
+ *                      if specified.
+ */
+stock ObjLib_AddObjectType(Collection:collection, ObjectType:value, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+{
+    ObjLib_ValidateCollection(collection);
+    
+    // Validate type.
+    if (!ObjLib_CollectionTypeCheck(collection, ObjDataType_ObjectType, errorHandler))
+    {
+        return;
+    }
+    
+    ObjLib_CollectionAddCell(collection, value);
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Inserts a type descriptor reference at the specified index in the collection.
+ *
+ * @param collection    Collection object to add to.
+ * @param index         Index where value will be inserted.
+ * @param value         Value to insert.
+ * @param errorHandler  Custom error handler. Overrides any other error handler
+ *                      if specified.
+ *
+ * @error               Invalid index.
+ */
+stock ObjLib_AddObjectTypeAt(Collection:collection, index, ObjectType:value, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+{
+    ObjLib_ValidateCollection(collection);
+    
+    // Validate type.
+    if (!ObjLib_CollectionTypeCheck(collection, ObjDataType_ObjectType, errorHandler))
+    {
+        return;
+    }
+    
+    ObjLib_CollectionInsertCellAt(collection, index, value);
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Removes a cell value at the specified index in the collection.
+ *
+ * @param collection    Collection object to remove from.
+ * @param index         Index of value to remove.
+ * @param errorHandler  Custom error handler. Overrides any other error handler
+ *                      if specified.
+ *
+ * @error               Invalid index.
+ */
+stock ObjLib_RemoveAt(Collection:collection, index, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+{
+    ObjLib_ValidateCollection(collection);
+    ObjLib_CollectionRemoveAt(Collection:collection, index);
 }
 
 /*____________________________________________________________________________*/
@@ -139,11 +574,7 @@ stock ObjLib_CollectionInsertCellAt(Collection:collection, index, any:value)
     new elementCount = GetArraySize(elements);
     
     // Validate index.
-    if (index >= elementCount)
-    {
-        ThrowError("Index out of bounds (%d).", index);
-        return 0;
-    }
+    ObjLib_CollectionIndexCheck(elementCount, index);
     
     // Move elements to make free space at the specified index.
     ShiftArrayUp(elements, index);
@@ -164,11 +595,7 @@ stock ObjLib_CollectionInsertArrayAt(Collection:collection, index, const any:val
     new elementCount = GetArraySize(elements);
     
     // Validate index.
-    if (index >= elementCount)
-    {
-        ThrowError("Index out of bounds (%d).", index);
-        return 0;
-    }
+    ObjLib_CollectionIndexCheck(elementCount, index);
     
     // Move elements to make free space at the specified index.
     ShiftArrayUp(elements, index);
@@ -187,11 +614,7 @@ stock ObjLib_CollectionInsertStringAt(Collection:collection, index, const String
     new elementCount = GetArraySize(elements);
     
     // Validate index.
-    if (index >= elementCount)
-    {
-        ThrowError("Index out of bounds (%d).", index);
-        return 0;
-    }
+    ObjLib_CollectionIndexCheck(elementCount, index);
     
     // Move elements to make free space at the specified index.
     ShiftArrayUp(elements, index);
@@ -235,4 +658,32 @@ stock ObjLib_CollectionAddString(Collection:collection, const String:value[])
     
     // Add string.
     return PushArrayString(elements, value);
+}
+
+/*____________________________________________________________________________*/
+
+/** Internal use only! */
+stock ObjLib_CollectionRemoveAt(Collection:collection, index)
+{
+    // Get array.
+    new Handle:elements = ObjLib_GetHandle(Object:collection, "elements");
+    new elementCount = GetArraySize(elements);
+    
+    // Validate index.
+    ObjLib_CollectionIndexCheck(elementCount, index);
+    
+    // Remove element.
+    RemoveFromArray(elements, index);
+}
+
+/*____________________________________________________________________________*/
+
+/** Internal use only! */
+stock ObjLib_CollectionIndexCheck(elementCount, index)
+{
+    // Validate index.
+    if (!Util_IsInBounds(0, elementCount - 1, index))
+    {
+        ThrowError("Index out of bounds (%d).", index);
+    }
 }

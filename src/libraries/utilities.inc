@@ -284,6 +284,21 @@ stock bool:Util_IsNumeric(const String:str[])
 }
 
 /**
+ * Returns whether a value is within the bounds (inclusive).
+ *
+ * @param min           Lower bound.
+ * @param max           Upper bound.
+ * @prarm value         Value to test.
+ *
+ * @return              True if value is between min and max (inclusive), false
+ *                      otherwise.
+ */
+stock bool:Util_IsInBounds(min, max, value)
+{
+    return (min >= value && max <= value);
+}
+
+/**
  * Prints strings longer than 1022 bytes to the console. Max 4 KB.
  *
  * @param client        Client index, or 0 for server.
