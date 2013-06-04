@@ -314,8 +314,9 @@ stock Object:ObjLib_GetObjectConstraints(bool:nonzero = false,
  * defaults to no limit.
  *
  * @param nonzero       Cannot be zero (INVALID_OBJECT).
- * @param type          Must be a certain type. Use INVALID_OBJECT_TYPE to skip
- *                      type validation.
+ * @param requireKeys   Require certain keys to exist.
+ * @param keys          ADT array with list of key names to require.
+ * @param dataTypes     ADT array with matching data types of keys.
  *
  * @return              Constraint object. Use this once when adding a key.
  *                      Object must be deleted if not used anywhere.
