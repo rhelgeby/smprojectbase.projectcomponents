@@ -4,12 +4,10 @@ Object Library - Technical Documentation
 Base Data Strucure
 ------------------
 
-ARRAYS
-
 All data is stored in ADT arrays.
 
 The arrays are initialized with a predefined size depending on data structure.
-Objects only need 3 elements with one cell per element.
+Objects only need three elements with one cell per element.
 
     new Object:object = Object:CreateArray(_, OBJECT_DATA_LEN);
 
@@ -62,13 +60,14 @@ appropriate functions in this library.
 Objects
 -------
 
-Objects are made as simple as possible. An object only need to store 3 values:
+Objects are made as simple as possible. An object only need to store three
+values:
 
-    * Handle to data array.
-    * Handle to null flag array.
-    * Handle to type descriptor array.
+    * Handle to data array
+    * Handle to null flag array
+    * Handle to type descriptor array
 
-The data array is also an ADT array. It stored the raw object data, with one
+The data array is also an ADT array. It stores the raw object data, with one
 element for each key. It may store numbers, strings and arrays.
 
 The null flag array stores which keys that have values and not. Keys with the
@@ -89,26 +88,25 @@ This might be optimized in the future with a separate data array for arrays and
 strings, but it will break consistency of key indexes. Two keys may get the same
 index, even though the index itself will be valid for the key it belongs to. Due
 to this it's recommended to always access key by name. It's using a Trie for
-name lookup and is still very fast. Iterating over keys might be tricky.
+name lookup and is still very fast. Iterating over keys would be tricky.
 
 
 Type Descriptors
 ----------------
 
-To avoid redundancy, meta data about object are stored in a separate type
-descriptor structure. This makes it possible for objects of the same type to
-share meta data.
+Meta data about objects are stored in a separate type descriptor structure. This
+also makes it possible for objects of the same type to share meta data.
 
 A type descriptor use several data structures to store the following:
 
-    * Handle to array with key names.
-    * Handle to array with key data types.
-    * Key size.
-    * Block size.
-    * Handle to array with constraints.
-    * Error handle callback.
-    * Whether the type is locked.
-    * Reference to parent object.
+    * Handle to array with key names
+    * Handle to array with key data types
+    * Key size
+    * Block size
+    * Handle to array with constraints
+    * Error handler callback
+    * Whether the type is locked
+    * Reference to parent object
 
 Obviously it needs to store a list of key names for the object. It also stores
 another array with data types of each key, at the matching index.
@@ -120,7 +118,7 @@ user may use ByteCountToCells to calulate how many cells that are required for
 storing a string.
 
 The constraint array stores references to constraint objects for each key.
-Constraints are optional so, some keys may be INVALID_OBJECT.
+Constraints are optional, so some elements may be set to INVALID_OBJECT.
 
 The user may create a custom error callback function to handle various errors
 catched in the error handler. If no error callback is specified the error
@@ -160,25 +158,136 @@ Memory Management
 
 The Object Library doesn't have a garbage collector, so the user is responsible
 for deleding unused objects. The user can't just use CloseHandle on an object,
-even though it will work. The object array itself store other handles that must
+even though it will work. The object array itself stores other handles that must
 be closed.
 
-Delete functions are provided to do a proper cleanup of objects and other data
-structures.
+Delete functions are provided to do proper cleanup of objects and other data
+structures. It will only do cleanup for the object itself, not the data stored
+by users. The user will be responsible for closing its own handles, as usual.
 
 If there's a leak, it will most likely leak pretty fast unless the plugin only
 creates a few objects once.
+
+In some rare cases SourceMod might give a false memory leak warning. The Object
+Library use a lot of handles, but this is only an issue if you create _a lot_ of
+objects. Especially mutable objects creates a lof of handles because of the
+individual type descriptors (which are much more expensive than objects).
 
 
 Error Handler
 -------------
 
+Error handling is provided through an error internal handler. If something goes
+wrong, the Object Library will trigger an error using the error handler.
+
+The error handler will either result in a call to ThrowError, or a user defined
+error callback if it exists. It takes various prameters to gather information,
+along with a formatted message.
+
+An error callback can be specified in type descriptors, so you can have various
+callbacks for different types.
+
+The error callback can also be overridden in various situations. Currently this
+is in accessor functions and the KeyValue parser (it does its own error
+handling).
 
 
+Constraints
+-----------
 
-* globals
-* constraints
-* constraint handler
-* collections
-* keyvalue parser
-* inspector
+Constraints are regular objects with parameters that specify constraints of
+various types. Constraint types are identified by their type descriptors.
+
+Constraint type descriptors are built once and remain in memory until the plugin
+is unloaded.
+
+Helper functions are provided to build a constraint object.
+
+
+Lookup Constraints
+------------------
+
+Lookup constraint objects store a table of lookup strings and replacement
+values. It supports ADT Array, ADT Trie and a callback for user defined
+replacement.
+
+The array method use two arrays where the first one store lookup strings and the
+second one store replacement values. When the handler is called it gets the
+replacement by searching the lookup array to get an index. The replacement value
+at the specified index is copied and stored.
+
+The trie method is similar, but now lookup strings are directly mapped to
+replacement values. It's useful if there are many lookup strings and faster than
+searching a very large array.
+
+The callback method calls a user defined callback where the user can process the
+lookup value and return a replacement value. It supports three types of
+callback signatures; cell, array and string.
+
+
+Constraint Handler
+------------------
+
+The constraint handler is divided into several main functions:
+
+    1. ObjLib_ApplyConstraints
+    2. ObjLib_RunConstraintHandler
+    3. ObjLib_ApplyValue, ObjLib_ApplyString, ObjLib_ApplyArray
+
+The entry point of the constraint handler is ObjLib_ApplyConstraints. This
+function is called by accessor functions when they're about to store a value.
+Instead of storing the value, they delegate this work to the constraint handler.
+The constraint handler works like a value filter.
+
+Constraint handlers return whether the value is invalid, valid or overridden.
+ObjLib_ApplyConstraints reads this return value and acts accordingly. 
+
+Constraint errors are handled in individual constraint types so they are able to
+give specific error messages.
+
+If the value was overridden it does nothing, because something else stored a
+value.
+
+If the value is valid it delegates the work to an appropriate storage function
+depending on value type. This propagates down to low-level set-functions for the
+appropriate type (object or collection at the moment).
+
+The individual constraint handlers simply do tests on the value and throw erros
+on constraint violations.
+
+
+Collections
+-----------
+
+Collections are regular objects and is a wrapper around an ADT array. There's
+nothing special about these. They are typed and support constraints like regular
+object keys.
+
+A collection object stores the following:
+
+    * Data type
+    * Handle to array of collection elements
+    * Reference to constraint object
+
+The data type specifies the data type of _all_ elements in the collection.
+
+The collection elements are stored in a regular ADT array.
+
+An optional constraint object reference may be provided. If none is used, it
+only validates data type.
+
+It's a little bit slower than ADT arrays due to the retrieval of the element
+array handle and validation, but this is marginal.
+
+
+KeyValue Parser
+---------------
+* Recursive and event based.
+* Builds objects based on content.
+* Can validate against predefined type descriptors (or even nested type trees).
+* The user only needs to declare types, create a parse context and start the
+  parser. The most simple case can be done in five lines.
+
+Object Inspector Tool
+---------------------
+* Functions for printing formatted object data to console or chat.

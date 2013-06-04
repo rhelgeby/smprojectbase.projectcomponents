@@ -83,6 +83,7 @@ stock ObjLib_ApplyConstraints(
     {
         case ObjConstraintResult_Invalid:
         {
+            // Error is already handled by a constraint handler. Forward result.
             return -1;
         }
         case ObjConstraintResult_Valid:
@@ -1075,6 +1076,8 @@ stock bool:ObjLib_HandleConstraintError(const String:constraintName[], Object:ob
     new String:keyName[OBJECT_KEY_NAME_LEN];
     new Handle:keys = ObjLib_GetTypeKeys(typeDescriptor);
     GetArrayString(keys, keyIndex, keyName, sizeof(keyName));
+    
+    // TODO: Add support for collections.
     
     return ObjLib_HandleError(typeDescriptor, object, ObjLibError_ValidationError, errorHandler, _, _, "Cannot set value in key (\"%s\"). Value violated constraint: %s", keyName, constraintName);
 }

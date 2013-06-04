@@ -41,7 +41,8 @@ stock ParseTypedKv()
     FileToKeyValues(KvFull, "objectlibtest-kvfull.txt");    // Must be located in root of game directory.
     KvRewind(KvFull);
     
-    // Declare types.
+    // Declare types. Deepest types/sections must be declared first so you can
+    // later attach them to the parent type.
     
     // DataType section. Some keys have constraints.
     new ObjectType:dataTypes = ObjLib_CreateType(16);
@@ -69,7 +70,7 @@ stock ParseTypedKv()
     // added to the list. Sub sections are referenced through keys in objects.
     
     // Parser context object must be deleted when no longer in use, otherwise
-    // there might be a memory leak.
+    // there will be a memory leak.
     ObjLib_DeleteParseContext(parseContext);
     
     PrintToServer("KeyValue file parsed.");
