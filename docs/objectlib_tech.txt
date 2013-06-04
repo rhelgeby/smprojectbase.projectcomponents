@@ -242,8 +242,8 @@ The constraint handler works like a value filter.
 Constraint handlers return whether the value is invalid, valid or overridden.
 ObjLib_ApplyConstraints reads this return value and acts accordingly. 
 
-Constraint errors are handled in individual constraint types so they are able to
-give specific error messages.
+Constraint errors are handled in individual constraint handlers so they are able
+to give specific error messages.
 
 If the value was overridden it does nothing, because something else stored a
 value.
@@ -252,7 +252,7 @@ If the value is valid it delegates the work to an appropriate storage function
 depending on value type. This propagates down to low-level set-functions for the
 appropriate type (object or collection at the moment).
 
-The individual constraint handlers simply do tests on the value and throw erros
+The individual constraint handlers simply do tests on the value and throw errors
 on constraint violations.
 
 
