@@ -283,8 +283,10 @@ stock Object:ObjLib_GetArrayConstraints(bool:nonempty = false,
 /*____________________________________________________________________________*/
 
 /**
- * Creates a object constraint object. All parameters are optional and defaults
- * to no limit.
+ * Creates an object constraint object. Can be used to require objects of a
+ * certain type.
+ *
+ * All parameters are optional and defaults to no limit.
  *
  * @param nonzero       Cannot be zero (INVALID_OBJECT).
  * @param type          Must be a certain type. Use INVALID_OBJECT_TYPE to skip
@@ -310,8 +312,12 @@ stock Object:ObjLib_GetObjectConstraints(bool:nonzero = false,
 /*____________________________________________________________________________*/
 
 /**
- * Creates a object type constraint object. All parameters are optional and
- * defaults to no limit.
+ * Creates an object type constraint object. This can be used to require certain
+ * keys to exist in the type descriptor.
+ *
+ * This constraint can also be used on keys that store object references.
+ *
+ * All parameters are optional and defaults to no limit.
  *
  * @param nonzero       Cannot be zero (INVALID_OBJECT).
  * @param requireKeys   Require certain keys to exist.

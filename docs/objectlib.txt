@@ -326,7 +326,8 @@ requiring the entire object to be a certain type. As the name describes,
 the whole object, and is less strict. As long as the object has the required
 keys, it's valid.
 
-TODO: The naming is bad and should be inverted.
+The naming is based on where the constraint is applied; on the object itself, or
+on a type descriptor.
 
 
 LOOKUP CONSTRAINTS
