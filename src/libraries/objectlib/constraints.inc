@@ -35,6 +35,7 @@ new ObjectType:ObjLib_HandleConstraints     = INVALID_OBJECT_TYPE;
 new ObjectType:ObjLib_FunctionConstraints   = INVALID_OBJECT_TYPE;
 new ObjectType:ObjLib_StringConstraints     = INVALID_OBJECT_TYPE;
 new ObjectType:ObjLib_ArrayConstraints      = INVALID_OBJECT_TYPE;
+new ObjectType:ObjLib_CollectionConstraints = INVALID_OBJECT_TYPE;
 new ObjectType:ObjLib_ObjectConstraints     = INVALID_OBJECT_TYPE;
 new ObjectType:ObjLib_ObjectTypeConstraints = INVALID_OBJECT_TYPE;
 new ObjectType:ObjLib_CustomConstraints     = INVALID_OBJECT_TYPE;
@@ -244,7 +245,7 @@ stock Object:ObjLib_GetStringConstraints(bool:nonempty = false,
 /*____________________________________________________________________________*/
 
 /**
- * Creates a array constraint object. All parameters are optional and defaults
+ * Creates an array constraint object. All parameters are optional and defaults
  * to no limit.
  *
  * @param lowerLimit    Enable minimum length limit.
@@ -276,6 +277,49 @@ stock Object:ObjLib_GetArrayConstraints(bool:nonempty = false,
     ObjLib_SetBool(constraint, "upperLimit", upperLimit);
     ObjLib_SetCell(constraint, "minLen", minLen);
     ObjLib_SetCell(constraint, "maxLen", maxLen);
+    
+    return constraint;
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Creates a collection constraint object. All parameters are optional and
+ * defaults to no limit.
+ *
+ * Note this constraint also validates an implicit parameter; objectType. This
+ * verifies that the object is a collection object.
+ *
+ * @param dataType              Data type of elements in collection.
+ * @param minBlockSize          Minimum element size.
+ * @param elementConstraints    Constraints for elements. Must match data type.
+ *                              On validation the collection must use THIS
+ *                              constraint object to pass.
+ *
+ * @return                  Constraint object. Use this once when adding a key.
+ *                          Object must be deleted if not used anywhere.
+ */
+stock Object:ObjLib_GetCollectionConstraints(ObjectDataType:dataType = ObjDataType_String,
+                                             minBlockSize = 16,
+                                             Object:elementConstraints = INVALID_OBJECT)
+{
+    // Make sure constraint types exist.
+    ObjLib_BuildConstraintTypes();
+    
+    // Validate minBlockSize.
+    if (minBlockSize < 1)
+    {
+        ThrowError("Invalid minBlockSize (%d) value. Must be nonzero and positive.", minBlockSize);
+    }
+    
+    // Validate elementConstraints.
+    ObjLib_ValidateConstraintOrFail(elementConstraints, dataType, true);
+    
+    new Object:constraint = ObjLib_CreateObject(ObjLib_CollectionConstraints, false);
+    
+    ObjLib_SetCell(constraint, "dataType", dataType);
+    ObjLib_SetCell(constraint, "minBlockSize", minBlockSize);
+    ObjLib_SetObject(constraint, "elementConstraints", elementConstraints);
     
     return constraint;
 }
@@ -625,7 +669,7 @@ stock Object:ObjLib_GetBooleanLookupConstraints(
  */
 stock bool:ObjLib_IsConstraintObject(Object:constraints)
 {
-    ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(constraints);
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(constraints);
     return ObjLib_IsConstraintType(typeDescriptor);
 }
 
@@ -677,6 +721,7 @@ stock ObjLib_BuildConstraintTypes()
     ObjLib_FunctionConstraints      = ObjLib_GetFunctionConstraintType();
     ObjLib_StringConstraints        = ObjLib_GetStringConstraintType();
     ObjLib_ArrayConstraints         = ObjLib_GetArrayConstraintType();
+    ObjLib_CollectionConstraints    = ObjLib_GetCollectionConstraintType();
     ObjLib_ObjectConstraints        = ObjLib_GetObjectConstraintType();
     ObjLib_ObjectTypeConstraints    = ObjLib_GetObjTypeConstraintType();
     ObjLib_CustomConstraints        = ObjLib_GetCustomConstraintType();
@@ -786,6 +831,20 @@ stock ObjectType:ObjLib_GetArrayConstraintType()
 /*____________________________________________________________________________*/
 
 /* Internal use only! */
+stock ObjectType:ObjLib_GetCollectionConstraintType()
+{
+    new ObjectType:constraints = ObjLib_CreateType();
+    
+    ObjLib_AddKey(constraints, "dataType", ObjDataType_Cell);
+    ObjLib_AddKey(constraints, "minBlockSize", ObjDataType_Cell);
+    ObjLib_AddKey(constraints, "elementConstraints", ObjDataType_Object);
+    
+    return constraints;
+}
+
+/*____________________________________________________________________________*/
+
+/* Internal use only! */
 stock ObjectType:ObjLib_GetObjectConstraintType()
 {
     new ObjectType:constraints = ObjLib_CreateType();
@@ -864,7 +923,6 @@ stock ObjLib_ValidateConstraintOrFail(Object:constraints, ObjectDataType:dataTyp
     }
     
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(constraints);
-    new ObjectType:expectedConstraintType = ObjLib_DataTypeToConstraintType(dataType);
     
     // Always allow custom constraints.
     if (typeDescriptor == ObjLib_CustomConstraints)
@@ -888,11 +946,11 @@ stock ObjLib_ValidateConstraintOrFail(Object:constraints, ObjectDataType:dataTyp
     }
     
     // Check constraint type against data type.
-    if (typeDescriptor != expectedConstraintType)
+    if (typeDescriptor != ObjLib_DataTypeToConstraintType(dataType))
     {
         new String:dataTypeName[32];
         ObjLib_DataTypeToString(dataType, dataTypeName, sizeof(dataTypeName));
-        ThrowError("Invalid constraints object (%x). Not a constraint type or constraints not matching data type (%s).", constraints, dataTypeName);
+        ThrowError("Invalid constraints object (%x). Not a constraint type or constraints not compatible with data type (%s).", constraints, dataTypeName);
     }
 }
 
@@ -903,9 +961,9 @@ stock ObjectType:ObjLib_DataTypeToConstraintType(ObjectDataType:dataType)
 {
     switch (dataType)
     {
-        case ObjDataType_Any:           return ObjLib_CustomConstraints;    // Only custom constraints allowed.
+        case ObjDataType_Any:           return ObjLib_CustomConstraints;
         case ObjDataType_Cell:          return ObjLib_CellConstraints;
-        case ObjDataType_Bool:          return ObjLib_CustomConstraints;    // Only custom constraints allowed.
+        case ObjDataType_Bool:          return ObjLib_CustomConstraints;
         case ObjDataType_Float:         return ObjLib_FloatConstraints;
         case ObjDataType_Handle:        return ObjLib_HandleConstraints;
         case ObjDataType_Function:      return ObjLib_FunctionConstraints;

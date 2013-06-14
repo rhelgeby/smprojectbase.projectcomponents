@@ -73,7 +73,10 @@ enum ObjLibParseState
 {
     ObjLibState_Stopped,    /** Stop parsing. */
     ObjLibState_Running,    /** Continue parsing. */
-    ObjLibState_Aborted     /** Abort parser due to error. */
+    ObjLibState_Aborted,    /** Abort parser due to error. */
+    
+    // Signals.
+    ObjLibState_SkipSection /** Parser should skip current section. */
 }
 
 /*____________________________________________________________________________*/
@@ -260,7 +263,8 @@ stock Handle:ObjLib_ParseInListMode(Handle:kv, Object:parseContext)
  * from the current section.
  *
  * Note: This function expects the KeyValue cursor to be positioned on the first
- *       sub key in the section.
+ *       sub key in this section. Call this function after a successive call to
+ *       KvGotoFirstSubKey.
  *
  * @param kv                Handle to keyvalue tree with the cursor on a
  *                          section.
@@ -273,14 +277,14 @@ stock Handle:ObjLib_ParseInListMode(Handle:kv, Object:parseContext)
  */
 stock Object:ObjLib_ParseSection(Handle:kv, Object:parseContext)
 {
-    // Note: This function do recursive calls to itself.
+    // Note: This function is recursive.
     
     decl String:keyName[OBJLIB_KV_MAX_KEY_LEN];
     decl String:sectionName[OBJLIB_KV_MAX_KEY_LEN];
     keyName[0] = 0;
     sectionName[0] = 0;
     
-    // Get current section name. At this point the cursor is pointing to the
+    // Get current section name. At this point the cursor is pointing at the
     // first sub key, not the section itself. Save the position (keyId) of this
     // key and go back to get the section name.
     new keyId;
@@ -289,19 +293,15 @@ stock Object:ObjLib_ParseSection(Handle:kv, Object:parseContext)
     KvGetSectionName(kv, sectionName, sizeof(sectionName));
     KvJumpToKeySymbol(kv, keyId);   // Jump back to the first sub key again.
     
+    PrintToServer("-- Parse Section Start: %s --", sectionName);
+    
     // Prepare new section object.
     ObjLib_OnSectionStart(kv, sectionName, parseContext);
     
     // Get current section object from the object stack (keep it on the stack).
+    // It may be invalid if the current section is being skipped due to errors.
     new Object:object = INVALID_OBJECT;
     Array_PeekCell(ObjLib_GetHandle(parseContext, "objectStack"), object);
-    
-    // Validate object.
-    if (object == INVALID_OBJECT)
-    {
-        ThrowError("[BUG] No object on object stack. This is a bug in objectlib.");
-    }
-    PrintToServer("-- Parse Section Start: %s --", sectionName);
     
     // Loop through keys and sections in the current kv section.
     do
@@ -312,8 +312,9 @@ stock Object:ObjLib_ParseSection(Handle:kv, Object:parseContext)
         new ObjLibParseState:parseState = ObjLibParseState:ObjLib_GetCell(parseContext, "parseState");
         if (parseState != ObjLibState_Running)
         {
-            // Parser was stopped or an error occoured. Exit loop and end
-            // this section.
+            // Parser was interrupted or an error occoured. Exit loop and end
+            // this section. The parent section may continue parsing, depending
+            // on state.
             break;
         }
         
@@ -375,6 +376,11 @@ stock Object:ObjLib_ParseSection(Handle:kv, Object:parseContext)
  * Handles a new section. Creates a new object to store section sub keys and
  * does validation if a type descriptor is available.
  *
+ * This function has three major steps:
+ * - Get constraints for this section (with some fallback methods).
+ * - Validate them, if any.
+ * - Create new object for this section.
+ *
  * @param kv                Handle to keyvalue tree with the cursor on a
  *                          section.
  * @param sectionName       Name of the current section.
@@ -390,6 +396,9 @@ stock ObjLib_OnSectionStart(Handle:kv, const String:sectionName[], Object:parseC
     new Handle:objectStack = ObjLib_GetHandle(parseContext, "objectStack");
     new Handle:nameStack = ObjLib_GetHandle(parseContext, "nameStack");
     
+    // Get error handler.
+    new ObjLib_ErrorHandler:errorHandler = ObjLib_KvGetErrorHandler(parseContext);
+    
     new bool:mutableObject = false;
     if (typeDescriptor == ObjLib_KvObjectType)
     {
@@ -398,8 +407,129 @@ stock ObjLib_OnSectionStart(Handle:kv, const String:sectionName[], Object:parseC
         mutableObject = true;
     }
     
+    
+    // Get constraints for this section.
+    // ---------------------------------
+    
+    new Object:constraints = INVALID_OBJECT;
+    new ObjectType:parentType = INVALID_OBJECT_TYPE;
+    
+    // Get parent object (don't remove from stack).
+    new Object:parent = INVALID_OBJECT;
+    Array_PeekCell(objectStack, parent);
+    
+    // Validate parent.
+    if (parent == INVALID_OBJECT)
+    {
+        // There is no parent object, this is the root section.
+        parentType = ObjLib_GetObjectType(parseContext, "rootType");
+    }
+    else
+    {
+        parentType = ObjLib_GetTypeDescriptor(parent);
+    }
+    
+    // Validate parent type.
+    if (parentType != INVALID_OBJECT_TYPE)
+    {
+        // Get index of sub section key in parent object. This key may not exist if
+        // the parent object type is not predefined in rootType.
+        new keyIndex = ObjLib_GetKeyIndexFromType(parentType, sectionName);
+        
+        // Get key constraints, if any.
+        if (keyIndex >= 0)
+        {
+            // Get the constraints from the parent type. This might be
+            // INVALID_OBJECT too.
+            constraints = ObjLib_GetTypeConstraintsAt(parentType, keyIndex);
+        }
+    }
+    
+    
+    // Validate constraints, if any.
+    // -----------------------------
+    
+    new ObjectType:constraintType = INVALID_OBJECT_TYPE;
+    
+    // Check if section has constraints.
+    if (constraints != INVALID_OBJECT)
+    {
+        // Constraints available. Check type of constraints.
+        constraintType = ObjLib_GetTypeDescriptor(constraints);
+        if (constraintType != ObjLib_ObjectConstraints &&
+            constraintType != ObjLib_ObjectTypeConstraints &&
+            constraintType != ObjLib_CollectionConstraints)
+        {
+            // This key is not supposed to be a sub section. Trigger validation
+            // error.
+            
+            // Call error handler.
+            new Action:result = Plugin_Handled;
+            if (ObjLib_HandleError(parentType,                  // typeDescriptor
+                                   INVALID_OBJECT,              // object
+                                   ObjLibError_ValidationError, // errorType
+                                   errorHandler,                // customHandler
+                                   result,                      // result
+                                   parseContext,                // data
+                                   "Constraint violation. Expected \"%s\" to be a key value pair, but it's a sub section (object).",   // format
+                                   sectionName))
+            {
+                // Error was handled in customHandler. Update parser state.
+                if (result == Plugin_Continue)
+                {
+                    // Parsing should continue. Just skip this section.
+                    ObjLib_SetCell(parseContext, "parseState", ObjLibState_SkipSection);
+                }
+                else
+                {
+                    // Abort parser.
+                    ObjLib_SetCell(parseContext, "parseState", ObjLibState_Aborted);
+                }
+                
+                // Return to parse loop. The parse state will tell parser what
+                // to do next.
+                return;
+            }
+            else
+            {
+                // Error not handled. This code is actually not reachable
+                // because the error handler doesn't return when calling
+                // ThrowError.
+                return;
+            }
+        }
+    }
+    
+    
     // Create object for this section.
-    new Object:object = ObjLib_CreateObject(typeDescriptor, mutableObject);
+    // -------------------------------
+    
+    new Object:object;
+    if (ObjLib_IsCollectionType(typeDescriptor))
+    {
+        // Object is a collection.
+        
+        // Set default type and size.
+        new ObjectDataType:dataType = ObjDataType_String;
+        new blockSize = ByteCountToCells(OBJLIB_MAX_STRING_LEN);
+        new Object:elementConstraints = INVALID_OBJECT;
+        
+        // Get collection data type from constraints, if any.
+        if (constraintType == ObjLib_CollectionConstraints)
+        {
+            // Override defaults with settings in constraint.
+            dataType = ObjectDataType:ObjLib_GetCell(constraints, "dataType");
+            blockSize = ObjLib_GetCell(constraints, "minBlockSize");
+            elementConstraints = Object:ObjLib_GetObject(constraints, "elementConstraints");
+        }
+        
+        // Create collection.
+        object = Object:ObjLib_CreateCollection(dataType, blockSize, elementConstraints);
+    }
+    else
+    {
+        object = ObjLib_CreateObject(typeDescriptor, mutableObject);
+    }
     
     // Push to cursor stacks so they become the current type and object.
     PushArrayCell(typeStack, typeDescriptor);
@@ -426,6 +556,21 @@ stock ObjLib_OnSectionStart(Handle:kv, const String:sectionName[], Object:parseC
  */
 stock Object:ObjLib_OnSectionEnd(Handle:kv, const String:sectionName[], Object:parseContext)
 {
+    // Check if this section was skipped.
+    new ObjLibParseState:parseState = ObjLibParseState:ObjLib_GetCell(parseContext, "parseState");
+    if (parseState == ObjLibState_SkipSection)
+    {
+        // The current section was skipped due to error. It was not pushed on
+        // the stack so we don't need to do anything but restoring the parser
+        // state.
+        
+        // Restore to running state so the parser can continue parsing remaining
+        // keys in the parent section.
+        ObjLib_SetCell(parseContext, "parseState", ObjLibState_Running);
+        
+        return INVALID_OBJECT;
+    }
+    
     // Get stacks.
     new Handle:typeStack = ObjLib_GetHandle(parseContext, "typeStack");
     new Handle:objectStack = ObjLib_GetHandle(parseContext, "objectStack");
@@ -487,60 +632,29 @@ stock Object:ObjLib_OnSectionEnd(Handle:kv, const String:sectionName[], Object:p
         constraints = ObjLib_GetTypeConstraintsAt(parentType, keyIndex);
     }
     
-    // TODO: Validate that key type in parent is an object.
-    
-    // Check if section has constraints.
-    if (constraints != INVALID_OBJECT)
+    // Add section to parent object.
+    if (ObjLib_IsCollectionType(parentType))
     {
-        // Constraints available. Check type of constraints.
-        new ObjectType:constraintType = ObjLib_GetTypeDescriptor(constraints);
-        if (constraintType != ObjLib_ObjectConstraints &&
-            constraintType != ObjLib_ObjectTypeConstraints)
-        {
-            // This key is not supposed to be a sub section. Trigger validation
-            // error.
-            
-            // Call error handler.
-            new Action:result = Plugin_Handled;
-            if (ObjLib_HandleError(parentType,                  // typeDescriptor
-                                   object,                      // object
-                                   ObjLibError_ValidationError, // errorType
-                                   errorHandler,                // customHandler
-                                   result,                      // result
-                                   parseContext,                // data
-                                   "Expected \"%s\" to be a key value pair, but it's a sub section (object). Type constraints does not allow this.",   // format
-                                   sectionName))
-            {
-                // Error was handled in customHandler. Update parser state.
-                ObjLib_SetCell(parseContext, "parseState", result);
-                
-                // Return to parse loop. The parse state will tell if parser
-                // should abort or continue.
-                return object;
-            }
-            else
-            {
-                // Error not handled. This code is actually not reachable
-                // because the error handler doesn't return when calling
-                // ThrowError. Return something to satisfy compiler.
-                return INVALID_OBJECT;
-            }
-        }
+        // Parent is a collection.
+        
+        // Add section to collection.
+        ObjLib_AddObject(Collection:parent, object, errorHandler);
     }
     else
     {
-        // No constraints.
+        // Parent is a general object.
         
-        // Check if key in parent exists.
-        if (keyIndex < 0)
+        // Create key in parent object if there are no constraints and the key
+        // doesn't exist.
+        if (constraints == INVALID_OBJECT && keyIndex < 0)
         {
             // Create object key for storing this section.
             ObjLib_AddObjectKey(parent, sectionName, ObjDataType_Object);
         }
+        
+        // Add object to parent.
+        ObjLib_SetObject(parent, sectionName, object, errorHandler);
     }
-    
-    // Add object to parent.
-    ObjLib_SetObject(parent, sectionName, object, errorHandler);
     
     return INVALID_OBJECT;
 }
@@ -592,7 +706,7 @@ stock ObjLib_OnKeyValue(Handle:kv, const String:keyName[], KvDataTypes:kvDataTyp
     // Get stacks.
     new Handle:objectStack = ObjLib_GetHandle(parseContext, "objectStack");
     
-    // Get object.
+    // Get current object.
     new Object:object = INVALID_OBJECT;
     Array_PeekCell(objectStack, object);
     if (object == INVALID_OBJECT)
@@ -602,13 +716,17 @@ stock ObjLib_OnKeyValue(Handle:kv, const String:keyName[], KvDataTypes:kvDataTyp
         ThrowError("[BUG] No object. This is a bug in objectlib.");
     }
     
+    // Get type.
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
+    
     // Get error handler.
     new ObjLib_ErrorHandler:errorHandler = ObjLib_KvGetErrorHandler(parseContext);
     
     new ObjectDataType:keyDataType = ObjDataType_String;
+    new Object:constraints = INVALID_OBJECT;
     
-    // Check if object is using the type template (object is mutable).
-    if (ObjLib_IsMutable(object))
+    // Check if object is using the type template.
+    if (typeDescriptor == ObjLib_KvObjectType)
     {
         // Object has no predefined type descriptor. Add string key with no
         // constraints.
@@ -619,66 +737,101 @@ stock ObjLib_OnKeyValue(Handle:kv, const String:keyName[], KvDataTypes:kvDataTyp
     {
         // Object has a predefined type descriptor. Get key data type.
         
-        new ObjectType:typeDescriptor = ObjLib_KvGetCurrentType(parseContext);
-        new Handle:keyDataTypes = ObjLib_GetTypeDataTypes(typeDescriptor);
-        new keyIndex = ObjLib_GetKeyIndexFromType(typeDescriptor, keyName);
-        
-        // Validate key.
-        if (keyIndex < 0)
+        if (ObjLib_IsCollectionType(typeDescriptor))
         {
-            // Unexpected key. Throw validation error.
-            new Action:result = Plugin_Handled;
-            if (ObjLib_HandleError(typeDescriptor,                      // typeDescriptor
-                                   object,                              // object
-                                   ObjLibError_InvalidKey,              // errorType
-                                   errorHandler,                        // customHandler
-                                   result,                              // result
-                                   parseContext,                        // data
-                                   "Unexpected key. The key \"%s\" does not exist in the type descriptor.",   // format
-                                   keyName))
+            // Object is a collection. Get its data type and constraints.
+            keyDataType = ObjLib_CollectionGetDataType(Collection:object);
+            constraints = ObjLib_CollectionGetConstraints(Collection:object);
+        }
+        else
+        {
+            // General object. Get key data type and constraints.
+            
+            new keyIndex = ObjLib_GetKeyIndexFromType(typeDescriptor, keyName);
+            
+            // Validate key.
+            if (keyIndex < 0)
             {
-                // Error was handled in customHandler. Update parser state.
-                ObjLib_SetCell(parseContext, "parseState", result);
-                
-                // Return to parse loop. The parse state will tell if parser
-                // should abort or continue.
-                return;
+                // Unexpected key. Throw validation error.
+                new Action:result = Plugin_Handled;
+                if (ObjLib_HandleError(typeDescriptor,                      // typeDescriptor
+                                       object,                              // object
+                                       ObjLibError_InvalidKey,              // errorType
+                                       errorHandler,                        // customHandler
+                                       result,                              // result
+                                       parseContext,                        // data
+                                       "Unexpected key. The key \"%s\" does not exist in the type descriptor.",   // format
+                                       keyName))
+                {
+                    // Error was handled in customHandler. Update parser state.
+                    if (result == Plugin_Continue)
+                    {
+                        // Continue parsing.
+                        ObjLib_SetCell(parseContext, "parseState", ObjLibState_Running);
+                    }
+                    else
+                    {
+                        // Abort parsing.
+                        ObjLib_SetCell(parseContext, "parseState", ObjLibState_Aborted);
+                    }
+                    
+                    // Return to parse loop. The parse state will tell if parser
+                    // should abort or continue.
+                    return;
+                }
+                else
+                {
+                    // Error not handled. This code is actually not reachable
+                    // because the error handler doesn't return when calling
+                    // ThrowError.
+                    return;
+                }
             }
+            
+            // Get data type of key.
+            new Handle:keyDataTypes = ObjLib_GetTypeDataTypes(typeDescriptor);
+            keyDataType = ObjectDataType:GetArrayCell(keyDataTypes, keyIndex);
+            
+            // Get key constraints.
+            constraints = ObjLib_GetTypeConstraintsAt(typeDescriptor, keyIndex);
         }
         
         // Get constraint type.
-        new Object:constraints = ObjLib_GetTypeConstraintsAt(typeDescriptor, keyIndex);
-        new ObjectType:constraintsType = INVALID_OBJECT_TYPE;
+        new ObjectType:constraintType = INVALID_OBJECT_TYPE;
         if (constraints != INVALID_OBJECT)
         {
-            constraintsType = ObjLib_GetTypeDescriptor(constraints);
+            constraintType = ObjLib_GetTypeDescriptor(constraints);
         }
         
         // Check if this is a lookup case. Override type to string if using
         // lookup constraints.
-        if (constraintsType == ObjLib_LookupConstraints)
+        if (constraintType == ObjLib_LookupConstraints)
         {
             // This will trigger a lookup case when using lookup constraints and
             // a SetString function.
             keyDataType = ObjDataType_String;
         }
-        else
-        {
-            // Not a lookup case. Get data type of key.
-            keyDataType = ObjectDataType:GetArrayCell(keyDataTypes, keyIndex);
-        }
     }
     
     // Get and store value. Objectlib will handle type mismatch or constraint
     // violations.
-    ObjLib_StoreKvValue(kv, object, keyName, keyDataType, parseContext);
+    if (ObjLib_IsCollectionType(typeDescriptor))
+    {
+        // Add value to collection.
+        ObjLib_StoreCollectionValue(kv, Collection:object, keyDataType, parseContext);
+    }
+    else
+    {
+        // Store value in object.
+        ObjLib_StoreObjectValue(kv, object, keyName, keyDataType, parseContext);
+    }
 }
 
 /*____________________________________________________________________________*/
 
 /**
  * Internal use only!
- * Reads a value from a key and store it in the object.
+ * Reads a value from a key and stores it in the object.
  *
  * @param kv            Handle to keyvalue tree.
  * @param object        Object to store value in.
@@ -689,7 +842,7 @@ stock ObjLib_OnKeyValue(Handle:kv, const String:keyName[], KvDataTypes:kvDataTyp
  * @param parseContect  Object with parser settings.
  *                      (Type: ObjLib_KvParamsType)
  */
-stock ObjLib_StoreKvValue(Handle:kv, Object:object, const String:keyName[], ObjectDataType:dataType, Object:parseContext)
+stock ObjLib_StoreObjectValue(Handle:kv, Object:object, const String:keyName[], ObjectDataType:dataType, Object:parseContext)
 {
     // Note: Using NULL_STRING as key name in KeyValue tree so that it will read
     //       the value at the current cursor position (which is prepared by the
@@ -747,6 +900,97 @@ stock ObjLib_StoreKvValue(Handle:kv, Object:object, const String:keyName[], Obje
             KvGetString(kv, NULL_STRING, value, sizeof(value));
             ObjLib_SetString(object, keyName, value, errorHandler);
             PrintToServer("Reading value of %s: \"%s\"", keyName, value);
+        }
+        case ObjDataType_Object:
+        {
+            // This shouldn't happen. Objects should be read as kv sections or
+            // handled as named lookups when available.
+            ThrowError("[BUG] Can't read key as an object. The parser should check if this key is a sub section, if not it's a bug in objectlib.");
+        }
+        case ObjDataType_ObjectType:
+        {
+            // Not supported.
+            ThrowError("ObjectType type is not supported by the objectlib KeyValue parser.");
+        }
+        default:
+        {
+            ThrowError("[BUG] Unexpected data type. This is a bug in objectlib.");
+        }
+    }
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Internal use only!
+ * Reads a value from a key and stores it in the collection.
+ *
+ * @param kv            Handle to keyvalue tree.
+ * @param collection    Collection to store value in.
+ * @param dataType      Key type.
+ * @param errorHandler  Custom error handler. Overrides any other error handler
+ *                      if specified.
+ * @param parseContect  Object with parser settings.
+ *                      (Type: ObjLib_KvParamsType)
+ */
+stock ObjLib_StoreCollectionValue(Handle:kv, Collection:collection, ObjectDataType:dataType, Object:parseContext)
+{
+    // Note: Using NULL_STRING as key name in KeyValue tree so that it will read
+    //       the value at the current cursor position (which is prepared by the
+    //       parser).
+    
+    // Get error handler.
+    new ObjLib_ErrorHandler:errorHandler = ObjLib_KvGetErrorHandler(parseContext);
+    
+    // Read value from KeyValue tree according to the expected data type.
+    // Objectlib will validate type and constraints.
+    switch (dataType)
+    {
+        case ObjDataType_Any:
+        {
+            //new value = KvGetNum(kv, NULL_STRING);
+            //ObjLib_AddAny(collection, value, errorHandler);
+            ThrowError("TODO. Not implemented!");
+        }
+        case ObjDataType_Cell:
+        {
+            new value = KvGetNum(kv, NULL_STRING);
+            ObjLib_AddCell(collection, value, errorHandler);
+        }
+        case ObjDataType_Bool:
+        {
+            // Note: This does direct conversion, from string to integer. The
+            //       user may use a boolean lookup constraint for converting
+            //       boolean words and call SetString instead.
+            new bool:value = bool:KvGetNum(kv, NULL_STRING);
+            ObjLib_AddBool(collection, value, errorHandler);
+        }
+        case ObjDataType_Float:
+        {
+            new Float:value = KvGetFloat(kv, NULL_STRING);
+            ObjLib_AddFloat(collection, value, errorHandler);
+        }
+        case ObjDataType_Handle:
+        {
+            // Not supported.
+            ThrowError("Handle type is not supported by the objectlib KeyValue parser.");
+        }
+        case ObjDataType_Function:
+        {
+            // Not supported.
+            ThrowError("Function type is not supported by the objectlib KeyValue parser.");
+        }
+        case ObjDataType_Array:
+        {
+            // Not supported.
+            ThrowError("Array type is not supported by the objectlib KeyValue parser.");
+        }
+        case ObjDataType_String:
+        {
+            decl String:value[OBJLIB_KV_MAX_STRING_LEN];
+            value[0] = 0;
+            KvGetString(kv, NULL_STRING, value, sizeof(value));
+            ObjLib_AddString(collection, value, errorHandler);
         }
         case ObjDataType_Object:
         {
@@ -941,7 +1185,8 @@ stock ObjectType:ObjLib_KvGetCurrentType(Object:parseContext)
  * used.
  *
  * Note: If a type template is returned, only use it to create mutable objects
- *       from it.
+ *       from it. Otherwise it will be locked and other parsers may stop
+ *       working.
  *
  * @param sectionName       Name of the sub section to get type of.
  * @param parseContext      Object with parser settings.
@@ -1003,8 +1248,16 @@ stock ObjectType:ObjLib_GetSectionType(const String:sectionName[], Object:parseC
             return ObjLib_KvObjectType;
         }
         
-        // Type is valid.
+        // Type is valid. Use type specified in constraint object.
         return typeDescriptor;
+    }
+    
+    // Check if this section is bound by collection constraints.
+    new ObjectType:collectionType = ObjLib_GetCollectionType();
+    if (constraintType == collectionType)
+    {
+        // Use collection type descriptor.
+        return collectionType;
     }
     
     // No constraints, use type template.

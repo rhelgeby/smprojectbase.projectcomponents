@@ -235,6 +235,8 @@ enum ObjLibError
  *                          * Plugin_Continue - Continue processing if possible.
  *                          This is useful to let the KeyValue parser continue
  *                          parsing remaining keys.
+ *                          * Other values are treated as if Plugin_Handled was
+ *                          returned, parsing will be aborted.
  */
 functag public Action:ObjLib_ErrorHandler(ObjectType:typeDescriptor, ObjLibError:errorType, const String:message[], Object:object, Object:data);
 
