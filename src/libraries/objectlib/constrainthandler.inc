@@ -352,7 +352,11 @@ stock ObjectConstraintResult:ObjLib_RunConstraintHandler(
     }
     else if (constraintsType == ObjLib_ArrayConstraints)
     {
-        return ObjLib_HandleArrayTypeConstr(object, typeDescriptor, constraints, keyIndex, values, size, errorHandler);
+        return ObjLib_HandleArrayConstraints(object, typeDescriptor, constraints, keyIndex, values, size, errorHandler);
+    }
+    else if (constraintsType == ObjLib_CollectionConstraints)
+    {
+        return ObjLib_HandleCollectionConstraints(object, typeDescriptor, constraints, keyIndex, values, size, errorHandler);
     }
     else if (constraintsType == ObjLib_StringConstraints)
     {
@@ -930,7 +934,7 @@ stock ObjectConstraintResult:ObjLib_HandleStringConstraints(
 /*____________________________________________________________________________*/
 
 /** Internal use only! */
-stock ObjectConstraintResult:ObjLib_HandleArrayTypeConstr(
+stock ObjectConstraintResult:ObjLib_HandleArrayConstraints(
         Object:object,
         ObjectType:typeDescriptor,
         Object:constraints,
@@ -956,6 +960,56 @@ stock ObjectConstraintResult:ObjLib_HandleArrayTypeConstr(
     if (upperLimit && size > maxLen)
     {
         ObjLib_HandleConstraintError("maxLen", object, typeDescriptor, keyIndex, errorHandler);
+        return ObjConstraintResult_Invalid;
+    }
+    
+    // Passed validation.
+    return ObjConstraintResult_Valid;
+}
+
+/*____________________________________________________________________________*/
+
+/** Internal use only! */
+stock ObjectConstraintResult:ObjLib_HandleCollectionConstraints(
+        Object:object,
+        ObjectType:typeDescriptor,
+        Object:constraints,
+        keyIndex,
+        const any:value[],
+        size,
+        ObjLib_ErrorHandler:errorHandler)
+{
+    // Get constraints.
+    new ObjectDataType:dataType = ObjectDataType:ObjLib_GetCell(constraints, "dataType");
+    new minBlockSize = ObjLib_GetCell(constraints, "minBlockSize");
+    new Object:elementConstraints = Object:ObjLib_GetObject(constraints, "elementConstraints");
+    
+    // Check if object is a collection.
+    if (!ObjLib_IsCollectionType(typeDescriptor))
+    {
+        ObjLib_HandleConstraintError("objectType", object, typeDescriptor, keyIndex, errorHandler);
+        return ObjConstraintResult_Invalid;
+    }
+    
+    // Validate data type.
+    if (ObjectDataType:ObjLib_GetCell(object, "dataType") != dataType)
+    {
+        ObjLib_HandleConstraintError("dataType", object, typeDescriptor, keyIndex, errorHandler);
+        return ObjConstraintResult_Invalid;
+    }
+    
+    // Validate minimum block size.
+    if (ObjLib_GetCell(object, "blockSize") < minBlockSize)
+    {
+        ObjLib_HandleConstraintError("blockSize", object, typeDescriptor, keyIndex, errorHandler);
+        return ObjConstraintResult_Invalid;
+    }
+    
+    // Validate element constraints.
+    if (elementConstraints != INVALID_OBJECT &&
+        elementConstraints != ObjLib_GetObject(object, "constraints"))
+    {
+        ObjLib_HandleConstraintError("elementConstraints", object, typeDescriptor, keyIndex, errorHandler);
         return ObjConstraintResult_Invalid;
     }
     

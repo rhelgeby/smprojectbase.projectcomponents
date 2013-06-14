@@ -55,10 +55,7 @@ static bool:ObjLibCollectionTypeBuilt = false;
 stock Collection:ObjLib_CreateCollection(ObjectDataType:dataType = ObjDataType_Object, blockSize = 1, Object:constraints = INVALID_OBJECT)
 {
     // Validate constraints.
-    if (constraints != INVALID_OBJECT && !ObjLib_IsConstraintObject(constraints))
-    {
-        ThrowError("Invalid constraint object (%x).", constraints);
-    }
+    ObjLib_ValidateConstraintOrFail(constraints, dataType, true);
     
     // Create collection object.
     new Object:collection = ObjLib_CreateObject(ObjLibCollectionType, false);
@@ -68,6 +65,7 @@ stock Collection:ObjLib_CreateCollection(ObjectDataType:dataType = ObjDataType_O
     
     // Initialize collection.
     ObjLib_SetCell(collection, "dataType", dataType);
+    ObjLib_SetCell(collection, "blockSize", blockSize);
     ObjLib_SetHandle(collection, "elements", elements);
     ObjLib_SetObject(collection, "constraints", constraints);
     
@@ -113,6 +111,9 @@ stock ObjLib_BuildCollectionType()
         
         // Data type of elements in collection.
         ObjLib_AddKey(ObjLibCollectionType, "dataType", ObjDataType_Cell);
+        
+        // Block size. Number of cells reserved for each element.
+        ObjLib_AddKey(ObjLibCollectionType, "blockSize", ObjDataType_Cell);
         
         // Handle to array of elements.
         ObjLib_AddKey(ObjLibCollectionType, "elements", ObjDataType_Handle);
@@ -212,8 +213,50 @@ stock bool:ObjLib_CollectionLookupTypeCheck(Collection:collection, ObjectDataTyp
 
 /**
  * Returns whether the specified type is a collection type.
+ *
+ * @param typeDescriptor        Type descriptor to compare.
  */
 stock bool:ObjLib_IsCollectionType(ObjectType:typeDescriptor)
 {
     return typeDescriptor == ObjLibCollectionType;
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Gets the type descriptor for collection objects.
+ *
+ * @return                  Type descriptor for collection objects.
+ */
+stock ObjectType:ObjLib_GetCollectionType()
+{
+    return ObjLibCollectionType;
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Gets the data type of the specified collection.
+ *
+ * @param collection        Collection object.
+ *
+ * @return                  Data type.
+ */
+stock ObjectDataType:ObjLib_CollectionGetDataType(Collection:collection)
+{
+    return ObjectDataType:ObjLib_GetCell(Object:collection, "dataType");
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Gets the constraints object for the specified collection.
+ *
+ * @param collection        Collection object.
+ *
+ * @return                  Constraint object or INVALID_OBJECT if none.
+ */
+stock Object:ObjLib_CollectionGetConstraints(Collection:collection)
+{
+    return ObjLib_GetObject(Object:collection, "constraints");
 }
