@@ -51,11 +51,20 @@ stock ParseTypedKv()
     ObjLib_AddKey(dataTypes, "float", ObjDataType_Float, ObjLib_GetFloatConstraints(true, true, true, 1.0, 5.0));
     ObjLib_AddKey(dataTypes, "string", ObjDataType_String);
     
+    // Dummy object sections, used in collection example.
+    new ObjectType:dummyType = ObjLib_CreateType();
+    ObjLib_AddKey(dummyType, "dummyKey", ObjDataType_Cell);
+    
     // Root section. NestedSections doesn't use any object constraints so that
     // the parser will add objects and keys automatically (strings).
     new ObjectType:rootType = ObjLib_CreateType();
     ObjLib_AddKey(rootType, "DataTypes", ObjDataType_Object, ObjLib_GetObjectConstraints(true, dataTypes));
     ObjLib_AddKey(rootType, "NestedSections", ObjDataType_Object);
+    ObjLib_AddKey(rootType, "Collection", ObjDataType_Object, ObjLib_GetCollectionConstraints(ObjDataType_Cell, 1));
+    
+    // This key has collection constraints with sub constraints on collection
+    // elements.
+    ObjLib_AddKey(rootType, "CollectionOfObjects", ObjDataType_Object, ObjLib_GetCollectionConstraints(ObjDataType_Object, 1, ObjLib_GetObjectConstraints(true, dummyType)));
     
     // Get a parser context. This object stores parser state and settings. Most
     // default settings will do fine in this example, but it's recommended to

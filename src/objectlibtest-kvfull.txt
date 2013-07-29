@@ -33,26 +33,26 @@
     {
     }
     
-    //"DuplicateKeys"
-    //{
-    //    "DupKey"            "6"
-    //    "DupKey"            "7"
-    //    "DupKey"            "8"
-    //}
+    "Collection"
+    {
+        "CollectionEntry"   "6"
+        "CollectionEntry"   "7"
+        "CollectionEntry"   "8"
+    }
     
-    //"DuplicateSections"
-    //{
-    //    "DupSection"
-    //    {
-    //        "DummyKey"      "9"
-    //    }
-    //    "DupSection"
-    //    {
-    //        // Empty.
-    //    }
-    //    "DupSection"
-    //    {
-    //        "DummyKey"      "10"
-    //    }
-    //}
+    "CollectionOfObjects"
+    {
+        "DummyObject"
+        {
+            "DummyKey"      "9"
+        }
+        "DummyObject"
+        {
+            "DummyKey"      "10"
+        }
+        "DummyObject"
+        {
+            "DummyKey"      "11"
+        }
+    }
 }
