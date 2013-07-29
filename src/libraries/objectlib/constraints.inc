@@ -939,8 +939,8 @@ stock ObjLib_ValidateConstraintOrFail(Object:constraints, ObjectDataType:dataTyp
     // Allow object type constraints for object keys. Makes it possible to
     // require the object to have certain keys without requiring it to be a
     // certain object type.
-    if (dataType == ObjDataType_Object
-        && typeDescriptor == ObjLib_ObjectTypeConstraints)
+    if (dataType == ObjDataType_Object &&
+       (typeDescriptor == ObjLib_ObjectTypeConstraints || typeDescriptor == ObjLib_CollectionConstraints))
     {
         return;
     }
