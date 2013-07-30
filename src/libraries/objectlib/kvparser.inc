@@ -122,6 +122,9 @@ stock Object:ObjLib_GetParseContext(const String:name[] = "",
                                     bool:continueOnError = true,
                                     ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
 {
+    // Note: See comments in ObjLib_BuildKvContextType for details about the
+    //       parse context attributes.
+    
     // Make sture type is ready.
     ObjLib_BuildKvContextType();
     
@@ -388,6 +391,9 @@ stock Object:ObjLib_ParseSection(Handle:kv, Object:parseContext)
  */
 stock ObjLib_OnSectionStart(Handle:kv, const String:sectionName[], Object:parseContext)
 {
+    PrintToServer("OnSectionStart -- sectionName: %s", sectionName);
+    PrintToServer("Global template type: %x", ObjLib_KvObjectType);
+    
     // Get type for this section.
     new ObjectType:typeDescriptor = ObjLib_GetSectionType(sectionName, parseContext);
     
@@ -405,6 +411,7 @@ stock ObjLib_OnSectionStart(Handle:kv, const String:sectionName[], Object:parseC
         // Type template used. Make a mutable object so the parser will be
         // able to create keys.
         mutableObject = true;
+        PrintToServer("Object is mutable.");
     }
     
     
@@ -499,6 +506,10 @@ stock ObjLib_OnSectionStart(Handle:kv, const String:sectionName[], Object:parseC
             }
         }
     }
+    else
+    {
+        PrintToServer("No constraints.");
+    }
     
     
     // Create object for this section.
@@ -508,6 +519,7 @@ stock ObjLib_OnSectionStart(Handle:kv, const String:sectionName[], Object:parseC
     if (ObjLib_IsCollectionType(typeDescriptor))
     {
         // Object is a collection.
+        PrintToServer("Creating collection object.");
         
         // Set default type and size.
         new ObjectDataType:dataType = ObjDataType_String;
@@ -528,6 +540,8 @@ stock ObjLib_OnSectionStart(Handle:kv, const String:sectionName[], Object:parseC
     }
     else
     {
+        // Object is a general object (typed or untyped).
+        PrintToServer("Creating general object. Type: %x | Mutable: %d", typeDescriptor, mutableObject);
         object = ObjLib_CreateObject(typeDescriptor, mutableObject);
     }
     
@@ -703,8 +717,11 @@ stock Object:ObjLib_OnEmptySection(Handle:kv, const String:sectionName[], Object
  */
 stock ObjLib_OnKeyValue(Handle:kv, const String:keyName[], KvDataTypes:kvDataType, Object:parseContext)
 {
+    PrintToServer("OnKeyValue -- keyName: %s", keyName);
+    
     // Get stacks.
     new Handle:objectStack = ObjLib_GetHandle(parseContext, "objectStack");
+    new Handle:typeStack = ObjLib_GetHandle(parseContext, "typeStack");
     
     // Get current object.
     new Object:object = INVALID_OBJECT;
@@ -716,8 +733,16 @@ stock ObjLib_OnKeyValue(Handle:kv, const String:keyName[], KvDataTypes:kvDataTyp
         ThrowError("[BUG] No object. This is a bug in objectlib.");
     }
     
-    // Get type.
+    // Get types.
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
+    new ObjectType:typeOnStack = INVALID_OBJECT_TYPE;
+    Array_PeekCell(typeStack, typeOnStack);
+    if (typeOnStack == INVALID_OBJECT_TYPE)
+    {
+        ThrowError("[BUG] No type on stack. This is a bug in objectlib.");
+    }
+    PrintToServer("typeOnStack: %x", typeOnStack);
+    PrintToServer("typeDescriptor: %x", typeDescriptor);
     
     // Get error handler.
     new ObjLib_ErrorHandler:errorHandler = ObjLib_KvGetErrorHandler(parseContext);
@@ -725,17 +750,23 @@ stock ObjLib_OnKeyValue(Handle:kv, const String:keyName[], KvDataTypes:kvDataTyp
     new ObjectDataType:keyDataType = ObjDataType_String;
     new Object:constraints = INVALID_OBJECT;
     
-    // Check if object is using the type template.
-    if (typeDescriptor == ObjLib_KvObjectType)
+    // TODO: These nested if-statements are bad! Code needs flattening. Refactor
+    // when code is working (move code blocks to separate functions).
+    
+    // Check if object is using the type template. Do this by checking which
+    // type descriptor it was created with (which is stored on the type stack).
+    if (typeOnStack == ObjLib_KvObjectType)
     {
         // Object has no predefined type descriptor. Add string key with no
         // constraints.
+        PrintToServer("Object is untyped, adding key.");
         ObjLib_AddObjectKey(object, keyName, ObjDataType_String);
         keyDataType = ObjDataType_String;
     }
     else
     {
         // Object has a predefined type descriptor. Get key data type.
+        PrintToServer("Object is typed. Validating key.");
         
         if (ObjLib_IsCollectionType(typeDescriptor))
         {
@@ -1131,11 +1162,17 @@ stock ObjLib_BuildKvContextType()
         // and handle errors.
         ObjLib_AddKey(ObjLib_KvContextType, "parseState", ObjDataType_Cell, INVALID_OBJECT);
         
-        // Object cursor stack. The top object is the current object being
-        // written. ADT array used as a stack.
+        // Object cursor stack. The top object is the object representing the
+        // current section. ADT array used as a stack.
         ObjLib_AddKey(ObjLib_KvContextType, "objectStack", ObjDataType_Handle, INVALID_OBJECT);
         
-        // Object type cursor stack. ADT array used as a stack.
+        // Object type cursor stack. Stores references to type descriptors used
+        // to build the objects in the object stack. ADT array used as a stack.
+        //
+        // Note: Get type descriptors directly from the object to get the
+        //       objects' actual type descriptors. In most cases this stack will
+        //       store the same references, but mutable objects will have their
+        //       own clones. It's not guaranteed to be the same type descriptor.
         ObjLib_AddKey(ObjLib_KvContextType, "typeStack", ObjDataType_Handle, INVALID_OBJECT);
         
         // Section name stack used to build path to current location. ADT array
@@ -1208,7 +1245,7 @@ stock ObjectType:ObjLib_GetSectionType(const String:sectionName[], Object:parseC
     
     // Check if no type specified at all.
     if (parentType == INVALID_OBJECT_TYPE
-        || !ObjLib_KvHasRootType(parseContext))
+        || !ObjLib_KvHasRootType(parseContext))     // Redundant check?
     {
         // Not even a root type is available. Use type template.
         return ObjLib_KvObjectType;
@@ -1233,6 +1270,8 @@ stock ObjectType:ObjLib_GetSectionType(const String:sectionName[], Object:parseC
         // No constraint object. Use type template.
         return ObjLib_KvObjectType;
     }
+    
+    // Get type of section according to constraints.
     
     // Check if this section is bound by object constraints.
     new ObjectType:constraintType = ObjLib_GetTypeDescriptor(constraints);

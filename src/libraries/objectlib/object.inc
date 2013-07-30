@@ -159,6 +159,8 @@ stock Object:ObjLib_CreateObjectEx(ObjectType:primaryType = INVALID_OBJECT_TYPE,
 stock ObjLib_DeleteObject(&Object:object, bool:resetReference = true, bool:closeHandles = false)
 {
     // TODO: Add support for recursive deletion (nested objects/types).
+    //       Use a traversal stack. Don't delete objects that's already in the
+    //       stack. This should prevent objects from being deleted twice.
     
     // Validate.
     ObjLib_ValidateObject(object);
