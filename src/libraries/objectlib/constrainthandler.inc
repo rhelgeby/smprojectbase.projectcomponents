@@ -41,6 +41,22 @@ static bool:ObjLib_InLookupHandler = false;
  * @endsection
  */
 
+/**
+ * Switch for overriding whether constraints are checked. If disabled, values
+ * are stored directly in the object.
+ */
+static bool:ObjLib_ConstraintsEnabled = true;
+
+/**
+ * Switch for overriding how values are stored in container objects (like
+ * collections).
+ *
+ * When disabled, values are stored directly in the container object instead of
+ * using the container's storage handler. This is necessary to be able to set
+ * and modify attributes of the container object.
+ */
+static bool:ObjLib_ContainerStorageEnabled = true;
+
 /*____________________________________________________________________________*/
 
 /**
@@ -76,10 +92,21 @@ stock ObjLib_ApplyConstraints(
         bool:isLookup = false,
         bool:isString = false)
 {
-    // Get constraint object.
-    new Object:constraints = ObjLib_GetConstraints(object, typeDescriptor, index);
+    new ObjectConstraintResult:constraintResult;
     
-    switch (ObjLib_RunConstraintHandler(constraints, object, typeDescriptor, index, values, size, errorHandler, isLookup))
+    if (ObjLib_ConstraintsEnabled)
+    {
+        // Get constraint object.
+        new Object:constraints = ObjLib_GetConstraints(object, typeDescriptor, index);
+        constraintResult = ObjLib_RunConstraintHandler(constraints, object, typeDescriptor, index, values, size, errorHandler, isLookup);
+    }
+    else
+    {
+        // Constraints are disabled. Mark value as valid.
+        constraintResult = ObjConstraintResult_Valid;
+    }
+    
+    switch (constraintResult)
     {
         case ObjConstraintResult_Invalid:
         {
@@ -144,7 +171,12 @@ stock ObjLib_ApplyValue(
         index,
         any:value)
 {
-    if (ObjLib_IsCollectionType(typeDescriptor))
+
+    // TODO: Move storage code to its own storage handlers in collection.inc and
+    //       object.inc). This function should only be responsible for calling
+    //       the appropriate storage handler.
+    
+    if (ObjLib_IsCollectionType(typeDescriptor) && ObjLib_ContainerStorageEnabled)
     {
         // Object is a collection.
         
@@ -197,7 +229,7 @@ stock ObjLib_ApplyArray(
 {
     new count = 0;
     
-    if (ObjLib_IsCollectionType(typeDescriptor))
+    if (ObjLib_IsCollectionType(typeDescriptor) && ObjLib_ContainerStorageEnabled)
     {
         // Object is a collection. Get colletion data type.
         
@@ -247,7 +279,7 @@ stock ObjLib_ApplyString(
 {
     new count = 0;
     
-    if (ObjLib_IsCollectionType(typeDescriptor))
+    if (ObjLib_IsCollectionType(typeDescriptor) && ObjLib_ContainerStorageEnabled)
     {
         // Object is a collection. Get colletion data type.
         
@@ -1177,4 +1209,56 @@ stock bool:ObjLib_IsInCustomHandler()
 stock bool:ObjLib_IsInLookupHandler()
 {
     return ObjLib_InLookupHandler;
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Enables the constraint handler. Values will be validated if constraints are
+ * available.
+ */
+stock ObjLib_EnableConstraints()
+{
+    ObjLib_ConstraintsEnabled = true;
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Disables the constraint handler. Values will be stored without validation.
+ *
+ * Note: This setting will stay disabled until manually enabled again.
+ *
+ * Warning: Do not disable this unless you know what you're doing.
+ */
+stock ObjLib_DisableConstraints()
+{
+    ObjLib_ConstraintsEnabled = false;
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Enables container storage handlers. Values can be stored in container objects
+ * using their own storage handlers as usual.
+ */
+stock ObjLib_EnableContainerStorage()
+{
+    ObjLib_ContainerStorageEnabled = true;
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Disables container storage handlers. Values will be stored directly in the
+ * object. This is necessary to modify attributes of the container object
+ * itself.
+ *
+ * Note: This setting will stay disabled until manually enabled again.
+ *
+ * Warning: Do not disable this unless you know what you're doing.
+ */
+stock ObjLib_DisableContainerStorage()
+{
+    ObjLib_ContainerStorageEnabled = false;
 }

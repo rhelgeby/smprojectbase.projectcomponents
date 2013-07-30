@@ -54,6 +54,9 @@ static bool:ObjLibCollectionTypeBuilt = false;
  */
 stock Collection:ObjLib_CreateCollection(ObjectDataType:dataType = ObjDataType_Object, blockSize = 1, Object:constraints = INVALID_OBJECT)
 {
+    // Make sure collection type descriptor is built.
+    ObjLib_BuildCollectionType();
+    
     // Validate constraints.
     ObjLib_ValidateConstraintOrFail(constraints, dataType, true);
     
@@ -63,11 +66,22 @@ stock Collection:ObjLib_CreateCollection(ObjectDataType:dataType = ObjDataType_O
     // Create element array.
     new Handle:elements = CreateArray(blockSize);
     
+    // Disable container storage handlers and constraints, otherwise the
+    // constraint handler thinks we're adding elements to the collection. We're
+    // initializing collection attributes now.
+    ObjLib_DisableContainerStorage();
+    ObjLib_DisableConstraints();
+    
     // Initialize collection.
     ObjLib_SetCell(collection, "dataType", dataType);
     ObjLib_SetCell(collection, "blockSize", blockSize);
     ObjLib_SetHandle(collection, "elements", elements);
     ObjLib_SetObject(collection, "constraints", constraints);
+    
+    // Enable container storage handlers and constraints again. Any attempt to
+    // modify this object will now be treated as modifying the element collection.
+    ObjLib_EnableContainerStorage();
+    ObjLib_EnableConstraints();
     
     return Collection:collection;
 }
