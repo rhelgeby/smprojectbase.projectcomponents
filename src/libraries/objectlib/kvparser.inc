@@ -1235,6 +1235,8 @@ stock ObjectType:ObjLib_KvGetCurrentType(Object:parseContext)
  */
 stock ObjectType:ObjLib_GetSectionType(const String:sectionName[], Object:parseContext)
 {
+    PrintToServer("GetSectionType -- sectionName: %s", sectionName);
+    
     // Make sure type template is ready.
     ObjLib_BuildKvObjectType();
     
@@ -1248,6 +1250,7 @@ stock ObjectType:ObjLib_GetSectionType(const String:sectionName[], Object:parseC
         || !ObjLib_KvHasRootType(parseContext))     // Redundant check?
     {
         // Not even a root type is available. Use type template.
+        PrintToServer("No root type.");
         return ObjLib_KvObjectType;
     }
     
@@ -1260,6 +1263,7 @@ stock ObjectType:ObjLib_GetSectionType(const String:sectionName[], Object:parseC
         //       section is invalid. It is validated at the end of the section,
         //       but it might be better to make sure it's valid as early as
         //       possible.
+        PrintToServer("Key doesn't exist in parent object.");
         return ObjLib_KvObjectType;
     }
     
@@ -1268,6 +1272,7 @@ stock ObjectType:ObjLib_GetSectionType(const String:sectionName[], Object:parseC
     if (constraints == INVALID_OBJECT)
     {
         // No constraint object. Use type template.
+        PrintToServer("No constraint object.");
         return ObjLib_KvObjectType;
     }
     
@@ -1284,23 +1289,33 @@ stock ObjectType:ObjLib_GetSectionType(const String:sectionName[], Object:parseC
         if (typeDescriptor == INVALID_OBJECT_TYPE)
         {
             // Constraint object has no type constraint, use type template.
+            PrintToServer("Object constraint has no type constraint.");
             return ObjLib_KvObjectType;
         }
         
         // Type is valid. Use type specified in constraint object.
+        PrintToServer("Using object constraint. Type: %x", typeDescriptor);
         return typeDescriptor;
     }
     
     // Check if this section is bound by collection constraints.
     new ObjectType:collectionType = ObjLib_GetCollectionType();
-    if (constraintType == collectionType)
+    if (constraintType == ObjLib_CollectionConstraints)
     {
-        // Use collection type descriptor.
+        // Section is a collection. Use collection type descriptor.
+        PrintToServer("Using collection type: %x", collectionType);
         return collectionType;
     }
     
+    // Is this really a bug? Catch it anyways to see if there are any legal
+    // cases.
+    ThrowError("[BUG] Found unknown constraint object when retrieving section type. This is a bug in objectlib.");
+    return INVALID_OBJECT_TYPE;
+    
     // No constraints, use type template.
-    return ObjLib_KvObjectType;
+    
+    //PrintToServer("Unknown constraint.");
+    //return ObjLib_KvObjectType;
 }
 
 /*____________________________________________________________________________*/
