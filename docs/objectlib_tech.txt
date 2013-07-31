@@ -157,7 +157,7 @@ Memory Management
 -----------------
 
 The Object Library doesn't have a garbage collector, so the user is responsible
-for deleding unused objects. The user can't just use CloseHandle on an object,
+for deleting unused objects. The user can't just use CloseHandle on an object,
 even though it will work. The object array itself stores other handles that must
 be closed.
 
@@ -188,8 +188,8 @@ An error callback can be specified in type descriptors, so you can have various
 callbacks for different types.
 
 The error callback can also be overridden in various situations. Currently this
-is in accessor functions and the KeyValue parser (it does its own error
-handling).
+is in accessor functions and the KeyValue parser (the parser has its own error
+handler).
 
 
 Constraints
@@ -217,8 +217,8 @@ replacement by searching the lookup array to get an index. The replacement value
 at the specified index is copied and stored.
 
 The trie method is similar, but now lookup strings are directly mapped to
-replacement values. It's useful if there are many lookup strings and faster than
-searching a very large array.
+replacement values. It's useful if there are many lookup strings and is faster
+than searching through a large array.
 
 The callback method calls a user defined callback where the user can process the
 lookup value and return a replacement value. It supports three types of
@@ -245,7 +245,7 @@ ObjLib_ApplyConstraints reads this return value and acts accordingly.
 Constraint errors are handled in individual constraint handlers so they are able
 to give specific error messages.
 
-If the value was overridden it does nothing, because something else stored a
+If the value was overridden it does nothing, because something else stored the
 value.
 
 If the value is valid it delegates the work to an appropriate storage function
