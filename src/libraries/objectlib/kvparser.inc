@@ -391,6 +391,16 @@ stock Object:ObjLib_ParseSection(Handle:kv, Object:parseContext)
  */
 stock ObjLib_OnSectionStart(Handle:kv, const String:sectionName[], Object:parseContext)
 {
+    // TODO: This is getting messy! Refactor and move code to individual
+    //       functions with separate event handlers for each object type
+    //       (general object, collections, and possible future objects).
+    //
+    //       This event handler should decide what to do based on the parent
+    //       object.
+    //
+    //       If the parent is a collection, it should delegate work to a
+    //       OnSectionStart function in the collection handler.
+    
     PrintToServer("OnSectionStart -- sectionName: %s", sectionName);
     PrintToServer("Global template type: %x", ObjLib_KvObjectType);
     
@@ -414,6 +424,9 @@ stock ObjLib_OnSectionStart(Handle:kv, const String:sectionName[], Object:parseC
         PrintToServer("Object is mutable.");
     }
     
+    // TODO: Doesn't handle sub sections in collections properly. It creates
+    //       new collection object instead of inserting objects as elements in
+    //       a collection.
     
     // Get constraints for this section.
     // ---------------------------------
@@ -436,11 +449,19 @@ stock ObjLib_OnSectionStart(Handle:kv, const String:sectionName[], Object:parseC
         parentType = ObjLib_GetTypeDescriptor(parent);
     }
     
-    // Validate parent type.
+    // Get constraints from parent object.
+    /*if (parentType == ObjLibCollectionType)
+    {
+        // Parent is a general object. Get collection element constraints if
+        // available.
+        // TODO: Get constraints for the collection section, not the elements.
+        //constraints = ObjLib_CollectionGetConstraints(Collection:parent);
+    }*/
     if (parentType != INVALID_OBJECT_TYPE)
     {
-        // Get index of sub section key in parent object. This key may not exist if
-        // the parent object type is not predefined in rootType.
+        // Parent is a general object. Get index of sub section key in parent
+        // object. This key may not exist if the parent object type is not
+        // predefined in rootType.
         new keyIndex = ObjLib_GetKeyIndexFromType(parentType, sectionName);
         
         // Get key constraints, if any.
@@ -1254,6 +1275,15 @@ stock ObjectType:ObjLib_GetSectionType(const String:sectionName[], Object:parseC
         return ObjLib_KvObjectType;
     }
     
+    // Check if parent is a collection.
+    new ObjectType:collectionType = ObjLib_GetCollectionType();
+    if (parentType == ObjLib_CollectionConstraints)
+    {
+        // Parent is a collection. Use collection type descriptor.
+        PrintToServer("Using collection type: %x", collectionType);
+        return collectionType;
+    }
+    
     // Get constraints for this section.
     new keyIndex = ObjLib_GetKeyIndexFromType(parentType, sectionName);
     if (keyIndex < 0)
@@ -1299,13 +1329,13 @@ stock ObjectType:ObjLib_GetSectionType(const String:sectionName[], Object:parseC
     }
     
     // Check if this section is bound by collection constraints.
-    new ObjectType:collectionType = ObjLib_GetCollectionType();
-    if (constraintType == ObjLib_CollectionConstraints)
-    {
-        // Section is a collection. Use collection type descriptor.
-        PrintToServer("Using collection type: %x", collectionType);
-        return collectionType;
-    }
+    //new ObjectType:collectionType = ObjLib_GetCollectionType();
+    //if (constraintType == ObjLib_CollectionConstraints)
+    //{
+    //    // Section is a collection. Use collection type descriptor.
+    //    PrintToServer("Using collection type: %x", collectionType);
+    //    return collectionType;
+    //}
     
     // Is this really a bug? Catch it anyways to see if there are any legal
     // cases.

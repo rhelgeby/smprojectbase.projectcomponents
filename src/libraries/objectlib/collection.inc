@@ -244,6 +244,7 @@ stock bool:ObjLib_IsCollectionType(ObjectType:typeDescriptor)
  */
 stock ObjectType:ObjLib_GetCollectionType()
 {
+    ObjLib_BuildCollectionType();
     return ObjLibCollectionType;
 }
 
