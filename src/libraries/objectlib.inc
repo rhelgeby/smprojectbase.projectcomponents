@@ -89,6 +89,7 @@ enum Collection
  */
 enum ObjectDataType
 {
+    ObjDataType_Invalid = -1,   /** Unspecified type. Only used by validators. */
     ObjDataType_Any,            /** Does not include arrays/strings. */
     ObjDataType_Cell,
     ObjDataType_Bool,

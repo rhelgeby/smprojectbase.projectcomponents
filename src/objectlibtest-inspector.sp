@@ -69,7 +69,10 @@ stock ParseTypedKv()
     // Get a parser context. This object stores parser state and settings. Most
     // default settings will do fine in this example, but it's recommended to
     // give it a name so it can be identified in error logs.
-    new Object:parseContext = ObjLib_GetParseContext("objectlibtest", rootType);
+    new Object:parseContext = ObjLib_GetParseContext(
+            "objectlibtest",    // name
+            rootType,           // rootType
+            true);              // ignoreEmptySections
     
     // Run parser. Parsed sections are added to a list.
     List = ObjLib_ParseInListMode(KvFull, parseContext);

@@ -510,7 +510,7 @@ stock Object:ObjLib_GetLookupConstraints(
         
         if (constraintsType == ObjLib_LookupConstraints)
         {
-            ThrowError("Parameter subConstraint cannot be a lookup constraint object.");
+            ThrowError("Parameter subConstraint cannot be a lookup constraint object. Nested lookup constraints is not allowed.");
             return INVALID_OBJECT;
         }
     }
