@@ -227,10 +227,7 @@ stock Handle:ObjLib_ParseInListMode(Handle:kv, Object:parseContext)
         KvGetSectionName(kv, keyName, sizeof(keyName));
         
         // Enter section.
-        KvGotoFirstSubKey(kv, false);
-        
-        // Verify that the cursor is on a key and not an empty section.
-        if (KvGetDataType(kv, NULL_STRING) != KvData_None)
+        if (KvGotoFirstSubKey(kv, false))
         {
             PrintToServer("Parsing section \"%s\"", keyName);
             
@@ -244,6 +241,7 @@ stock Handle:ObjLib_ParseInListMode(Handle:kv, Object:parseContext)
         else
         {
             PrintToServer("List mode: Found empty section.");
+            
             // Section is empty.
             new Object:subObject = ObjLib_OnEmptySection(kv, keyName, parseContext);
             
@@ -749,13 +747,15 @@ stock Object:ObjLib_OnCollectionStart(Object:constraints, ObjectType:parentType,
     new Object:elementConstraints = INVALID_OBJECT;
     
     // Get collection data type from constraints, if any.
-    if (ObjLib_GetTypeDescriptor(constraints) == ObjLib_CollectionConstraints)
+    if (constraints != INVALID_OBJECT && ObjLib_GetTypeDescriptor(constraints) == ObjLib_CollectionConstraints)
     {
         // Override defaults with settings in constraint.
         dataType = ObjectDataType:ObjLib_GetCell(constraints, "dataType");
         blockSize = ObjLib_GetCell(constraints, "minBlockSize");
         elementConstraints = ObjLib_GetObject(constraints, "elementConstraints");
     }
+    
+    PrintToServer("ObjLib_OnCollectionStart -- constraints: %x, dataType: %d, elementConstraints: %x", constraints, dataType, elementConstraints);
     
     // Create collection.
     return Object:ObjLib_CreateCollection(dataType, blockSize, elementConstraints);
@@ -1149,7 +1149,7 @@ stock bool:ObjLib_KvUnexpectedKeyError(Object:object, ObjectType:typeDescriptor,
                            errorHandler,                        // customHandler
                            result,                              // result
                            parseContext,                        // data
-                           "Unexpected key. The key \"%s\" does not exist in the type descriptor.",   // format
+                           "Unexpected key \"%s\". It does not exist in the type descriptor. Key names are case sensitive.",   // format
                            keyName))
     {
         // Error was handled in customHandler. Update parser state.
@@ -1316,6 +1316,7 @@ stock bool:ObjLib_KvTypeMismatchError(Object:object, ObjectType:typeDescriptor, 
                            result,                              // result
                            parseContext,                        // data
                            "Type mismatch (key: \"%s\"). Expected type: %s. Actual type: %s",   // format
+                           keyName,
                            expectedTypeString,
                            actualTypeString))
     {
@@ -1574,9 +1575,11 @@ stock bool:ObjLib_KvIsTypeTemplate(ObjectType:typeDescriptor)
  * This is a helper function to get object the object type of collections that
  * stores object elements.
  *
- * @param collection        Collection to get element type of.
- * @param parseContext      Object with parser settings.
- *                          (Type: ObjLib_KvParamsType)
+ * @param collection            Collection to get element type of.
+ * @param parseContext          Object with parser settings.
+ *                              (Type: ObjLib_KvParamsType)
+ * @param elementConstraints    (Output) Constraint object for collection
+ *                              elements.
  *
  * @return                  Type descriptor of element objects, or type template
  *                          if not specified. On handled errors it returns
@@ -1586,7 +1589,7 @@ stock bool:ObjLib_KvIsTypeTemplate(ObjectType:typeDescriptor)
  *                          using another constraint type than object
  *                          constraints.
  */
-stock ObjectType:ObjLib_KvGetColElementTypeOrFail(Collection:collection, Object:parseContext)
+stock ObjectType:ObjLib_KvGetColElementTypeOrFail(Collection:collection, Object:parseContext, &Object:elementConstraints = INVALID_OBJECT)
 {
     // Get error handler.
     new ObjLib_ErrorHandler:errorHandler = ObjLib_KvGetErrorHandler(parseContext);
@@ -1602,7 +1605,7 @@ stock ObjectType:ObjLib_KvGetColElementTypeOrFail(Collection:collection, Object:
     }
     
     // Get collection element constraints, if any.
-    new Object:elementConstraints = ObjLib_CollectionGetConstraints(collection);
+    elementConstraints = ObjLib_CollectionGetConstraints(collection);
     if (elementConstraints == INVALID_OBJECT)
     {
         // No element constraints, use type template.
@@ -1670,7 +1673,7 @@ stock ObjectType:ObjLib_KvGetColElementTypeOrFail(Collection:collection, Object:
  *                          (ObjLib_KvObjectType). On errors it will return
  *                          INVALID_OBJECT_TYPE and update the parser state.
  */
-stock ObjectType:ObjLib_KvGetSubTypeOrFail(const String:subSection[], Object:parseContext, ObjectType:parentType = INVALID_OBJECT_TYPE, Object:constraints = INVALID_OBJECT)
+stock ObjectType:ObjLib_KvGetSubTypeOrFail(const String:subSection[], Object:parseContext, &ObjectType:parentType = INVALID_OBJECT_TYPE, &Object:constraints = INVALID_OBJECT)
 {
     PrintToServer("ObjLib_KvGetSubTypeOrFail -- subSection: %s", subSection);
     
@@ -1685,8 +1688,21 @@ stock ObjectType:ObjLib_KvGetSubTypeOrFail(const String:subSection[], Object:par
     // Get error handler.
     new ObjLib_ErrorHandler:errorHandler = ObjLib_KvGetErrorHandler(parseContext);
     
-    // Get object stack.
+    // Get stacks.
     new Handle:objectStack = ObjLib_GetHandle(parseContext, "objectStack");
+    new Handle:typeStack = ObjLib_GetHandle(parseContext, "typeStack");
+    
+    // Get parent type template.
+    new ObjectType:typeTemplate = INVALID_OBJECT_TYPE;
+    Array_PeekCell(typeStack, typeTemplate);
+    
+    // Check if parent is untyped.
+    if (ObjLib_KvIsTypeTemplate(typeTemplate))
+    {
+        // Nothing more to do, all sub sections will also be untyped. This also
+        // implies that collections in untyped parents are not supported.
+        return ObjLib_KvObjectType;
+    }
     
     // Get parent object, which is currently on the top of the object stack
     // (not removing it from the stack).
@@ -1694,7 +1710,7 @@ stock ObjectType:ObjLib_KvGetSubTypeOrFail(const String:subSection[], Object:par
     Array_PeekCell(objectStack, parent);
     
     // Get type descriptor of parent object. This will be either the actual
-    // type descriptor, or the type descriptur used to create it.
+    // type descriptor, or the type descriptor used to create it.
     if (parent == INVALID_OBJECT)
     {
         // Parent object is not available, the sub section is the root section.
@@ -1707,14 +1723,6 @@ stock ObjectType:ObjLib_KvGetSubTypeOrFail(const String:subSection[], Object:par
         parentType = ObjLib_GetTypeDescriptor(parent);
     }
     
-    // Check if parent is untyped.
-    if (ObjLib_KvIsTypeTemplate(parentType))
-    {
-        // Nothing more to do, all sub sections will also be untyped. This also
-        // implies that collections in untyped parents are not supported.
-        return parentType;
-    }
-    
     // At this point the parent has a predefined type. Figure out whether it's
     // a collection or a regular object.
     
@@ -1725,7 +1733,7 @@ stock ObjectType:ObjLib_KvGetSubTypeOrFail(const String:subSection[], Object:par
     {
         // Parent is a collection collection object. Get type of collection 
         // elements.
-        return ObjLib_KvGetColElementTypeOrFail(Collection:parent, parseContext);
+        return ObjLib_KvGetColElementTypeOrFail(Collection:parent, parseContext, constraints);
     }
     
     // Parent is a general object. Get object constraints for this sub section

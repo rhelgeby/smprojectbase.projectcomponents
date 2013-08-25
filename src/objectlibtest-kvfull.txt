@@ -44,15 +44,15 @@
     {
         "DummyObject"
         {
-            "DummyKey"      "9"
+            "dummyKey"      "9"
         }
         "DummyObject"
         {
-            "DummyKey"      "10"
+            "dummyKey"      "10"
         }
         "DummyObject"
         {
-            "DummyKey"      "11"
+            "dummyKey"      "11"
         }
     }
 }
