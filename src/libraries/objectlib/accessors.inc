@@ -1552,6 +1552,7 @@ stock ObjLib_DataTypeToString(ObjectDataType:dataType, String:buffer[], maxlen)
         case ObjDataType_String:        return strcopy(buffer, maxlen, "String");
         case ObjDataType_Object:        return strcopy(buffer, maxlen, "Object");
         case ObjDataType_ObjectType:    return strcopy(buffer, maxlen, "ObjectType");
+        default:                        return strcopy(buffer, maxlen, "(Unefined)");
     }
     
     return 0;

@@ -232,6 +232,7 @@ stock bool:ObjLib_CollectionLookupTypeCheck(Collection:collection, ObjectDataTyp
  */
 stock bool:ObjLib_IsCollectionType(ObjectType:typeDescriptor)
 {
+    ObjLib_BuildCollectionType();
     return typeDescriptor == ObjLibCollectionType;
 }
 
