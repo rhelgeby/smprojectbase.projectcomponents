@@ -395,110 +395,10 @@ stock ObjLib_OnSectionStart(Handle:kv, const String:sectionName[], Object:parseC
     PrintToServer("OnSectionStart -- sectionName: %s", sectionName);
     PrintToServer("Global template type: %x", ObjLib_KvObjectType);
     
-    /* Goals:
-     * - Determine type of this section according to parent type and constraints
-     * - Create new section object.
-     *
-     * Tasks (unordered):
-     * - Get parent type descriptor (either directly or from the type stack).
-     * - Get constraints for this section.
-     * - Check if this section should use type template.
-     * - Validate that this section is expected (if parent is typed).
-     * - Check if section is a collection.
-     *
-     * Assume everything is valid. Get type and everything needed to create
-     * section object. Helper functions should do validation and throw errors.
-     */
-    
     // Get stacks.
     new Handle:typeStack = ObjLib_GetHandle(parseContext, "typeStack");
     new Handle:objectStack = ObjLib_GetHandle(parseContext, "objectStack");
     new Handle:nameStack = ObjLib_GetHandle(parseContext, "nameStack");
-    
-    // Old code: ----------------------------
-    
-    /*
-    // Get error handler.
-    new ObjLib_ErrorHandler:errorHandler = ObjLib_KvGetErrorHandler(parseContext);
-    
-    new Object:constraints = INVALID_OBJECT;
-    new ObjectType:parentType = INVALID_OBJECT_TYPE;
-    new ObjectType:parentTypeOnStack = INVALID_OBJECT_TYPE;
-    
-    // Get parent object (don't remove from stack).
-    new Object:parent = INVALID_OBJECT;
-    Array_PeekCell(objectStack, parent);
-    
-    // Get parent type.
-    if (parent == INVALID_OBJECT)
-    {
-        // There is no parent object on the stack. This is the root section,
-        // use the root type as parent type.
-        parentType = ObjLib_GetObjectType(parseContext, "rootType");
-    }
-    else
-    {
-        parentType = ObjLib_GetTypeDescriptor(parent);
-        
-        // Get original parent type.
-        Array_PeekCell(typeStack, parentTypeOnStack);
-    }
-    */
-    
-    // Validate section type.
-    // ----------------------
-    
-    /*
-    // Only validate if section is typed (not created with type template).
-    if (parentTypeOnStack != ObjLib_KvObjectType)
-    {
-        // Get constraints for this section from the parent object.
-        // TODO: This may be moved to its own function. Perhaps into                <=========
-        //       ObjLib_ValidateSectionType.
-        if (ObjLib_IsCollectionType(parentType))
-        {
-            // Parent is a collection, which makes this a section a collection
-            // element. Get collection element constraints from the parent
-            // collection, if available.
-            constraints = ObjLib_CollectionGetConstraints(Collection:parent);
-        }
-        if (parentType != INVALID_OBJECT_TYPE)
-        {
-            // Parent is a general object. Get index of sub section key in parent
-            // object. This key may not exist if the parent object type is not
-            // predefined in rootType.
-            new keyIndex = ObjLib_GetKeyIndexFromType(parentType, sectionName);
-            if (keyIndex < 0)
-            {
-                // Error. Unexpected section, it does not exist in the parent
-                // object.
-                if (!ObjLib_KvUnexpectedKeyError(parent, parentType, errorHandler, parseContext, sectionName))
-                {
-                    // Validation error. The parser state has been updated, just
-                    // return so the parse loop can handle it.
-                    return;
-                }
-            }
-            
-            // Get the constraints from the parent type. This might be
-            // INVALID_OBJECT too.
-            constraints = ObjLib_GetTypeConstraintsAt(parentType, keyIndex);
-        }
-        
-        // This validates that this section is expected, according to
-        // constraints in the parent type. If it's supposed to be a key-value
-        // pair instead, it will trigger an error.
-        if (!ObjLib_ValidateSectionType(constraints, parentType, errorHandler, parseContext, sectionName))
-        {
-            // Validation error. The parser state has been updated, just return
-            // so the parse loop can handle it.
-            return;
-        }
-    }
-    */
-    
-    // Create object for this section.
-    // -------------------------------
     
     // Get type and other meta data for for this section.
     new ObjectType:parentType = INVALID_OBJECT_TYPE;
@@ -644,8 +544,6 @@ stock Object:ObjLib_OnSectionEnd(Handle:kv, const String:sectionName[], Object:p
  */
 stock Object:ObjLib_OnEmptySection(Handle:kv, const String:sectionName[], Object:parseContext)
 {
-    // TODO: Validate. Check if this section is expected. Get type.
-    
     // Check if empty sections are included.
     if (!ObjLib_GetBool(parseContext, "ignoreEmptySections"))
     {
@@ -1462,18 +1360,6 @@ public Action:ObjLib_KvErrorHandler(ObjectType:typeDescriptor, ObjLibError:error
     }
 }
 
-
-/*____________________________________________________________________________*/
-
-/*public ObjLib_BoolParseErrorHandler()
-{
-    ObjLib_HandleError(ObjectType:typeDescriptor,   // typeDescriptor
-                       INVALID_OBJECT,              // object
-                       ObjLibError_ValidationError, // errorType
-                       TempErrorHandler,            // customHandler
-                       "Invalid boolean string.");  // format
-}*/
-
 /*____________________________________________________________________________*/
 
 /** Internal use only! */
@@ -1544,45 +1430,6 @@ stock ObjLib_BuildKvContextType()
         ObjLib_AddKey(ObjLib_KvContextType, "nameStack", ObjDataType_Handle, INVALID_OBJECT);
         
         ObjLib_KvContextTypeBuilt = true;
-    }
-}
-
-/*____________________________________________________________________________*/
-
-/**
- * Internal use only!
- * Gets the type descriptor used to create the current section.
- *
- * @param parseContext      Object with parser settings.
- *                          (Type: ObjLib_KvParamsType)
- *
- * @return                  One of the following, whichever is available first:
- *                          1. Type on top of the type stack.
- *                          2. Root type in parse context.
- *                          3. Type template.
- */
-stock ObjectType:ObjLib_KvGetTypeTemplate(Object:parseContext)
-{
-    new ObjectType:typeDescriptor = INVALID_OBJECT_TYPE;
-    
-    // Get and check if a type is on the type stack.
-    if (Array_PeekCell(ObjLib_GetHandle(parseContext, "typeStack"), typeDescriptor))
-    {
-        // Stack not empty, use this type.
-        return typeDescriptor;
-    }
-    
-    // Stack empty, use root type if available.
-    new ObjectType:rootType = ObjLib_GetObjectType(parseContext, "rootType");
-    if (rootType != INVALID_OBJECT_TYPE)
-    {
-        // Use root type.
-        return rootType;
-    }
-    else
-    {
-        // No root type specified, use type template.
-        return ObjLib_KvObjectType;
     }
 }
 
@@ -1857,75 +1704,6 @@ stock ObjectType:ObjLib_KvGetSubTypeOrFail(const String:subSection[], Object:par
     // handled above this statement.
     ThrowError("[BUG] Unexpected constraint. This is a bug in objectlib.");
     return INVALID_OBJECT_TYPE;
-    
-    
-    // Old code: ---------------
-    
-    /*
-    // Get type of parent section. It is currently on the top of the stack
-    // (when called from ObjLib_OnSectionStart). If the stack is empty it will
-    // get rootType in parseParams.
-    new ObjectType:typeTemplate = ObjLib_KvGetTypeTemplate(parseContext);
-    
-    // Check if no type specified at all.
-    if (parentType == INVALID_OBJECT_TYPE
-        || !ObjLib_KvHasRootType(parseContext))     // Redundant check?
-    {
-        // Not even a root type is available. Use type template.
-        PrintToServer("No root type.");
-        return ObjLib_KvObjectType;
-    }
-    */
-    
-    /*
-    new ObjectType:collectionType = ObjLib_GetCollectionType();
-    
-    // Check if parent is a collection (handles nested collections).
-    // TODO: Collection type is defined by constraints in type descriptors,
-    //       can't compare types directly in this case.
-    if (parentType == collectionType)
-    {
-        // Parent is a collection. Use collection type descriptor.
-        PrintToServer("Using collection type: %x", collectionType);
-        return collectionType;
-    }
-    */
-    
-    /*
-    // Get constraints for this section.
-    new keyIndex = ObjLib_GetKeyIndexFromType(parentType, subSection);
-    if (keyIndex < 0)
-    {
-        // Key doesn't exist in parent object, it's mutable. Use type template.
-        // TODO: Is this always the case? What if parent is typed, but this
-        //       section is invalid. It is validated at the end of the section,
-        //       but it might be better to make sure it's valid as early as
-        //       possible.
-        PrintToServer("Key doesn't exist in parent object.");
-        return ObjLib_KvObjectType;
-    }
-    
-    // Check if this section has no constraints.
-    new Object:constraints = ObjLib_GetTypeConstraintsAt(parentType, keyIndex);
-    if (constraints == INVALID_OBJECT)
-    {
-        // No constraint object. Use type template.
-        PrintToServer("No constraint object.");
-        return ObjLib_KvObjectType;
-    }
-    */
-    
-    /*
-    // Is this really a bug? Catch it anyways to see if there are any legal
-    // cases.
-    ThrowError("[BUG] Found unknown constraint object when retrieving section type. This is a bug in objectlib.");
-    return INVALID_OBJECT_TYPE;
-    */
-    
-    // No constraints, use type template.
-    
-    //PrintToServer("Unknown constraint.");
-    //return ObjLib_KvObjectType;
 }
 
 /*____________________________________________________________________________*/
