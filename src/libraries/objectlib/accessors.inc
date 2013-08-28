@@ -1454,6 +1454,22 @@ stock Handle:ObjLib_GetTypeDataTypes(ObjectType:typeDescriptor)
 /*____________________________________________________________________________*/
 
 /**
+ * Gets the data type of the specified key.
+ *
+ * @param typeDescriptor    Type descriptor to inspect.
+ * @param keyIndex          Index of key.
+ *
+ * @return                  Type of key.
+ */
+stock ObjectDataType:ObjLib_GetKeyDataType(ObjectType:typeDescriptor, keyIndex)
+{
+    new Handle:dataTypes = ObjLib_GetTypeDataTypes(typeDescriptor);
+    return ObjectDataType:GetArrayCell(dataTypes, keyIndex);
+}
+
+/*____________________________________________________________________________*/
+
+/**
  * Gets the constraints object for the specified key.
  *
  * @param typeDescriptor    Type descriptor.

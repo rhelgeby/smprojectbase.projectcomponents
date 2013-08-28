@@ -31,6 +31,14 @@
 /*____________________________________________________________________________*/
 
 /**
+ * Enables fallback error handler. Disable to lett errors result in a call to
+ * ThrowError (and dump a stack trace).
+ */
+#define OBJLIB_KV_SOFT_ERROR
+
+/*____________________________________________________________________________*/
+
+/**
  * Length of string buffers used in parser. Increase this if you need to read
  * longer string values.
  */
@@ -1201,14 +1209,66 @@ stock bool:ObjLib_KvUnexpectedSectionError(Object:object, ObjectType:typeDescrip
                            errorHandler,                        // customHandler
                            result,                              // result
                            parseContext,                        // data
-                           "Constraint violation. Expected \"%s\" to be a key value pair, but it's a sub section (object).",   // format
+                           "Unexpected section \"%s\". It does not exist in the type descriptor. Section names are case sensitive.",   // format
                            sectionName))
     {
         // Error was handled in customHandler. Update parser state.
         if (result == Plugin_Continue)
         {
-            // Continue parsing.
-            ObjLib_SetCell(parseContext, "parseState", ObjLibState_Running);
+            // Skip this section, continue parsing.
+            ObjLib_SetCell(parseContext, "parseState", ObjLibState_SkipSection);
+        }
+        else
+        {
+            // Abort parsing.
+            ObjLib_SetCell(parseContext, "parseState", ObjLibState_Aborted);
+        }
+        
+        // Return to parse loop. The parse state will tell if parser
+        // should abort or continue.
+        return true;
+    }
+    else
+    {
+        // Error not handled. This code is actually not reachable
+        // because the error handler doesn't return when calling
+        // ThrowError.
+        return false;
+    }
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Triggers an unexpected section error.
+ *
+ * @param object            Current object.
+ * @param typeDescriptor    Type descriptor for object.
+ * @param errorHandler      Error handler to use on errors.
+ * @param parseContext      Object with parser settings.
+ *                          (Type: ObjLib_KvParamsType)
+ * @param sectionName       Name of the section.
+ *
+ * @return                  True if error was handled. If not handled this
+ *                          function does not return at all.
+ */
+stock bool:ObjLib_KvSectionNotObjectError(Object:object, ObjectType:typeDescriptor, ObjLib_ErrorHandler:errorHandler, Object:parseContext, const String:sectionName[])
+{
+    new Action:result = Plugin_Handled;
+    if (ObjLib_HandleError(typeDescriptor,                      // typeDescriptor
+                           object,                              // object
+                           ObjLibError_ValidationError,         // errorType
+                           errorHandler,                        // customHandler
+                           result,                              // result
+                           parseContext,                        // data
+                           "Expected \"%s\" to be a key value pair, but it's a sub section (object).",   // format
+                           sectionName))
+    {
+        // Error was handled in customHandler. Update parser state.
+        if (result == Plugin_Continue)
+        {
+            // Skip this section, continue parsing.
+            ObjLib_SetCell(parseContext, "parseState", ObjLibState_SkipSection);
         }
         else
         {
@@ -1742,7 +1802,16 @@ stock ObjectType:ObjLib_KvGetSubTypeOrFail(const String:subSection[], Object:par
     if (keyIndex < 0)
     {
         // Error. The specified sub section doesn't exist in parent object.
-        ObjLib_KvUnexpectedKeyError(parent, parentType, errorHandler, parseContext, subSection);
+        ObjLib_KvUnexpectedSectionError(parent, parentType, errorHandler, parseContext, subSection);
+        return INVALID_OBJECT_TYPE;
+    }
+    
+    // Validate that this key is storing an object.
+    new ObjectDataType:keyType = ObjLib_GetKeyDataType(parentType, keyIndex);
+    if (keyType != ObjDataType_Object)
+    {
+        // Unexpected sub section. It's not supposed to be an object.
+        ObjLib_KvSectionNotObjectError(parent, parentType, errorHandler, parseContext, subSection);
         return INVALID_OBJECT_TYPE;
     }
     
@@ -1783,8 +1852,10 @@ stock ObjectType:ObjLib_KvGetSubTypeOrFail(const String:subSection[], Object:par
         return ObjLib_GetCollectionType();
     }
     
-    // Unexpected sub section. It's not supposed to be an object.
-    ObjLib_KvUnexpectedSectionError(parent, parentType, errorHandler, parseContext, subSection);
+    // Unexpected constraint, it's not a compatible object constraint. This is
+    // a bug. If other object constraints are added in the future, they must be
+    // handled above this statement.
+    ThrowError("[BUG] Unexpected constraint. This is a bug in objectlib.");
     return INVALID_OBJECT_TYPE;
     
     
@@ -1992,10 +2063,13 @@ stock ObjLib_ErrorHandler:ObjLib_KvGetErrorHandler(Object:parseContext)
     
     if (errorHandler == INVALID_FUNCTION)
     {
-        // No error handler specified. Replace with fallback error
-        // handler. Store parser context.
+        // No error handler specified.Store parser context.
         TempParseContext = parseContext;
-        errorHandler = ObjLib_KvErrorHandler;
+        
+        // Use fallback error handler if enabled.
+        #if defined OBJLIB_KV_SOFT_ERROR
+            errorHandler = ObjLib_KvErrorHandler;
+        #endif
     }
     
     return errorHandler;
