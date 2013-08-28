@@ -282,11 +282,110 @@ array handle and validation, but this is marginal.
 
 KeyValue Parser
 ---------------
-* Recursive and event based.
-* Builds objects based on content.
-* Can validate against predefined type descriptors (or even nested type trees).
-* The user only needs to declare types, create a parse context and start the
-  parser. The most simple case can be done in five lines.
+
+The KeyValue parser is recursive and event based. It will traverse every key and
+sub section in a KeyValue tree, and delegate work to appropriate event handlers.
+
+The objects are automatically built according to a predefined type tree or a
+type template.
+
+To keep track of current state of multiple parsers in the plugin, the parsers
+use a context object with user preferences and internal state values:
+
+    * rootType
+      The type hierarchy to validate against. This may be a nested structure of
+      type descriptors defining the expected tree structure. If no root type is
+      specified, validation is skipped and all objects are mutable.
+      
+    * ignoreEmptySections
+      Whether to skip empty sections.
+      
+    * continueOnError
+      Whether to continue parsing other keys on errors. This may be useful if
+      the error is trivial, or when parsing a collection of optional objects.
+      It will either skip a single key or a whole section depending on what's
+      failing validation.
+      
+    * errorHandler
+      User defined error handler to use on validation errors. It's optional and
+      an internal fallback error handler may be used, though the error messages
+      will be generic. The fallback error handler can be disabled by commenting
+      OBJLIB_KV_SOFT_ERROR in kvparser.inc. This will result in a call to
+      ThrowError instead, with a useful call stack that would otherwise be
+      hidden.
+      
+    * name
+      User defined name of parser context. A plugin may use various parsers and
+      this name may be used to identify which part of the plugin that had
+      validation errors.
+      
+    * parseState
+      Tells parser what to do on every iteration (next key or section). It may
+      be instructed to skip a section or abort parsing. See ObjLibParseState
+      enumeration in kvparser.inc for details.
+      
+    * objectStack
+      Object (section) cursor stack. Keeps track of parent objects and the
+      current location in the KeyValue tree.
+      
+    * typeStack
+      Type descriptor stack. Matches the object stack and stores references to
+      type descriptors that were used to create the objects. This stack is used
+      to access meta data and validate keys in the KeyVaue tree.
+      
+    * nameStack
+      Stack of section names. Used to build a path to the current location on
+      errors.
+
+There are multiple layers of event handlers. The top level determines what to do
+when traversing the tree, and maintain the stacks. Other work is delegated to
+lower level handlers.
+
+Top level handlers are:
+
+    * OnSectionStart
+      Determines type of the current section and gets an object for it. The task
+      of creating the object is delegated to a lower level event handler
+      depending on what type of object it is. Currently it's only collections
+      and generic objects. The new object is pushed to the object stack.
+      
+    * OnSectionEnd
+      Adds the new object to the parent object. It may be a collection or a
+      generic object. It figures out which one and delegates it to the
+      appropriate handler.
+      
+    * OnEmptySection
+      Handles empty section. This just calls OnSectionStart and OnSectionEnd if
+      empty sections are enabled in the context object.
+      
+    * OnKeyValue
+      Stores a value in the current object. It's delegated to appropriate
+      handler according to current object type.
+
+Lower level handlers:
+
+    * OnObjectStart
+      Prepares a new object for the current section.
+      
+    * OnObjectEnd
+      Stores the object in the parent object. Adds a key for it in the parent
+      object if the parent is mutable.
+      
+    * OnCollectionStart
+      Prepares a new collection for the current section.
+      
+    * OnCollectionObjectElement
+      Just adds an object to the collection.
+      
+    * StoreObjectValue
+      Adds a value to the current object using appropriate accessor functions
+      according to the value data type. This implies validation.
+      
+    * StoreCollectionValue
+      Stores a value in the current collection using appropriate accessor
+      functions according to the collection element data type. Implies
+      validation.
+
 
 Object Inspector Tool
 ---------------------

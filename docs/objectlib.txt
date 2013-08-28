@@ -551,13 +551,12 @@ TODO/NOTES
   object with the value's name through a user defined lookup function. If the
   object is found it would insert it instead of the value itself. This might
   need to be done in a post validation process when the tree is parsed.
-* Automatically store duplicate keys and sections in arrays. Objects only allow
-  unique names, but arrays fixes this. (Use collections)
 * Sometimes data cannot be validated until all keys are parsed. Provide a
   callback for doing post object validation once a section is parsed (not the
   same as OnSectionEnd, but a user callback). Perhaps a callback in the context
   object for post validation of specific keys (so it will skip keys already
-  known to be valid).
+  known to be valid). The callback should provide the type descriptor of the
+  current section so the user can determine what it's validating.
   (How to handle nested sections?)
 
 
