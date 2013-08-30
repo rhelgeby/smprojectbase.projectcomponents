@@ -276,3 +276,17 @@ stock Object:ObjLib_CollectionGetConstraints(Collection:collection)
 {
     return ObjLib_GetObject(Object:collection, "constraints");
 }
+
+/*____________________________________________________________________________*/
+
+/**
+ * Gets the element array for the specified collection.
+ *
+ * @param collection        Collection object.
+ *
+ * @return                  Element array handle.
+ */
+stock Handle:ObjLib_CollectionGetElements(Collection:collection)
+{
+    return ObjLib_GetHandle(Object:collection, "elements");
+}
