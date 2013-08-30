@@ -945,16 +945,15 @@ stock ObjLib_RemoveAt(Collection:collection, index, ObjLib_ErrorHandler:errorHan
 /*____________________________________________________________________________*/
 
 /**
- * Removes a cell value at the specified index in the collection.
+ * Gets the number of elements in the specified collection.
  *
- * @param collection    Collection object to remove from.
- * @param index         Index of value to remove.
- * @param errorHandler  Custom error handler. Overrides any other error handler
- *                      if specified.
+ * @param collection    Collection object.
  *
- * @error               Invalid index.
+ * @return              Number of elements.
+ *
+ * @error               Invalid collection.
  */
-stock ObjLib_GetCollectionSize(Collection:collection, index, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+stock ObjLib_GetCollectionSize(Collection:collection)
 {
     ObjLib_ValidateCollection(collection);
     
