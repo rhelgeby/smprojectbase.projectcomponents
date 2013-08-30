@@ -89,6 +89,45 @@ stock ObjLib_AddCellAt(Collection:collection, index, any:value, ObjLib_ErrorHand
 /*____________________________________________________________________________*/
 
 /**
+ * Gets the cell value at the specified element index in the collection.
+ *
+ * @param collection    Collection to get value from.
+ * @param index         Index of element.
+ * @param errorHandler  Custom error handler. Overrides any other error handler
+ *                      if specified.
+ *
+ * @return              Value at the specified index.
+ *
+ * @error               Invalid collection, element index or element type
+ *                      mismatch.
+ */
+stock ObjLib_GetCellElementAt(Collection:collection, index, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+{
+    // Validate collection.
+    ObjLib_ValidateCollection(collection);
+    
+    new Handle:elements = ObjLib_CollectionGetElements(collection);
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
+    
+    // Validate type.
+    if (!ObjLib_CollectionTypeCheck(collection, ObjDataType_Cell, errorHandler))
+    {
+        return 0;
+    }
+    
+    // Validate index.
+    if (!ObjLib_CollectionIndexCheckEx(collection, elements, index, errorHandler))
+    {
+        return 0;
+    }
+    
+    // Get value.
+    return GetArrayCell(elements, index);
+}
+
+/*____________________________________________________________________________*/
+
+/**
  * Adds a boolean value at end of the collection.
  *
  * @param collection    Collection object to add to.
@@ -147,6 +186,45 @@ stock ObjLib_AddBoolAt(Collection:collection, index, bool:value, ObjLib_ErrorHan
     // Handle constraints, sets value if valid and not overridden.
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(Object:collection);
     ObjLib_ApplyConstraints(Object:collection, typeDescriptor, index, values, 1, errorHandler);
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Gets the boolean value at the specified element index.
+ *
+ * @param collection    Collection to get value from.
+ * @param index         Index of element.
+ * @param errorHandler  Custom error handler. Overrides any other error handler
+ *                      if specified.
+ *
+ * @return              Value at the specified index.
+ *
+ * @error               Invalid collection, element index or element type
+ *                      mismatch.
+ */
+stock ObjLib_GetBoolElementAt(Collection:collection, index, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+{
+    // Validate collection.
+    ObjLib_ValidateCollection(collection);
+    
+    new Handle:elements = ObjLib_CollectionGetElements(collection);
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
+    
+    // Validate type.
+    if (!ObjLib_CollectionTypeCheck(collection, ObjDataType_Bool, errorHandler))
+    {
+        return 0;
+    }
+    
+    // Validate index.
+    if (!ObjLib_CollectionIndexCheckEx(collection, elements, index, errorHandler))
+    {
+        return 0;
+    }
+    
+    // Get value.
+    return bool:GetArrayCell(elements, index);
 }
 
 /*____________________________________________________________________________*/
@@ -215,6 +293,45 @@ stock ObjLib_AddFloatAt(Collection:collection, index, Float:value, ObjLib_ErrorH
 /*____________________________________________________________________________*/
 
 /**
+ * Gets the float value at the specified element index.
+ *
+ * @param collection    Collection to get value from.
+ * @param index         Index of element.
+ * @param errorHandler  Custom error handler. Overrides any other error handler
+ *                      if specified.
+ *
+ * @return              Value at the specified index.
+ *
+ * @error               Invalid collection, element index or element type
+ *                      mismatch.
+ */
+stock Float:ObjLib_GetFloatElementAt(Collection:collection, index, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+{
+    // Validate collection.
+    ObjLib_ValidateCollection(collection);
+    
+    new Handle:elements = ObjLib_CollectionGetElements(collection);
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
+    
+    // Validate type.
+    if (!ObjLib_CollectionTypeCheck(collection, ObjDataType_Float, errorHandler))
+    {
+        return 0;
+    }
+    
+    // Validate index.
+    if (!ObjLib_CollectionIndexCheckEx(collection, elements, index, errorHandler))
+    {
+        return 0;
+    }
+    
+    // Get value.
+    return Float:GetArrayCell(elements, index);
+}
+
+/*____________________________________________________________________________*/
+
+/**
  * Adds a handle value at end of the collection.
  *
  * @param collection    Collection object to add to.
@@ -273,6 +390,45 @@ stock ObjLib_AddHandleAt(Collection:collection, index, Handle:value, ObjLib_Erro
     // Handle constraints, sets value if valid and not overridden.
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(Object:collection);
     ObjLib_ApplyConstraints(Object:collection, typeDescriptor, index, values, 1, errorHandler);
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Gets the handle value at the specified element index.
+ *
+ * @param collection    Collection to get value from.
+ * @param index         Index of element.
+ * @param errorHandler  Custom error handler. Overrides any other error handler
+ *                      if specified.
+ *
+ * @return              Value at the specified index.
+ *
+ * @error               Invalid collection, element index or element type
+ *                      mismatch.
+ */
+stock Handle:ObjLib_GetHandleElementAt(Collection:collection, index, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+{
+    // Validate collection.
+    ObjLib_ValidateCollection(collection);
+    
+    new Handle:elements = ObjLib_CollectionGetElements(collection);
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
+    
+    // Validate type.
+    if (!ObjLib_CollectionTypeCheck(collection, ObjDataType_Handle, errorHandler))
+    {
+        return 0;
+    }
+    
+    // Validate index.
+    if (!ObjLib_CollectionIndexCheckEx(collection, elements, index, errorHandler))
+    {
+        return 0;
+    }
+    
+    // Get value.
+    return Handle:GetArrayCell(elements, index);
 }
 
 /*____________________________________________________________________________*/
@@ -341,6 +497,45 @@ stock ObjLib_AddFunctionAt(Collection:collection, index, Function:value, ObjLib_
 /*____________________________________________________________________________*/
 
 /**
+ * Gets the function value at the specified element index.
+ *
+ * @param collection    Collection to get value from.
+ * @param index         Index of element.
+ * @param errorHandler  Custom error handler. Overrides any other error handler
+ *                      if specified.
+ *
+ * @return              Value at the specified index.
+ *
+ * @error               Invalid collection, element index or element type
+ *                      mismatch.
+ */
+stock Function:ObjLib_GetFunctionElementAt(Collection:collection, index, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+{
+    // Validate collection.
+    ObjLib_ValidateCollection(collection);
+    
+    new Handle:elements = ObjLib_CollectionGetElements(collection);
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
+    
+    // Validate type.
+    if (!ObjLib_CollectionTypeCheck(collection, ObjDataType_Function, errorHandler))
+    {
+        return 0;
+    }
+    
+    // Validate index.
+    if (!ObjLib_CollectionIndexCheckEx(collection, elements, index, errorHandler))
+    {
+        return 0;
+    }
+    
+    // Get value.
+    return Function:GetArrayCell(elements, index);
+}
+
+/*____________________________________________________________________________*/
+
+/**
  * Adds an array at end of the collection.
  *
  * @param collection    Collection object to add to.
@@ -391,6 +586,47 @@ stock ObjLib_AddArrayAt(Collection:collection, index, const any:values[], size, 
     // Handle constraints, sets value if valid and not overridden.
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(Object:collection);
     ObjLib_ApplyConstraints(Object:collection, typeDescriptor, index, values, size, errorHandler);
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Gets the array at the specified element index.
+ *
+ * @param collection    Collection to get value from.
+ * @param index         Index of element.
+ * @param buffer        Destination buffer.
+ * @param maxlen        Size of buffer.
+ * @param errorHandler  Custom error handler. Overrides any other error handler
+ *                      if specified.
+ *
+ * @return              Number of cells copied.
+ *
+ * @error               Invalid collection, element index or element type
+ *                      mismatch.
+ */
+stock ObjLib_GetArrayElementAt(Collection:collection, index, any:buffer[], maxlen, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+{
+    // Validate collection.
+    ObjLib_ValidateCollection(collection);
+    
+    new Handle:elements = ObjLib_CollectionGetElements(collection);
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
+    
+    // Validate type.
+    if (!ObjLib_CollectionTypeCheck(collection, ObjDataType_Array, errorHandler))
+    {
+        return 0;
+    }
+    
+    // Validate index.
+    if (!ObjLib_CollectionIndexCheckEx(collection, elements, index, errorHandler))
+    {
+        return 0;
+    }
+    
+    // Get array.
+    return GetArrayArray(elements, index, buffer, maxlen);
 }
 
 /*____________________________________________________________________________*/
@@ -450,6 +686,47 @@ stock ObjLib_AddStringAt(Collection:collection, index, const String:value[], Obj
     // Handle constraints, sets value if valid and not overridden.
     new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(Object:collection);
     ObjLib_ApplyConstraints(Object:collection, typeDescriptor, index, value, strlen(value), errorHandler, isLookup, isString);
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Gets the string at the specified element index.
+ *
+ * @param collection    Collection to get value from.
+ * @param index         Index of element.
+ * @param buffer        Destination buffer.
+ * @param maxlen        Size of buffer.
+ * @param errorHandler  Custom error handler. Overrides any other error handler
+ *                      if specified.
+ *
+ * @return              Number of characters copied.
+ *
+ * @error               Invalid collection, element index or element type
+ *                      mismatch.
+ */
+stock ObjLib_GetStringElementAt(Collection:collection, index, String:buffer[], maxlen, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+{
+    // Validate collection.
+    ObjLib_ValidateCollection(collection);
+    
+    new Handle:elements = ObjLib_CollectionGetElements(collection);
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
+    
+    // Validate type.
+    if (!ObjLib_CollectionTypeCheck(collection, ObjDataType_String, errorHandler))
+    {
+        return 0;
+    }
+    
+    // Validate index.
+    if (!ObjLib_CollectionIndexCheckEx(collection, elements, index, errorHandler))
+    {
+        return 0;
+    }
+    
+    // Get array.
+    return GetArrayString(elements, index, buffer, maxlen);
 }
 
 /*____________________________________________________________________________*/
@@ -518,6 +795,45 @@ stock ObjLib_AddObjectAt(Collection:collection, index, Object:value, ObjLib_Erro
 /*____________________________________________________________________________*/
 
 /**
+ * Gets the object reference at the specified element index.
+ *
+ * @param collection    Collection to get value from.
+ * @param index         Index of element.
+ * @param errorHandler  Custom error handler. Overrides any other error handler
+ *                      if specified.
+ *
+ * @return              Value at the specified index.
+ *
+ * @error               Invalid collection, element index or element type
+ *                      mismatch.
+ */
+stock Object:ObjLib_GetObjectElementAt(Collection:collection, index, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+{
+    // Validate collection.
+    ObjLib_ValidateCollection(collection);
+    
+    new Handle:elements = ObjLib_CollectionGetElements(collection);
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
+    
+    // Validate type.
+    if (!ObjLib_CollectionTypeCheck(collection, ObjDataType_Object, errorHandler))
+    {
+        return 0;
+    }
+    
+    // Validate index.
+    if (!ObjLib_CollectionIndexCheckEx(collection, elements, index, errorHandler))
+    {
+        return 0;
+    }
+    
+    // Get value.
+    return Object:GetArrayCell(elements, index);
+}
+
+/*____________________________________________________________________________*/
+
+/**
  * Adds a type descriptor reference at end of the collection.
  *
  * @param collection    Collection object to add to.
@@ -581,6 +897,45 @@ stock ObjLib_AddObjectTypeAt(Collection:collection, index, ObjectType:value, Obj
 /*____________________________________________________________________________*/
 
 /**
+ * Gets the type descriptor reference at the specified element index.
+ *
+ * @param collection    Collection to get value from.
+ * @param index         Index of element.
+ * @param errorHandler  Custom error handler. Overrides any other error handler
+ *                      if specified.
+ *
+ * @return              Value at the specified index.
+ *
+ * @error               Invalid collection, element index or element type
+ *                      mismatch.
+ */
+stock ObjectType:ObjLib_GetObjectTypeElementAt(Collection:collection, index, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+{
+    // Validate collection.
+    ObjLib_ValidateCollection(collection);
+    
+    new Handle:elements = ObjLib_CollectionGetElements(collection);
+    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
+    
+    // Validate type.
+    if (!ObjLib_CollectionTypeCheck(collection, ObjDataType_ObjectType, errorHandler))
+    {
+        return 0;
+    }
+    
+    // Validate index.
+    if (!ObjLib_CollectionIndexCheckEx(collection, elements, index, errorHandler))
+    {
+        return 0;
+    }
+    
+    // Get value.
+    return ObjectType:GetArrayCell(elements, index);
+}
+
+/*____________________________________________________________________________*/
+
+/**
  * Removes a cell value at the specified index in the collection.
  *
  * @param collection    Collection object to remove from.
@@ -594,6 +949,28 @@ stock ObjLib_RemoveAt(Collection:collection, index, ObjLib_ErrorHandler:errorHan
 {
     ObjLib_ValidateCollection(collection);
     ObjLib_CollectionRemoveAt(Collection:collection, index);
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Removes a cell value at the specified index in the collection.
+ *
+ * @param collection    Collection object to remove from.
+ * @param index         Index of value to remove.
+ * @param errorHandler  Custom error handler. Overrides any other error handler
+ *                      if specified.
+ *
+ * @error               Invalid index.
+ */
+stock ObjLib_GetCollectionSize(Collection:collection, index, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+{
+    ObjLib_ValidateCollection(collection);
+    
+    // Get element array.
+    new Handle:elements = ObjLib_CollectionGetElements(collection);
+    
+    return GetArraySize(elements);
 }
 
 /*____________________________________________________________________________*/
@@ -856,4 +1233,24 @@ stock ObjLib_CollectionIndexCheck(elementCount, index)
     {
         ThrowError("Index out of bounds (%d).", index);
     }
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Internal use only!
+ */
+stock bool:ObjLib_CollectionIndexCheckEx(Collection:collection, Handle:elements, index, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+{
+    // Validate index.
+    new size = GetArraySize(elements);
+    if (index < 0 || index >= size)
+    {
+        new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(Object:collection);
+        
+        ObjLib_HandleError(typeDescriptor, Object:collection, ObjLibError_InvalidKey, errorHandler, _, _, "Element index is out of bounds: %d", index);
+        return false;
+    }
+    
+    return true;
 }
