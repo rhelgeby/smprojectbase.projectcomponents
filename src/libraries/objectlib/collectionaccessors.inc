@@ -107,7 +107,6 @@ stock ObjLib_GetCellElementAt(Collection:collection, index, ObjLib_ErrorHandler:
     ObjLib_ValidateCollection(collection);
     
     new Handle:elements = ObjLib_CollectionGetElements(collection);
-    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
     if (!ObjLib_CollectionTypeCheck(collection, ObjDataType_Cell, errorHandler))
@@ -203,24 +202,23 @@ stock ObjLib_AddBoolAt(Collection:collection, index, bool:value, ObjLib_ErrorHan
  * @error               Invalid collection, element index or element type
  *                      mismatch.
  */
-stock ObjLib_GetBoolElementAt(Collection:collection, index, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
+stock bool:ObjLib_GetBoolElementAt(Collection:collection, index, ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
 {
     // Validate collection.
     ObjLib_ValidateCollection(collection);
     
     new Handle:elements = ObjLib_CollectionGetElements(collection);
-    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
     if (!ObjLib_CollectionTypeCheck(collection, ObjDataType_Bool, errorHandler))
     {
-        return 0;
+        return false;
     }
     
     // Validate index.
     if (!ObjLib_CollectionIndexCheckEx(collection, elements, index, errorHandler))
     {
-        return 0;
+        return false;
     }
     
     // Get value.
@@ -311,18 +309,17 @@ stock Float:ObjLib_GetFloatElementAt(Collection:collection, index, ObjLib_ErrorH
     ObjLib_ValidateCollection(collection);
     
     new Handle:elements = ObjLib_CollectionGetElements(collection);
-    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
     if (!ObjLib_CollectionTypeCheck(collection, ObjDataType_Float, errorHandler))
     {
-        return 0;
+        return 0.0;
     }
     
     // Validate index.
     if (!ObjLib_CollectionIndexCheckEx(collection, elements, index, errorHandler))
     {
-        return 0;
+        return 0.0;
     }
     
     // Get value.
@@ -413,18 +410,17 @@ stock Handle:ObjLib_GetHandleElementAt(Collection:collection, index, ObjLib_Erro
     ObjLib_ValidateCollection(collection);
     
     new Handle:elements = ObjLib_CollectionGetElements(collection);
-    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
     if (!ObjLib_CollectionTypeCheck(collection, ObjDataType_Handle, errorHandler))
     {
-        return 0;
+        return INVALID_HANDLE;
     }
     
     // Validate index.
     if (!ObjLib_CollectionIndexCheckEx(collection, elements, index, errorHandler))
     {
-        return 0;
+        return INVALID_HANDLE;
     }
     
     // Get value.
@@ -515,18 +511,17 @@ stock Function:ObjLib_GetFunctionElementAt(Collection:collection, index, ObjLib_
     ObjLib_ValidateCollection(collection);
     
     new Handle:elements = ObjLib_CollectionGetElements(collection);
-    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
     if (!ObjLib_CollectionTypeCheck(collection, ObjDataType_Function, errorHandler))
     {
-        return 0;
+        return INVALID_FUNCTION;
     }
     
     // Validate index.
     if (!ObjLib_CollectionIndexCheckEx(collection, elements, index, errorHandler))
     {
-        return 0;
+        return INVALID_FUNCTION;
     }
     
     // Get value.
@@ -611,7 +606,6 @@ stock ObjLib_GetArrayElementAt(Collection:collection, index, any:buffer[], maxle
     ObjLib_ValidateCollection(collection);
     
     new Handle:elements = ObjLib_CollectionGetElements(collection);
-    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
     if (!ObjLib_CollectionTypeCheck(collection, ObjDataType_Array, errorHandler))
@@ -711,7 +705,6 @@ stock ObjLib_GetStringElementAt(Collection:collection, index, String:buffer[], m
     ObjLib_ValidateCollection(collection);
     
     new Handle:elements = ObjLib_CollectionGetElements(collection);
-    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
     if (!ObjLib_CollectionTypeCheck(collection, ObjDataType_String, errorHandler))
@@ -813,18 +806,17 @@ stock Object:ObjLib_GetObjectElementAt(Collection:collection, index, ObjLib_Erro
     ObjLib_ValidateCollection(collection);
     
     new Handle:elements = ObjLib_CollectionGetElements(collection);
-    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
     if (!ObjLib_CollectionTypeCheck(collection, ObjDataType_Object, errorHandler))
     {
-        return 0;
+        return INVALID_OBJECT;
     }
     
     // Validate index.
     if (!ObjLib_CollectionIndexCheckEx(collection, elements, index, errorHandler))
     {
-        return 0;
+        return INVALID_OBJECT;
     }
     
     // Get value.
@@ -915,18 +907,17 @@ stock ObjectType:ObjLib_GetObjectTypeElementAt(Collection:collection, index, Obj
     ObjLib_ValidateCollection(collection);
     
     new Handle:elements = ObjLib_CollectionGetElements(collection);
-    new ObjectType:typeDescriptor = ObjLib_GetTypeDescriptor(object);
     
     // Validate type.
     if (!ObjLib_CollectionTypeCheck(collection, ObjDataType_ObjectType, errorHandler))
     {
-        return 0;
+        return INVALID_OBJECT_TYPE;
     }
     
     // Validate index.
     if (!ObjLib_CollectionIndexCheckEx(collection, elements, index, errorHandler))
     {
-        return 0;
+        return INVALID_OBJECT_TYPE;
     }
     
     // Get value.
