@@ -25,6 +25,267 @@
  * ============================================================================
  */
 
+static ObjLib_InspectorBuilt = false;
+
+/*____________________________________________________________________________*/
+
+/**
+ * Builds the following object inspector commands as admin commands:
+ *
+ * object_help                  - Prints an overview of inspector commands.
+ * object_inspect               - Inspect object keys and values.
+ * object_inspect_ex            - Inspect object raw data.
+ * object_inspect_type_ex       - Inspect type descriptor raw data.
+ * object_inspect_array_cell    - Inspect array elements as cell values.
+ * object_inspect_array_float   - Inspect array elements as float values.
+ * object_inspect_array_string  - Inspect array elements as string values.
+ * object_inspect_array_hex     - Inspect array elements as hex values.
+ *
+ * Note: Once the inspector is built, it cannot be changed or removed until
+ *       the plugin is reloaded.
+ *
+ * @param adminFlags        (Optional) Administrative flags (bitstring) to use
+ *                          for permissions. Default is ADMFLAG_ROOT.
+ * @param group             (Optional) String containing the command group to
+ *                          use. If empty, the plugin's filename will be used
+ *                          instead. Default is empty.
+ */
+ObjLib_BuildInspector(adminFlags = ADMFLAG_ROOT, const String:group[] = "")
+{
+    if (ObjLib_InspectorBuilt)
+    {
+        // Only build once.
+        return;
+    }
+    
+    RegAdminCmd("object_help", ObjLibCommand_Help, adminFlags, "Prints an overview of inspector commands.", group);
+    RegAdminCmd("object_inspect", ObjLibCommand_Inspect, adminFlags, "Inspects an object's keys and values. Usage: object_inspect <object address>", group);
+    RegAdminCmd("object_inspect_ex", ObjLibCommand_InspectEx, adminFlags, "Inspect an object's raw data. Usage: object_inspect_ex <object address>", group);
+    RegAdminCmd("object_inspect_type_ex", ObjLibCommand_InspectTypeEx, adminFlags, "Inspects a type descriptor's raw data. Usage: object_inspect_type_ex <type descriptor address>", group);
+    RegAdminCmd("object_inspect_array_cell", ObjLibCommand_InspectArrayCell, adminFlags, "Inspects cell values in an array. Usage: object_inspect_array_cell <array handle>", group);
+    RegAdminCmd("object_inspect_array_float", ObjLibCommand_InspectArrayFloat, adminFlags, "Inspects float values in an array. Usage: object_inspect_array_float <array handle>", group);
+    RegAdminCmd("object_inspect_array_string", ObjLibCommand_InspectArrayString, adminFlags, "Inspects string values in an array. Usage: object_inspect_array_string <array handle>", group);
+    RegAdminCmd("object_inspect_array_hex", ObjLibCommand_InspectArrayHex, adminFlags, "Inspects hex values in an array. Usage: object_inspect_array_hex <array handle>", group);
+    
+    ObjLib_InspectorBuilt = true;
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Command handler for object_inspect. Inspects keys in the specified object.
+ *
+ * @param client        Command sender.
+ * @param argc          Number of arguments.
+ */
+public Action:ObjLibCommand_Help(client, argc)
+{
+    ReplyToCommand(client, "Object inspector commands:");
+    ReplyToCommand(client, "object_help                                         - Prints this overview.");
+    ReplyToCommand(client, "object_inspect <object address>                     - Inspect object keys and values.");
+    ReplyToCommand(client, "object_inspect_ex <object address>                  - Inspect object raw data.");
+    ReplyToCommand(client, "object_inspect_type_ex <type descriptor address>    - Inspect type descriptor raw data.");
+    ReplyToCommand(client, "object_inspect_array_cell <array handle>            - Inspect array elements as cell values.");
+    ReplyToCommand(client, "object_inspect_array_float <array handle>           - Inspect array elements as float values.");
+    ReplyToCommand(client, "object_inspect_array_string <array handle>          - Inspect array elements as string values.");
+    ReplyToCommand(client, "object_inspect_array_hex <array handle>             - Inspect array elements as hex values.");
+    
+    ReplyToCommand(client, "Note: All addresses and handles are written as hex values (without the 0x prefix).");
+    
+    return Plugin_Handled;
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Command handler for object_inspect. Inspects keys in the specified object.
+ *
+ * @param client        Command sender.
+ * @param argc          Number of arguments.
+ */
+public Action:ObjLibCommand_Inspect(client, argc)
+{
+    new String:argBuffer[16];
+    GetCmdArg(1, argBuffer, sizeof(argBuffer));
+    
+    new Object:object;
+    
+    // Parse hex string.
+    StringToIntEx(argBuffer, _:object, 16);
+    
+    ReplyToCommand(client, "Inspecting object 0x%X.", object);
+    
+    ObjLib_DumpObjectKeys(client, object);
+    
+    return Plugin_Handled;
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Command handler for object_inspect_ex. Inspects raw data in the specified
+ * object.
+ *
+ * @param client        Command sender.
+ * @param argc          Number of arguments.
+ */
+public Action:ObjLibCommand_InspectEx(client, argc)
+{
+    new String:argBuffer[16];
+    GetCmdArg(1, argBuffer, sizeof(argBuffer));
+    
+    new Object:object;
+    
+    // Parse hex string.
+    StringToIntEx(argBuffer, _:object, 16);
+    
+    ReplyToCommand(client, "Inspecting raw data in object 0x%X.", object);
+    
+    ObjLib_DumpRawObject(client, object);
+    
+    return Plugin_Handled;
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Command handler for object_inspect_type. Inspects raw data in the specified
+ * type descriptor.
+ *
+ * @param client        Command sender.
+ * @param argc          Number of arguments.
+ */
+public Action:ObjLibCommand_InspectTypeEx(client, argc)
+{
+    new String:argBuffer[16];
+    GetCmdArg(1, argBuffer, sizeof(argBuffer));
+    
+    new ObjectType:typeDescriptor;
+    
+    // Parse hex string.
+    StringToIntEx(argBuffer, _:typeDescriptor, 16);
+    
+    ReplyToCommand(client, "Inspecting raw data in type descriptor 0x%X.", typeDescriptor);
+    
+    ObjLib_DumpRawType(client, typeDescriptor);
+    
+    return Plugin_Handled;
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Command handler for object_inspect_array_cells. Inspects cells in an array.
+ *
+ * @param client        Command sender.
+ * @param argc          Number of arguments.
+ */
+public Action:ObjLibCommand_InspectArrayCell(client, argc)
+{
+    new String:argBuffer[16];
+    GetCmdArg(1, argBuffer, sizeof(argBuffer));
+    
+    new Handle:array;
+    
+    // Parse hex string.
+    StringToIntEx(argBuffer, _:array, 16);
+    
+    ReplyToCommand(client, "Inspecting array 0x%X.", array);
+    
+    new String:values[512];
+    Array_ADTCellsToString(array, values, sizeof(values), false);
+    
+    ReplyToCommand(client, values);
+    
+    return Plugin_Handled;
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Command handler for object_inspect_array_cells. Inspects cells in an array.
+ *
+ * @param client        Command sender.
+ * @param argc          Number of arguments.
+ */
+public Action:ObjLibCommand_InspectArrayFloat(client, argc)
+{
+    new String:argBuffer[16];
+    GetCmdArg(1, argBuffer, sizeof(argBuffer));
+    
+    new Handle:array;
+    
+    // Parse hex string.
+    StringToIntEx(argBuffer, _:array, 16);
+    
+    ReplyToCommand(client, "Inspecting array 0x%X.", array);
+    
+    new String:values[512];
+    Array_ADTFloatToString(array, values, sizeof(values), false);
+    
+    ReplyToCommand(client, values);
+    
+    return Plugin_Handled;
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Command handler for object_inspect_array_cells. Inspects cells in an array.
+ *
+ * @param client        Command sender.
+ * @param argc          Number of arguments.
+ */
+public Action:ObjLibCommand_InspectArrayString(client, argc)
+{
+    new String:argBuffer[16];
+    GetCmdArg(1, argBuffer, sizeof(argBuffer));
+    
+    new Handle:array;
+    
+    // Parse hex string.
+    StringToIntEx(argBuffer, _:array, 16);
+    
+    ReplyToCommand(client, "Inspecting array 0x%X.", array);
+    
+    new String:values[512];
+    Array_ADTToString(array, values, sizeof(values), false);
+    
+    ReplyToCommand(client, values);
+    
+    return Plugin_Handled;
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Command handler for object_inspect_array_cells. Inspects cells in an array.
+ *
+ * @param client        Command sender.
+ * @param argc          Number of arguments.
+ */
+public Action:ObjLibCommand_InspectArrayHex(client, argc)
+{
+    new String:argBuffer[16];
+    GetCmdArg(1, argBuffer, sizeof(argBuffer));
+    
+    new Handle:array;
+    
+    // Parse hex string.
+    StringToIntEx(argBuffer, _:array, 16);
+    
+    ReplyToCommand(client, "Inspecting array 0x%X.", array);
+    
+    new String:values[512];
+    Array_ADTHexToString(array, values, sizeof(values), false);
+    
+    ReplyToCommand(client, values);
+    
+    return Plugin_Handled;
+}
+
+/*____________________________________________________________________________*/
+
 /**
  * Prints object contents to the specified client.
  *
@@ -255,7 +516,7 @@ stock ObjLib_ValueToString(Object:object, keyIndex, String:buffer[], maxlen)
             new blockSize = ObjLib_GetTypeBlockSize(typeDescriptor);
             new values[blockSize];
             GetArrayArray(data, keyIndex, values, blockSize);
-            return Array_CellsToString(values, blockSize, buffer, maxlen);
+            return Array_CellsToString(values, blockSize, buffer, maxlen, false);
         }
         case ObjDataType_String:
         {
