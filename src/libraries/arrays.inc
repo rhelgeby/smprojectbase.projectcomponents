@@ -212,14 +212,21 @@ stock Array_RemoveDuplicateInt(Handle:array, bool:sorted = false)
  *
  * Output format: {1, 2, 3, ...}
  *
+ * List format:
+ * 1
+ * 2
+ * 3
+ * ...
+ *
  * @param values    Source array.
  * @param len       Size of source array.
  * @param buffer    Destination string buffer.
  * @param maxlen    Size of buffer.
+ * @param list      (Optional) Store values as a list.
  *
  * @return          Number of cells written.
  */
-stock Array_CellsToString(const values[], len, String:buffer[], maxlen)
+stock Array_CellsToString(const values[], len, String:buffer[], maxlen, bool:list = false)
 {
     decl String:valuebuffer[16];
     valuebuffer[0] = 0;
@@ -229,7 +236,10 @@ stock Array_CellsToString(const values[], len, String:buffer[], maxlen)
     
     new writeCount = 0;
     
-    writeCount = StrCat(buffer, maxlen, "{");
+    if (!list)
+    {
+        writeCount = StrCat(buffer, maxlen, "{");
+    }
     
     // Loop through values.
     for (new i = 0; i < len; i++)
@@ -240,11 +250,149 @@ stock Array_CellsToString(const values[], len, String:buffer[], maxlen)
         // If not the last value.
         if (i < len - 1)
         {
-            writeCount += StrCat(buffer, maxlen, ", ");
+            if (list)
+            {
+                writeCount += StrCat(buffer, maxlen, "\n");
+            }
+            else
+            {
+                writeCount += StrCat(buffer, maxlen, ", ");
+            }
         }
     }
     
-    writeCount += StrCat(buffer, maxlen, "}");
+    if (!list)
+    {
+        writeCount += StrCat(buffer, maxlen, "}");
+    }
+    
+    return writeCount;
+}
+
+/**
+ * Converts the contents of an ADT array to a string.
+ *
+ * Output format: {1, 2, 3, ...}
+ *
+ * List format:
+ * 1
+ * 2
+ * 3
+ * ...
+ *
+ * @param array     Source array.
+ * @param buffer    Destination string buffer.
+ * @param maxlen    Size of buffer.
+ * @param list      (Optional) Store values as a list.
+ *
+ * @return          Number of cells written.
+ */
+stock Array_ADTCellsToString(Handle:array, String:buffer[], maxlen, bool:list = false)
+{
+    new value;
+    decl String:valuebuffer[16];
+    valuebuffer[0] = 0;
+    
+    // Make sure buffer is empty.
+    buffer[0] = 0;
+    
+    new writeCount = 0;
+    
+    if (!list)
+    {
+        writeCount = StrCat(buffer, maxlen, "{");
+    }
+    
+    // Loop through values.
+    new len = GetArraySize(array);
+    for (new i = 0; i < len; i++)
+    {
+        value = GetArrayCell(array, i);
+        IntToString(value, valuebuffer, sizeof(valuebuffer));
+        writeCount += StrCat(buffer, maxlen, valuebuffer);
+        
+        // If not the last value.
+        if (i < len - 1)
+        {
+            if (list)
+            {
+                writeCount += StrCat(buffer, maxlen, "\n");
+            }
+            else
+            {
+                writeCount += StrCat(buffer, maxlen, ", ");
+            }
+        }
+    }
+    
+    if (!list)
+    {
+        writeCount += StrCat(buffer, maxlen, "}");
+    }
+    
+    return writeCount;
+}
+
+/**
+ * Converts the contents of an ADT array to a string, as hex values.
+ *
+ * Output format: {0x1, 0x2, 0x3, ...}
+ *
+ * List format:
+ * 0x1
+ * 0x2
+ * 0x3
+ * ...
+ *
+ * @param array     Source array.
+ * @param buffer    Destination string buffer.
+ * @param maxlen    Size of buffer.
+ * @param list      (Optional) Store values as a list.
+ *
+ * @return          Number of cells written.
+ */
+stock Array_ADTHexToString(Handle:array, String:buffer[], maxlen, bool:list = false)
+{
+    new value;
+    decl String:valuebuffer[16];
+    valuebuffer[0] = 0;
+    
+    // Make sure buffer is empty.
+    buffer[0] = 0;
+    
+    new writeCount = 0;
+    
+    if (!list)
+    {
+        writeCount = StrCat(buffer, maxlen, "{");
+    }
+    
+    // Loop through values.
+    new len = GetArraySize(array);
+    for (new i = 0; i < len; i++)
+    {
+        value = GetArrayCell(array, i);
+        Format(valuebuffer, sizeof(valuebuffer), "0x%X", value);
+        writeCount += StrCat(buffer, maxlen, valuebuffer);
+        
+        // If not the last value.
+        if (i < len - 1)
+        {
+            if (list)
+            {
+                writeCount += StrCat(buffer, maxlen, "\n");
+            }
+            else
+            {
+                writeCount += StrCat(buffer, maxlen, ", ");
+            }
+        }
+    }
+    
+    if (!list)
+    {
+        writeCount += StrCat(buffer, maxlen, "}");
+    }
     
     return writeCount;
 }
@@ -254,12 +402,21 @@ stock Array_CellsToString(const values[], len, String:buffer[], maxlen)
  *
  * Output format: {1.0, 2.0, 3.0, ...}
  *
+ * List format:
+ * 1.0
+ * 2.0
+ * 3.0
+ * ...
+ *
+ * Additional decimals may be shown.
+ *
  * @param values    Source array.
  * @param len       Size of source array.
  * @param buffer    Destination string buffer.
  * @param maxlen    Size of buffer.
+ * @param list      (Optional) Store values as a list.
  */
-stock Array_FloatsToString(const Float:values[], len, String:buffer[], maxlen)
+stock Array_FloatsToString(const Float:values[], len, String:buffer[], maxlen, bool:list = false)
 {
     decl String:valuebuffer[16];
     valuebuffer[0] = 0;
@@ -267,7 +424,12 @@ stock Array_FloatsToString(const Float:values[], len, String:buffer[], maxlen)
     // Make sure buffer is empty.
     buffer[0] = 0;
     
-    StrCat(buffer, maxlen, "{");
+    new writeCount = 0;
+    
+    if (!list)
+    {
+        writeCount = StrCat(buffer, maxlen, "{");
+    }
     
     // Loop through values.
     for (new i = 0; i < len; i++)
@@ -278,11 +440,217 @@ stock Array_FloatsToString(const Float:values[], len, String:buffer[], maxlen)
         // If not the last value.
         if (i < len - 1)
         {
-            StrCat(buffer, maxlen, ", ");
+            if (list)
+            {
+                writeCount += StrCat(buffer, maxlen, "\n");
+            }
+            else
+            {
+                writeCount += StrCat(buffer, maxlen, ", ");
+            }
         }
     }
     
-    StrCat(buffer, maxlen, "}");
+    if (!list)
+    {
+        writeCount += StrCat(buffer, maxlen, "}");
+    }
+}
+
+/**
+ * Converts the contents of an ADT array to a string, assuming elements are
+ * stored as floats.
+ *
+ * Output format: {1.0, 2.0, 3.0, ...}
+ *
+ * List format:
+ * 1.0
+ * 2.0
+ * 3.0
+ * ...
+ *
+ * Additional decimals may be shown.
+ *
+ * @param array     Source array.
+ * @param buffer    Destination string buffer.
+ * @param maxlen    Size of buffer.
+ * @param list      (Optional) Store values as a list.
+ *
+ * @return          Number of cells written.
+ */
+stock Array_ADTFloatToString(Handle:array, String:buffer[], maxlen, bool:list = false)
+{
+    new Float:floatValue;
+    decl String:valuebuffer[16];
+    valuebuffer[0] = 0;
+    
+    // Make sure buffer is empty.
+    buffer[0] = 0;
+    
+    new writeCount = 0;
+    
+    if (!list)
+    {
+        writeCount = StrCat(buffer, maxlen, "{");
+    }
+    
+    // Loop through values.
+    new len = GetArraySize(array);
+    for (new i = 0; i < len; i++)
+    {
+        floatValue = GetArrayCell(array, i);
+        FloatToString(floatValue, valuebuffer, sizeof(valuebuffer));
+        writeCount += StrCat(buffer, maxlen, valuebuffer);
+        
+        // If not the last value.
+        if (i < len - 1)
+        {
+            if (list)
+            {
+                writeCount += StrCat(buffer, maxlen, "\n");
+            }
+            else
+            {
+                writeCount += StrCat(buffer, maxlen, ", ");
+            }
+        }
+    }
+    
+    if (!list)
+    {
+        writeCount += StrCat(buffer, maxlen, "}");
+    }
+    
+    return writeCount;
+}
+
+/**
+ * Converts the contents of a string array to a string.
+ *
+ * Output format: {"a", "b", "c", ...}
+ *
+ * List format:
+ * "a"
+ * "b"
+ * "c"
+ * ...
+ *
+ * @param array     Source array.
+ * @param buffer    Destination string buffer.
+ * @param maxlen    Size of buffer.
+ * @param list      (Optional) Store values as a list.
+ *
+ * @return          Number of cells written.
+ */
+stock Array_ADTToString(Handle:array, String:buffer[], maxlen, bool:list = false)
+{
+    decl String:valuebuffer[16];
+    valuebuffer[0] = 0;
+    
+    // Make sure buffer is empty.
+    buffer[0] = 0;
+    
+    new writeCount = 0;
+    
+    if (!list)
+    {
+        writeCount = StrCat(buffer, maxlen, "{");
+    }
+    
+    // Loop through values.
+    new len = GetArraySize(array);
+    for (new i = 0; i < len; i++)
+    {
+        GetArrayString(array, i, valuebuffer, sizeof(valuebuffer));
+        writeCount += StrCat(buffer, maxlen, "\"");
+        writeCount += StrCat(buffer, maxlen, valuebuffer);
+        writeCount += StrCat(buffer, maxlen, "\"");
+        
+        // If not the last value.
+        if (i < len - 1)
+        {
+            if (list)
+            {
+                writeCount += StrCat(buffer, maxlen, "\n");
+            }
+            else
+            {
+                writeCount += StrCat(buffer, maxlen, ", ");
+            }
+        }
+    }
+    
+    if (!list)
+    {
+        writeCount += StrCat(buffer, maxlen, "}");
+    }
+    
+    return writeCount;
+}
+
+/**
+ * Converts the contents of an ADT array to a string, assuming elements are
+ * stored as strings.
+ *
+ * Output format: {"a", "b", "c", ...}
+ *
+ * List format:
+ * "a"
+ * "b"
+ * "c"
+ * ...
+ *
+ * @param values    Source array.
+ * @param len       Size of source array.
+ * @param buffer    Destination string buffer.
+ * @param maxlen    Size of buffer.
+ * @param list      (Optional) Store values as a list.
+ *
+ * @return          Number of cells written.
+ */
+stock Array_ToString(const String:values[][], len, String:buffer[], maxlen, bool:list = false)
+{
+    decl String:valuebuffer[16];
+    valuebuffer[0] = 0;
+    
+    // Make sure buffer is empty.
+    buffer[0] = 0;
+    
+    new writeCount = 0;
+    
+    if (!list)
+    {
+        writeCount = StrCat(buffer, maxlen, "{");
+    }
+    
+    // Loop through values.
+    for (new i = 0; i < len; i++)
+    {
+        strcopy(valuebuffer, sizeof(valuebuffer), values[i]);
+        writeCount += StrCat(buffer, maxlen, "\"");
+        writeCount += StrCat(buffer, maxlen, valuebuffer);
+        writeCount += StrCat(buffer, maxlen, "\"");
+        
+        // If not the last value.
+        if (i < len - 1)
+        {
+            if (list)
+            {
+                writeCount += StrCat(buffer, maxlen, "\n");
+            }
+            else
+            {
+                writeCount += StrCat(buffer, maxlen, ", ");
+            }
+        }
+    }
+    
+    if (!list)
+    {
+        writeCount += StrCat(buffer, maxlen, "}");
+    }
+    
+    return writeCount;
 }
 
 /**

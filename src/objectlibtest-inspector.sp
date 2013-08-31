@@ -8,10 +8,9 @@ new Handle:List;
 
 public OnPluginStart()
 {
+    ObjLib_BuildInspector();
+    
     RegConsoleCmd("object_list", Command_List, "List objects in root.");
-    RegConsoleCmd("object_inspect", Command_Inspect, "Inspect an object. Usage: object_inspect <object address>");
-    RegConsoleCmd("object_inspect_ex", Command_InspectEx, "Inspect an object's raw data. Usage: object_inspect_ex <object address>");
-    RegConsoleCmd("object_inspect_type_ex", Command_InspectTypeEx, "Inspect an object type's raw data. Usage: object_inspect_type_ex <object type address>");
     
     //ParseUntypedKv();
     ParseTypedKv();
@@ -99,57 +98,6 @@ public Action:Command_List(client, argc)
         new object = GetArrayCell(List, i);
         ReplyToCommand(client, "0x%X", object);
     }
-    
-    return Plugin_Handled;
-}
-
-public Action:Command_Inspect(client, argc)
-{
-    new String:argBuffer[16];
-    GetCmdArg(1, argBuffer, sizeof(argBuffer));
-    
-    new Object:object;
-    
-    // Parse hex string.
-    StringToIntEx(argBuffer, _:object, 16);
-    
-    ReplyToCommand(client, "Inspecting object 0x%X.", object);
-    
-    ObjLib_DumpObjectKeys(client, object);
-    
-    return Plugin_Handled;
-}
-
-public Action:Command_InspectEx(client, argc)
-{
-    new String:argBuffer[16];
-    GetCmdArg(1, argBuffer, sizeof(argBuffer));
-    
-    new Object:object;
-    
-    // Parse hex string.
-    StringToIntEx(argBuffer, _:object, 16);
-    
-    ReplyToCommand(client, "Inspecting raw data in object 0x%X.", object);
-    
-    ObjLib_DumpRawObject(client, object);
-    
-    return Plugin_Handled;
-}
-
-public Action:Command_InspectTypeEx(client, argc)
-{
-    new String:argBuffer[16];
-    GetCmdArg(1, argBuffer, sizeof(argBuffer));
-    
-    new ObjectType:typeDescriptor;
-    
-    // Parse hex string.
-    StringToIntEx(argBuffer, _:typeDescriptor, 16);
-    
-    ReplyToCommand(client, "Inspecting raw data in object type 0x%X.", typeDescriptor);
-    
-    ObjLib_DumpRawType(client, typeDescriptor);
     
     return Plugin_Handled;
 }
