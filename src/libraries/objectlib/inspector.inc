@@ -25,7 +25,7 @@
  * ============================================================================
  */
 
-static ObjLib_InspectorBuilt = false;
+static stock ObjLib_InspectorBuilt = false;
 
 /*____________________________________________________________________________*/
 
@@ -50,7 +50,7 @@ static ObjLib_InspectorBuilt = false;
  *                          use. If empty, the plugin's filename will be used
  *                          instead. Default is empty.
  */
-ObjLib_BuildInspector(adminFlags = ADMFLAG_ROOT, const String:group[] = "")
+stock ObjLib_BuildInspector(adminFlags = ADMFLAG_ROOT, const String:group[] = "")
 {
     if (ObjLib_InspectorBuilt)
     {
