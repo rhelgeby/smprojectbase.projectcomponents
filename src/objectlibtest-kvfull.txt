@@ -1,58 +1,58 @@
-"Root"
+root
 {
-    "DataTypes"
+    data_types
     {
-        "cell"              "10"
-        "bool"              "true"
-        "float"             "2.5"
-        "string"            "This is a string."
+        cell                10
+        bool                "true"
+        float               2.5
+        string              "This is a string."
     }
     
-    "NestedSections"
+    nested_sections
     {
-        "valueA"            "1"
-        "sectionA"
+        value_a             1
+        section_a
         {
-            "valueB"        "2"
+            value_b         2
         }
-        "sectionB"
+        section_b
         {
-            "valueC"        "3"
-            "sectionC"
+            valueC          3
+            section_c
             {
-                "valueD"    "4"
+                value_d     4
             }
-            "sectionD"
+            section_d
             {
-                "valueE"    "5"
+                value_e     5
             }
         }
     }
     
-    "EmptySection"
+    empty_section
     {
     }
     
-    "Collection"
+    collection
     {
-        "CollectionEntry"   "6"
-        "CollectionEntry"   "7"
-        "CollectionEntry"   "8"
+        collection_entry    6
+        collection_entry    7
+        collection_entry    8
     }
     
-    "CollectionOfObjects"
+    collection_of_objects
     {
-        "DummyObject"
+        dummy_object
         {
-            "dummyKey"      "9"
+            dummy_key       9
         }
-        "DummyObject"
+        dummy_object
         {
-            "dummyKey"      "10"
+            dummy_key       10
         }
-        "DummyObject"
+        dummy_object
         {
-            "dummyKey"      "11"
+            dummy_key       11
         }
     }
 }
