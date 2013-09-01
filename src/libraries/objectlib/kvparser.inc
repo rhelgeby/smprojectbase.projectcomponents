@@ -306,6 +306,9 @@ stock Object:ObjLib_ParseSection(Handle:kv, Object:parseContext)
     KvGetSectionName(kv, sectionName, sizeof(sectionName));
     KvJumpToKeySymbol(kv, keyId);   // Jump back to the first sub key again.
     
+    // Section names are case insensitive. Convert to lower case.
+    Array_ToLower(sectionName, sectionName, sizeof(sectionName));
+    
     PrintToServer("-- Parse Section Start: %s --", sectionName);
     
     // Prepare new section object.
@@ -331,8 +334,10 @@ stock Object:ObjLib_ParseSection(Handle:kv, Object:parseContext)
             break;
         }
         
-        // Get current key or section name.
+        // Get current key or section name. Convert to lower case, it's case
+        // insensitive.
         KvGetSectionName(kv, keyName, sizeof(keyName));
+        Array_ToLower(keyName, keyName, sizeof(keyName));
         PrintToServer("Current key: %s", keyName);
         
         // Check if key is a sub section.
@@ -359,8 +364,9 @@ stock Object:ObjLib_ParseSection(Handle:kv, Object:parseContext)
             new KvDataTypes:dataType = KvGetDataType(kv, NULL_STRING);
             if (dataType != KvData_None)
             {
-                // Get key name.
+                // Get key name. Convert to lower case, it's case insensitive.
                 KvGetSectionName(kv, keyName, sizeof(keyName));
+                Array_ToLower(keyName, keyName, sizeof(keyName));
                 PrintToServer("Found key: %s", keyName);
                 
                 // Execute new key handler.

@@ -47,7 +47,7 @@ stock bool:ObjLib_KvUnexpectedKeyError(Object:object, ObjectType:typeDescriptor,
                            errorHandler,                        // customHandler
                            result,                              // result
                            parseContext,                        // data
-                           "Unexpected key \"%s\". It does not exist in the type descriptor. Key names are case sensitive.",   // format
+                           "Unexpected key \"%s\". It does not exist in the type descriptor. Key names must be in lower case in the type descriptor.",   // format
                            keyName))
     {
         // Error was handled in customHandler. Update parser state.
@@ -99,7 +99,7 @@ stock bool:ObjLib_KvUnexpectedSectionError(Object:object, ObjectType:typeDescrip
                            errorHandler,                        // customHandler
                            result,                              // result
                            parseContext,                        // data
-                           "Unexpected section \"%s\". It does not exist in the type descriptor. Section names are case sensitive.",   // format
+                           "Unexpected section \"%s\". It does not exist in the type descriptor. Section names must be in lower case in the type descriptor.",   // format
                            sectionName))
     {
         // Error was handled in customHandler. Update parser state.
