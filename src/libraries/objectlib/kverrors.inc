@@ -40,6 +40,10 @@
  */
 stock bool:ObjLib_KvUnexpectedKeyError(Object:object, ObjectType:typeDescriptor, ObjLib_ErrorHandler:errorHandler, Object:parseContext, const String:keyName[])
 {
+    // Get path to current location in keyvalue tree.
+    decl String:path[PLATFORM_MAX_PATH];
+    ObjLib_KvBuildPath(parseContext, path, sizeof(path));
+    
     new Action:result = Plugin_Handled;
     if (ObjLib_HandleError(typeDescriptor,                      // typeDescriptor
                            object,                              // object
@@ -47,13 +51,14 @@ stock bool:ObjLib_KvUnexpectedKeyError(Object:object, ObjectType:typeDescriptor,
                            errorHandler,                        // customHandler
                            result,                              // result
                            parseContext,                        // data
-                           "Unexpected key \"%s\". It does not exist in the type descriptor. Key names must be in lower case in the type descriptor.",   // format
+                           "Unexpected key \"%s/%s\". It does not exist in the type descriptor. Key names must be in lower case in the type descriptor.",   // format
+                           path,
                            keyName))
     {
         // Error was handled in customHandler. Update parser state.
         if (result == Plugin_Continue)
         {
-            // Continue parsing.
+            // Skip this key, continue parsing remaining keys.
             ObjLib_SetCell(parseContext, "parseState", ObjLibState_Running);
         }
         else
@@ -92,6 +97,10 @@ stock bool:ObjLib_KvUnexpectedKeyError(Object:object, ObjectType:typeDescriptor,
  */
 stock bool:ObjLib_KvUnexpectedSectionError(Object:object, ObjectType:typeDescriptor, ObjLib_ErrorHandler:errorHandler, Object:parseContext, const String:sectionName[])
 {
+    // Get path to current location in keyvalue tree.
+    decl String:path[PLATFORM_MAX_PATH];
+    ObjLib_KvBuildPath(parseContext, path, sizeof(path));
+    
     new Action:result = Plugin_Handled;
     if (ObjLib_HandleError(typeDescriptor,                      // typeDescriptor
                            object,                              // object
@@ -99,13 +108,14 @@ stock bool:ObjLib_KvUnexpectedSectionError(Object:object, ObjectType:typeDescrip
                            errorHandler,                        // customHandler
                            result,                              // result
                            parseContext,                        // data
-                           "Unexpected section \"%s\". It does not exist in the type descriptor. Section names must be in lower case in the type descriptor.",   // format
+                           "Unexpected section \"%s/%s\". It does not exist in the type descriptor. Section names must be in lower case in the type descriptor.",   // format
+                           path,
                            sectionName))
     {
         // Error was handled in customHandler. Update parser state.
         if (result == Plugin_Continue)
         {
-            // Skip this section, continue parsing.
+            // Skip this section, continue parsing remaining keys.
             ObjLib_SetCell(parseContext, "parseState", ObjLibState_SkipSection);
         }
         else
@@ -144,6 +154,10 @@ stock bool:ObjLib_KvUnexpectedSectionError(Object:object, ObjectType:typeDescrip
  */
 stock bool:ObjLib_KvSectionNotObjectError(Object:object, ObjectType:typeDescriptor, ObjLib_ErrorHandler:errorHandler, Object:parseContext, const String:sectionName[])
 {
+    // Get path to current location in keyvalue tree.
+    decl String:path[PLATFORM_MAX_PATH];
+    ObjLib_KvBuildPath(parseContext, path, sizeof(path));
+    
     new Action:result = Plugin_Handled;
     if (ObjLib_HandleError(typeDescriptor,                      // typeDescriptor
                            object,                              // object
@@ -151,13 +165,14 @@ stock bool:ObjLib_KvSectionNotObjectError(Object:object, ObjectType:typeDescript
                            errorHandler,                        // customHandler
                            result,                              // result
                            parseContext,                        // data
-                           "Expected \"%s\" to be a key value pair, but it's a sub section (object).",   // format
+                           "Expected \"%s/%s\" to be a key value pair, but it's a sub section (object).",   // format
+                           path,
                            sectionName))
     {
         // Error was handled in customHandler. Update parser state.
         if (result == Plugin_Continue)
         {
-            // Skip this section, continue parsing.
+            // Skip this section, continue parsing remaining sections.
             ObjLib_SetCell(parseContext, "parseState", ObjLibState_SkipSection);
         }
         else
@@ -197,6 +212,10 @@ stock bool:ObjLib_KvSectionNotObjectError(Object:object, ObjectType:typeDescript
  */
 stock bool:ObjLib_KvConstraintTypeMismatch(Object:object, ObjectType:typeDescriptor, ObjLib_ErrorHandler:errorHandler, Object:parseContext, const String:keyName[], ObjectType:constraintType)
 {
+    // Get path to current location in keyvalue tree.
+    decl String:path[PLATFORM_MAX_PATH];
+    ObjLib_KvBuildPath(parseContext, path, sizeof(path));
+    
     new Action:result = Plugin_Handled;
     if (ObjLib_HandleError(typeDescriptor,                      // typeDescriptor
                            object,                              // object
@@ -204,14 +223,15 @@ stock bool:ObjLib_KvConstraintTypeMismatch(Object:object, ObjectType:typeDescrip
                            errorHandler,                        // customHandler
                            result,                              // result
                            parseContext,                        // data
-                           "Invalid constraint type for key \"%s\": %x. It's unknown or does not match the key data type.",   // format
+                           "Invalid constraint type for key \"%s/%s\": %x. It's unknown or does not match the key data type.",   // format
+                           path,
                            keyName,
                            constraintType))
     {
         // Error was handled in customHandler. Update parser state.
         if (result == Plugin_Continue)
         {
-            // Continue parsing.
+            // Skip this key, continue parsing remaining keys.
             ObjLib_SetCell(parseContext, "parseState", ObjLibState_Running);
         }
         else
@@ -252,6 +272,10 @@ stock bool:ObjLib_KvConstraintTypeMismatch(Object:object, ObjectType:typeDescrip
  */
 stock bool:ObjLib_KvTypeMismatchError(Object:object, ObjectType:typeDescriptor, ObjLib_ErrorHandler:errorHandler, Object:parseContext, const String:keyName[], ObjectDataType:expectedType, ObjectDataType:actualType)
 {
+    // Get path to current location in keyvalue tree.
+    decl String:path[PLATFORM_MAX_PATH];
+    ObjLib_KvBuildPath(parseContext, path, sizeof(path));
+    
     // Convert data types to strings.
     new String:expectedTypeString[32];
     new String:actualTypeString[32];
@@ -265,7 +289,8 @@ stock bool:ObjLib_KvTypeMismatchError(Object:object, ObjectType:typeDescriptor, 
                            errorHandler,                        // customHandler
                            result,                              // result
                            parseContext,                        // data
-                           "Type mismatch (key: \"%s\"). Expected type: %s. Actual type: %s",   // format
+                           "Key type mismatch: \"%s/%s\". Expected type: %s. Actual type: %s",   // format
+                           path,
                            keyName,
                            expectedTypeString,
                            actualTypeString))
@@ -273,7 +298,7 @@ stock bool:ObjLib_KvTypeMismatchError(Object:object, ObjectType:typeDescriptor, 
         // Error was handled in customHandler. Update parser state.
         if (result == Plugin_Continue)
         {
-            // Continue parsing.
+            // Skip this key, continue parsing remaining keys.
             ObjLib_SetCell(parseContext, "parseState", ObjLibState_Running);
         }
         else
@@ -358,23 +383,23 @@ public Action:ObjLib_KvErrorHandler(ObjectType:typeDescriptor, ObjLibError:error
 /**
  * Builds a path to the current parser location.
  *
- * @param parseParam        Object with parser settings.
+ * @param parseContext      Parser context object.
  * @param buffer            Destination string buffer.
  * @param maxlen            Size of buffer.
  *
  * @return                  Number of bytes written (including null terminator).
  */
-stock ObjLib_KvBuildPath(Object:parseParams, String:buffer[], maxlen)
+stock ObjLib_KvBuildPath(Object:parseContext, String:buffer[], maxlen)
 {
-    new Handle:nameStack = ObjLib_GetHandle(parseParams, "nameStack");
+    new Handle:nameStack = ObjLib_GetHandle(parseContext, "nameStack");
     new len = GetArraySize(nameStack);
     new count = 0;
     
     decl String:nameElement[OBJECT_KEY_NAME_LEN];
     nameElement[0] = 0;
     
-    // Initialize root path.
-    count = strcopy(buffer, maxlen, "/");
+    // Initialize buffer.
+    buffer[0] = 0;
     
     // Check if no elements.
     if (len == 0)
