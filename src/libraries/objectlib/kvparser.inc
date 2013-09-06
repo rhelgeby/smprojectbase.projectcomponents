@@ -774,6 +774,13 @@ static stock ObjLib_OnKeyValue(Handle:kv, const String:keyName[], KvDataTypes:kv
             // Get data type of key. It will be string if key is using lookup
             // constraints.
             dataType = ObjLib_GetKeyTypeOrFail(object, typeDescriptor, keyName, parseContext);
+            
+            // Check if failed.
+            if (dataType == ObjDataType_Invalid)
+            {
+                // Failed to get key type. Parser state is already updated.
+                return;
+            }
         }
         
         // Store value in object.
@@ -1122,6 +1129,7 @@ static stock ObjectType:ObjLib_KvGetColElementTypeOrFail(Collection:collection, 
     {
         // Something is trying to get an object type of a collection that
         // doesn't store objects. This is an error.
+        // TODO: Trigger an error that will skip the section if continuing.
         ObjLib_KvTypeMismatchError(Object:collection, ObjLib_GetTypeDescriptor(Object:collection), errorHandler, parseContext, "(Collection element)", ObjDataType_Object, dataType);
         return INVALID_OBJECT_TYPE;
     }
