@@ -55,29 +55,17 @@ stock bool:ObjLib_KvUnexpectedKeyError(Object:object, ObjectType:typeDescriptor,
                            path,
                            keyName))
     {
-        // Error was handled in customHandler. Update parser state.
-        if (result == Plugin_Continue)
-        {
-            // Skip this key, continue parsing remaining keys.
-            ObjLib_SetCell(parseContext, "parseState", ObjLibState_Running);
-        }
-        else
-        {
-            // Abort parsing.
-            ObjLib_SetCell(parseContext, "parseState", ObjLibState_Aborted);
-        }
+        // Error was handled in customHandler. Update parser state, skip this
+        // key if continuing.
+        ObjLib_KvUpdateParserState(result, parseContext);
         
-        // Return to parse loop. The parse state will tell if parser
-        // should abort or continue.
+        // Return to parse loop. The parse state will tell if parser should
+        // abort or continue.
         return true;
     }
-    else
-    {
-        // Error not handled. This code is actually not reachable
-        // because the error handler doesn't return when calling
-        // ThrowError.
-        return false;
-    }
+    
+    // Not reachable due to call to ThrowError.
+    return false;
 }
 
 /*____________________________________________________________________________*/
@@ -112,29 +100,17 @@ stock bool:ObjLib_KvUnexpectedSectionError(Object:object, ObjectType:typeDescrip
                            path,
                            sectionName))
     {
-        // Error was handled in customHandler. Update parser state.
-        if (result == Plugin_Continue)
-        {
-            // Skip this section, continue parsing remaining keys.
-            ObjLib_SetCell(parseContext, "parseState", ObjLibState_SkipSection);
-        }
-        else
-        {
-            // Abort parsing.
-            ObjLib_SetCell(parseContext, "parseState", ObjLibState_Aborted);
-        }
+        // Error was handled in customHandler. Update parser state, skip section
+        // if continuing.
+        ObjLib_KvUpdateParserState(result, parseContext, ObjLibState_SkipSection);
         
-        // Return to parse loop. The parse state will tell if parser
-        // should abort or continue.
+        // Return to parse loop. The parse state will tell if parser should
+        // abort or continue.
         return true;
     }
-    else
-    {
-        // Error not handled. This code is actually not reachable
-        // because the error handler doesn't return when calling
-        // ThrowError.
-        return false;
-    }
+    
+    // Not reachable due to call to ThrowError.
+    return false;
 }
 
 /*____________________________________________________________________________*/
@@ -169,29 +145,17 @@ stock bool:ObjLib_KvSectionNotObjectError(Object:object, ObjectType:typeDescript
                            path,
                            sectionName))
     {
-        // Error was handled in customHandler. Update parser state.
-        if (result == Plugin_Continue)
-        {
-            // Skip this section, continue parsing remaining sections.
-            ObjLib_SetCell(parseContext, "parseState", ObjLibState_SkipSection);
-        }
-        else
-        {
-            // Abort parsing.
-            ObjLib_SetCell(parseContext, "parseState", ObjLibState_Aborted);
-        }
+        // Error was handled in customHandler. Update parser state, skip section
+        // if continuing.
+        ObjLib_KvUpdateParserState(result, parseContext, ObjLibState_SkipSection);
         
         // Return to parse loop. The parse state will tell if parser
         // should abort or continue.
         return true;
     }
-    else
-    {
-        // Error not handled. This code is actually not reachable
-        // because the error handler doesn't return when calling
-        // ThrowError.
-        return false;
-    }
+    
+    // Not reachable due to call to ThrowError.
+    return false;
 }
 
 /*____________________________________________________________________________*/
@@ -229,28 +193,15 @@ stock bool:ObjLib_KvConstraintTypeMismatch(Object:object, ObjectType:typeDescrip
                            constraintType))
     {
         // Error was handled in customHandler. Update parser state.
-        if (result == Plugin_Continue)
-        {
-            // Skip this key, continue parsing remaining keys.
-            ObjLib_SetCell(parseContext, "parseState", ObjLibState_Running);
-        }
-        else
-        {
-            // Abort parsing.
-            ObjLib_SetCell(parseContext, "parseState", ObjLibState_Aborted);
-        }
+        ObjLib_KvUpdateParserState(result, parseContext);
         
         // Return to parse loop. The parse state will tell if parser
         // should abort or continue.
         return true;
     }
-    else
-    {
-        // Error not handled. This code is actually not reachable
-        // because the error handler doesn't return when calling
-        // ThrowError.
-        return false;
-    }
+    
+    // Not reachable due to call to ThrowError.
+    return false;
 }
 
 /*____________________________________________________________________________*/
@@ -296,36 +247,21 @@ stock bool:ObjLib_KvTypeMismatchError(Object:object, ObjectType:typeDescriptor, 
                            actualTypeString))
     {
         // Error was handled in customHandler. Update parser state.
-        if (result == Plugin_Continue)
-        {
-            // Skip this key, continue parsing remaining keys.
-            ObjLib_SetCell(parseContext, "parseState", ObjLibState_Running);
-        }
-        else
-        {
-            // Abort parsing.
-            ObjLib_SetCell(parseContext, "parseState", ObjLibState_Aborted);
-        }
+        ObjLib_KvUpdateParserState(result, parseContext);
         
         // Return to parse loop. The parse state will tell if parser
         // should abort or continue.
         return true;
     }
-    else
-    {
-        // Error not handled. This code is actually not reachable
-        // because the error handler doesn't return when calling
-        // ThrowError.
-        return false;
-    }
+    
+    // Not reachable due to call to ThrowError.
+    return false;
 }
 
 /*____________________________________________________________________________*/
 
 /**
  * Fallback error handler in case no error handler is provided to parser.
- *
- * Does general cleanup to prevent memory leaks.
  *
  * @param typeDescriptor    Related type descriptor.
  * @param errorType         Type of error.
@@ -451,7 +387,6 @@ stock ObjLib_ErrorHandler:ObjLib_KvGetErrorHandler(Object:parseContext)
 
 /*____________________________________________________________________________*/
 
-
 /**
  * Returns the parse context or parse context in temp storage.
  */
@@ -481,5 +416,34 @@ stock Object:ObjLib_KvGetStoredParseContext(Object:parseContext)
             ThrowError("[BUG] Missing parse context in temp storage. This is a bug in objectlib.");
             return INVALID_OBJECT;
         }
+    }
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Internal use only!.
+ * Updates parser state according to an error handler result.
+ *
+ * @param result            Result value from error handler.
+ * @param parseContext      Object with parser settings.
+ *                          (Type: ObjLib_KvParamsType)
+ * @param continueState     (Optional) Parser state to set if continuing
+ *                          parsing. Default is ObjLibSate_Running.
+ * @param abortState        (Optional) Parser state to set if aborting parsing.
+ *                          Default is ObjLibState_Aborted.
+ */
+stock ObjLib_KvUpdateParserState(Action:result, Object:parseContext, ObjLibParseState:continueState = ObjLibState_Running, ObjLibParseState:abortState = ObjLibState_Aborted)
+{
+    // Error was handled in customHandler. Update parser state.
+    if (result == Plugin_Continue)
+    {
+        // Continue parsing.
+        ObjLib_SetCell(parseContext, "parseState", continueState);
+    }
+    else
+    {
+        // Abort parsing.
+        ObjLib_SetCell(parseContext, "parseState", abortState);
     }
 }
