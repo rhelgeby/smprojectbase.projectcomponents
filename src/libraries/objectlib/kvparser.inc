@@ -31,7 +31,7 @@
 /*____________________________________________________________________________*/
 
 /**
- * Enables fallback error handler. Disable to lett errors result in a call to
+ * Enables fallback error handler. Disable to let errors result in a call to
  * ThrowError (and dump a stack trace).
  */
 #define OBJLIB_KV_SOFT_ERROR
@@ -114,6 +114,9 @@ new Object:TempParseContext = INVALID_OBJECT;
  * @param addEmptySections  (Optional) Whether to add sections with no keys.
  *                          An empty object will represent an empty section.
  *                          Default is false, not adding.
+ * @param continueOnError   (Optional) Continue parsing remaining keys/sections
+ *                          if there's an error parsing an element. The element
+ *                          that failed will be skipped. Default is true.
  * @param errorHandler      (Optional) Custom error handler. Overrides any other
  *                          error handler if specified. Default is none, use
  *                          built in error handler.
@@ -124,6 +127,7 @@ new Object:TempParseContext = INVALID_OBJECT;
 stock Object:ObjLib_GetParseContext(const String:name[] = "",
                                     ObjectType:rootType = INVALID_OBJECT_TYPE,
                                     bool:ignoreEmptySections = false,
+                                    bool:continueOnError = true,
                                     ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
 {
     // Note: See comments in ObjLib_BuildKvContextType for details about the
@@ -137,6 +141,7 @@ stock Object:ObjLib_GetParseContext(const String:name[] = "",
     // Set parameters.
     ObjLib_SetObjectType(parseContext, "rootType", rootType);
     ObjLib_SetBool(parseContext, "ignoreEmptySections", ignoreEmptySections);
+    ObjLib_SetBool(parseContext, "continueOnError", continueOnError);
     ObjLib_SetFunction(parseContext, "errorHandler", errorHandler);
     ObjLib_SetCell(parseContext, "parseState", ObjLibState_Running);
     if (strlen(name) > 0)
@@ -1003,6 +1008,9 @@ static stock ObjLib_BuildKvContextType()
         // Flag for specifying whether to ignore empty sections.
         ObjLib_AddKey(ObjLib_KvContextType, "ignoreEmptySections", ObjDataType_Bool, INVALID_OBJECT);
         
+        // Continue parsing remaining keys if there's an error parsing a key.
+        ObjLib_AddKey(ObjLib_KvContextType, "continueOnError", ObjDataType_Bool, INVALID_OBJECT);
+        
         // Optional user error handler callback to use on parser errors
         // (validation, unexpected keys, etc). This must be a
         // ObjLib_ErrorHandler function.
@@ -1090,6 +1098,8 @@ stock bool:ObjLib_KvIsTypeTemplate(ObjectType:typeDescriptor)
  * @param collection            Collection to get element type of.
  * @param parseContext          Object with parser settings.
  *                              (Type: ObjLib_KvParamsType)
+ * @param elementName           Name of the element in the collection (key or
+ *                              section name).
  * @param elementConstraints    (Output) Constraint object for collection
  *                              elements.
  *
@@ -1101,7 +1111,7 @@ stock bool:ObjLib_KvIsTypeTemplate(ObjectType:typeDescriptor)
  *                          using another constraint type than object
  *                          constraints.
  */
-static stock ObjectType:ObjLib_KvGetColElementTypeOrFail(Collection:collection, Object:parseContext, &Object:elementConstraints = INVALID_OBJECT)
+static stock ObjectType:ObjLib_KvGetColElementTypeOrFail(Collection:collection, Object:parseContext, const String:elementName[], &Object:elementConstraints = INVALID_OBJECT)
 {
     // Get error handler.
     new ObjLib_ErrorHandler:errorHandler = ObjLib_KvGetErrorHandler(parseContext);
@@ -1112,7 +1122,7 @@ static stock ObjectType:ObjLib_KvGetColElementTypeOrFail(Collection:collection, 
     {
         // Something is trying to get an object type of a collection that
         // doesn't store objects. This is an error.
-        ObjLib_KvCollectionTypeMismatchError(collection, ObjLib_GetTypeDescriptor(Object:collection), errorHandler, parseContext, ObjDataType_Object, dataType);
+        ObjLib_KvCollectionTypeMismatchError(collection, ObjLib_GetTypeDescriptor(Object:collection), errorHandler, parseContext, elementName, dataType, ObjDataType_Object);
         return INVALID_OBJECT_TYPE;
     }
     
@@ -1147,7 +1157,7 @@ static stock ObjectType:ObjLib_KvGetColElementTypeOrFail(Collection:collection, 
     if (constraintType != ObjLib_ObjectConstraints)
     {
         // Not using object constraints. This is an error.
-        ObjLib_KvConstraintTypeMismatch(Object:collection, ObjLib_GetTypeDescriptor(Object:collection), errorHandler, parseContext, "(Collection element", constraintType);
+        ObjLib_KvConstraintTypeMismatch(Object:collection, ObjLib_GetTypeDescriptor(Object:collection), errorHandler, parseContext, elementName, constraintType);
         return INVALID_OBJECT_TYPE;
     }
     
@@ -1245,7 +1255,7 @@ static stock ObjectType:ObjLib_KvGetSubTypeOrFail(const String:subSection[], Obj
     {
         // Parent is a collection collection object. Get type of collection 
         // elements.
-        return ObjLib_KvGetColElementTypeOrFail(Collection:parent, parseContext, constraints);
+        return ObjLib_KvGetColElementTypeOrFail(Collection:parent, parseContext, subSection, constraints);
     }
     
     // Parent is a general object. Get object constraints for this sub section

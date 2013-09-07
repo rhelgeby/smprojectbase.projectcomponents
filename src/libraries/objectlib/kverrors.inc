@@ -240,7 +240,7 @@ stock bool:ObjLib_KvTypeMismatchError(Object:object, ObjectType:typeDescriptor, 
                            errorHandler,                        // customHandler
                            result,                              // result
                            parseContext,                        // data
-                           "Key type mismatch: \"%s/%s\". Expected type: %s. Actual type: %s",   // format
+                           "Key type mismatch: \"%s/%s\". Expected %s, but %s was used.",   // format
                            path,
                            keyName,
                            expectedTypeString,
@@ -274,7 +274,7 @@ stock bool:ObjLib_KvTypeMismatchError(Object:object, ObjectType:typeDescriptor, 
  * @return                  True if error was handled. If not handled this
  *                          function does not return at all.
  */
-stock bool:ObjLib_KvCollectionTypeMismatchError(Collection:object, ObjectType:typeDescriptor, ObjLib_ErrorHandler:errorHandler, Object:parseContext, ObjectDataType:expectedType, ObjectDataType:actualType)
+stock bool:ObjLib_KvCollectionTypeMismatchError(Collection:object, ObjectType:typeDescriptor, ObjLib_ErrorHandler:errorHandler, Object:parseContext, const String:elementName[], ObjectDataType:expectedType, ObjectDataType:actualType)
 {
     // Get path to current location in keyvalue tree.
     decl String:path[PLATFORM_MAX_PATH];
@@ -293,8 +293,9 @@ stock bool:ObjLib_KvCollectionTypeMismatchError(Collection:object, ObjectType:ty
                            errorHandler,                        // customHandler
                            result,                              // result
                            parseContext,                        // data
-                           "Collection element type mismatch at \"%s\". Expected type: %s. Actual type: %s",   // format
+                           "Collection element type mismatch at \"%s/%s\". Expected %s, but %s was used.",   // format
                            path,
+                           elementName,
                            expectedTypeString,
                            actualTypeString))
     {
@@ -350,7 +351,7 @@ public Action:ObjLib_KvErrorHandler(ObjectType:typeDescriptor, ObjLibError:error
     }
     
     // Log general parse error.
-    LogError("[%s] Error parsing element in %s: %s", name, path, message);
+    LogError("[%s] Error parsing element at \"%s\": %s", name, path, message);
     
     // Remove parse context from temp storage.
     TempParseContext = INVALID_OBJECT;
