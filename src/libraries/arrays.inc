@@ -544,7 +544,7 @@ stock Array_ADTFloatToString(Handle:array, String:buffer[], maxlen, bool:list = 
  */
 stock Array_ADTToString(Handle:array, String:buffer[], maxlen, bool:list = false)
 {
-    decl String:valuebuffer[16];
+    decl String:valuebuffer[512];
     valuebuffer[0] = 0;
     
     // Make sure buffer is empty.
