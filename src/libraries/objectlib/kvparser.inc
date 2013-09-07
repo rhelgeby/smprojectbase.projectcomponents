@@ -114,12 +114,6 @@ new Object:TempParseContext = INVALID_OBJECT;
  * @param addEmptySections  (Optional) Whether to add sections with no keys.
  *                          An empty object will represent an empty section.
  *                          Default is false, not adding.
- * @param booleanType       (Optional) Which boolean words to allow when
- *                          converting to boolean values. Default is
- *                          BoolType_Any (utilities.inc).
- * @param continueOnError   (Optional) Continue parsing remaining keys/sections
- *                          if there's an error parsing an element. The element
- *                          that failed will be skipped. Default is true.
  * @param errorHandler      (Optional) Custom error handler. Overrides any other
  *                          error handler if specified. Default is none, use
  *                          built in error handler.
@@ -130,8 +124,6 @@ new Object:TempParseContext = INVALID_OBJECT;
 stock Object:ObjLib_GetParseContext(const String:name[] = "",
                                     ObjectType:rootType = INVALID_OBJECT_TYPE,
                                     bool:ignoreEmptySections = false,
-                                    Util_BoolStringType:booleanType = BoolType_Any,
-                                    bool:continueOnError = true,
                                     ObjLib_ErrorHandler:errorHandler = INVALID_FUNCTION)
 {
     // Note: See comments in ObjLib_BuildKvContextType for details about the
@@ -145,8 +137,6 @@ stock Object:ObjLib_GetParseContext(const String:name[] = "",
     // Set parameters.
     ObjLib_SetObjectType(parseContext, "rootType", rootType);
     ObjLib_SetBool(parseContext, "ignoreEmptySections", ignoreEmptySections);
-    ObjLib_SetCell(parseContext, "booleanType", booleanType);   // TODO: Obsolete, replaced by lookup constraints.
-    ObjLib_SetBool(parseContext, "continueOnError", continueOnError);
     ObjLib_SetFunction(parseContext, "errorHandler", errorHandler);
     ObjLib_SetCell(parseContext, "parseState", ObjLibState_Running);
     if (strlen(name) > 0)
@@ -1012,13 +1002,6 @@ static stock ObjLib_BuildKvContextType()
         
         // Flag for specifying whether to ignore empty sections.
         ObjLib_AddKey(ObjLib_KvContextType, "ignoreEmptySections", ObjDataType_Bool, INVALID_OBJECT);
-        
-        // Which types of boolean words allowed when converting a string to a
-        // boolean value. Stored as Util_BoolStringType.
-        ObjLib_AddKey(ObjLib_KvContextType, "booleanType", ObjDataType_Cell, INVALID_OBJECT);
-        
-        // Continue parsing remaining keys if there's an error parsing a key.
-        ObjLib_AddKey(ObjLib_KvContextType, "continueOnError", ObjDataType_Bool, INVALID_OBJECT);
         
         // Optional user error handler callback to use on parser errors
         // (validation, unexpected keys, etc). This must be a
