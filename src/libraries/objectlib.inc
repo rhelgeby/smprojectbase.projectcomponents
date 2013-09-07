@@ -197,12 +197,23 @@ enum ObjectTypeData
  */
 enum ObjLibError
 {
+    // Generic errors. These may occour any time an object or type descriptor is
+    // accessed.
     ObjLibError_InvalidKey,         /** Key name or index is invalid. */
     ObjLibError_TypeMismatch,       /** Data type does not match the expected type. */
     ObjLibError_NullDataKey,        /** Attempted to read from uninitialized key. */
     ObjLibError_KeyExist,           /** Attempted to create a key with an existing name. */
     ObjLibError_Immutable,          /** Object or Object type is immutable. */
-    ObjLibError_ValidationError     /** Data constraint violation. */
+    ObjLibError_ValidationError,    /** Data constraint violation. */
+    
+    // KeyValue parser errors. These errors are related to the tree structure
+    // validation.
+    ObjLibError_KvUnexpectedKey,            /** Key is not defined in type descriptor. */
+    ObjLibError_KvUnexpectedSection,        /** Section is not defined in type descriptor. */
+    ObjLibError_KvInvalidSection,           /** Section is supposed to be a key value pair. */
+    ObjLibError_KvInvalidConstraint,        /** Constraint type is invalid or unknown. */
+    ObjLibError_KvTypeMismatch,             /** Key type mismatch. */
+    ObjLibError_KvCollectionTypeMismatch    /** Collection element type mismatch. */
 }
 
 /*____________________________________________________________________________*/
@@ -218,8 +229,8 @@ enum ObjLibError
  * General error callback.
  *
  * The return value may be used to decide what to do next. In most cases it's
- * irrelevant and the value is ignored. But the keyvalue parser is using the
- * return value to abort or continue parsing.
+ * irrelevant and the value is ignored. The KeyValue parser is using the return
+ * value to abort or continue parsing.
  *
  * It would be considered a good habit to return a proper value even if it's
  * ignored in some cases.
@@ -229,15 +240,19 @@ enum ObjLibError
  * @param message           Error message.
  * @param object            Related object, if available.
  * @param data              Data bundle with additional data, if available.
+ *                          If the error is originating from the KeyValue parser
+ *                          it's a reference to the parser context object. You
+ *                          may use ObjLib_KvBuildPath to get a path to the
+ *                          current location in the tree.
  *
  * @return                  What to do next.
  *                          * Plugin_Handled - Error is handled and further
- *                          processing should be aborted.
+ *                            processing should be aborted.
  *                          * Plugin_Continue - Continue processing if possible.
- *                          This is useful to let the KeyValue parser continue
- *                          parsing remaining keys.
+ *                            This is useful to let the KeyValue parser continue
+ *                            parsing remaining keys.
  *                          * Other values are treated as if Plugin_Handled was
- *                          returned, parsing will be aborted.
+ *                            returned, parsing will be aborted.
  */
 functag public Action:ObjLib_ErrorHandler(ObjectType:typeDescriptor, ObjLibError:errorType, const String:message[], Object:object, Object:data);
 
