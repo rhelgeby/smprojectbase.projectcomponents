@@ -1279,8 +1279,8 @@ static stock ObjectType:ObjLib_KvGetSubTypeOrFail(const String:subSection[], Obj
     new ObjectDataType:keyType = ObjLib_GetKeyDataType(parentType, keyIndex);
     if (keyType != ObjDataType_Object)
     {
-        // Unexpected sub section. It's not supposed to be an object.
-        ObjLib_KvSectionNotObjectError(parent, parentType, errorHandler, parseContext, subSection);
+        // Invalid sub section. It's not supposed to be an object.
+        ObjLib_KvInvalidSectionError(parent, parentType, errorHandler, parseContext, subSection);
         return INVALID_OBJECT_TYPE;
     }
     

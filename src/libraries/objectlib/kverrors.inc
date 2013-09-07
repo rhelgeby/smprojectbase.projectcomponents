@@ -47,7 +47,7 @@ stock bool:ObjLib_KvUnexpectedKeyError(Object:object, ObjectType:typeDescriptor,
     new Action:result = Plugin_Handled;
     if (ObjLib_HandleError(typeDescriptor,                      // typeDescriptor
                            object,                              // object
-                           ObjLibError_InvalidKey,              // errorType
+                           ObjLibError_KvUnexpectedKey,         // errorType
                            errorHandler,                        // customHandler
                            result,                              // result
                            parseContext,                        // data
@@ -92,7 +92,7 @@ stock bool:ObjLib_KvUnexpectedSectionError(Object:object, ObjectType:typeDescrip
     new Action:result = Plugin_Handled;
     if (ObjLib_HandleError(typeDescriptor,                      // typeDescriptor
                            object,                              // object
-                           ObjLibError_ValidationError,         // errorType
+                           ObjLibError_KvUnexpectedSection,     // errorType
                            errorHandler,                        // customHandler
                            result,                              // result
                            parseContext,                        // data
@@ -116,7 +116,7 @@ stock bool:ObjLib_KvUnexpectedSectionError(Object:object, ObjectType:typeDescrip
 /*____________________________________________________________________________*/
 
 /**
- * Triggers an unexpected section error.
+ * Triggers an invalid section error.
  *
  * @param object            Current object.
  * @param typeDescriptor    Type descriptor for object.
@@ -128,7 +128,7 @@ stock bool:ObjLib_KvUnexpectedSectionError(Object:object, ObjectType:typeDescrip
  * @return                  True if error was handled. If not handled this
  *                          function does not return at all.
  */
-stock bool:ObjLib_KvSectionNotObjectError(Object:object, ObjectType:typeDescriptor, ObjLib_ErrorHandler:errorHandler, Object:parseContext, const String:sectionName[])
+stock bool:ObjLib_KvInvalidSectionError(Object:object, ObjectType:typeDescriptor, ObjLib_ErrorHandler:errorHandler, Object:parseContext, const String:sectionName[])
 {
     // Get path to current location in keyvalue tree.
     decl String:path[PLATFORM_MAX_PATH];
@@ -137,11 +137,11 @@ stock bool:ObjLib_KvSectionNotObjectError(Object:object, ObjectType:typeDescript
     new Action:result = Plugin_Handled;
     if (ObjLib_HandleError(typeDescriptor,                      // typeDescriptor
                            object,                              // object
-                           ObjLibError_ValidationError,         // errorType
+                           ObjLibError_KvInvalidSection,        // errorType
                            errorHandler,                        // customHandler
                            result,                              // result
                            parseContext,                        // data
-                           "Expected \"%s/%s\" to be a key value pair, but it's a sub section (object).",   // format
+                           "Invalid section at \"%s/%s\". It's supposed to be a key value pair.",   // format
                            path,
                            sectionName))
     {
@@ -183,7 +183,7 @@ stock bool:ObjLib_KvConstraintTypeMismatch(Object:object, ObjectType:typeDescrip
     new Action:result = Plugin_Handled;
     if (ObjLib_HandleError(typeDescriptor,                      // typeDescriptor
                            object,                              // object
-                           ObjLibError_TypeMismatch,            // errorType
+                           ObjLibError_KvInvalidConstraint,     // errorType
                            errorHandler,                        // customHandler
                            result,                              // result
                            parseContext,                        // data
@@ -236,7 +236,7 @@ stock bool:ObjLib_KvTypeMismatchError(Object:object, ObjectType:typeDescriptor, 
     new Action:result = Plugin_Handled;
     if (ObjLib_HandleError(typeDescriptor,                      // typeDescriptor
                            object,                              // object
-                           ObjLibError_TypeMismatch,            // errorType
+                           ObjLibError_KvTypeMismatch,          // errorType
                            errorHandler,                        // customHandler
                            result,                              // result
                            parseContext,                        // data
@@ -289,7 +289,7 @@ stock bool:ObjLib_KvCollectionTypeMismatchError(Collection:object, ObjectType:ty
     new Action:result = Plugin_Handled;
     if (ObjLib_HandleError(typeDescriptor,                      // typeDescriptor
                            Object:object,                       // object
-                           ObjLibError_TypeMismatch,            // errorType
+                           ObjLibError_KvCollectionTypeMismatch,// errorType
                            errorHandler,                        // customHandler
                            result,                              // result
                            parseContext,                        // data
