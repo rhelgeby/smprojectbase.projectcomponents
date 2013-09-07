@@ -26,6 +26,7 @@
  */
 
 static stock ObjLib_InspectorBuilt = false;
+static stock String:ObjLib_CommandPrefix[16];
 
 /*____________________________________________________________________________*/
 
@@ -44,13 +45,22 @@ static stock ObjLib_InspectorBuilt = false;
  * Note: Once the inspector is built, it cannot be changed or removed until
  *       the plugin is reloaded.
  *
+ * Note: The command prefix is also applied so that the command will start with:
+ *       <prefix>_object...
+ *
+ *       If the prefix string is empty commands will start with: object_...
+ *
+ * @param commandPrefix     (Optional) Short prefix to use at the beginning of
+ *                          admin command names. It's recommended to specify
+ *                          this to avoid conflicts with other plugins also
+ *                          using this inspector.
  * @param adminFlags        (Optional) Administrative flags (bitstring) to use
  *                          for permissions. Default is ADMFLAG_ROOT.
  * @param group             (Optional) String containing the command group to
  *                          use. If empty, the plugin's filename will be used
  *                          instead. Default is empty.
  */
-stock ObjLib_BuildInspector(adminFlags = ADMFLAG_ROOT, const String:group[] = "")
+stock ObjLib_BuildInspector(const String:commandPrefix[] = "", adminFlags = ADMFLAG_ROOT, const String:group[] = "")
 {
     if (ObjLib_InspectorBuilt)
     {
@@ -58,16 +68,53 @@ stock ObjLib_BuildInspector(adminFlags = ADMFLAG_ROOT, const String:group[] = ""
         return;
     }
     
-    RegAdminCmd("object_help", ObjLibCommand_Help, adminFlags, "Prints an overview of inspector commands.", group);
-    RegAdminCmd("object_inspect", ObjLibCommand_Inspect, adminFlags, "Inspects an object's keys and values. Usage: object_inspect <object address>", group);
-    RegAdminCmd("object_inspect_ex", ObjLibCommand_InspectEx, adminFlags, "Inspect an object's raw data. Usage: object_inspect_ex <object address>", group);
-    RegAdminCmd("object_inspect_type_ex", ObjLibCommand_InspectTypeEx, adminFlags, "Inspects a type descriptor's raw data. Usage: object_inspect_type_ex <type descriptor address>", group);
-    RegAdminCmd("object_inspect_array_cell", ObjLibCommand_InspectArrayCell, adminFlags, "Inspects cell values in an array. Usage: object_inspect_array_cell <array handle>", group);
-    RegAdminCmd("object_inspect_array_float", ObjLibCommand_InspectArrayFloat, adminFlags, "Inspects float values in an array. Usage: object_inspect_array_float <array handle>", group);
-    RegAdminCmd("object_inspect_array_string", ObjLibCommand_InspectArrayString, adminFlags, "Inspects string values in an array. Usage: object_inspect_array_string <array handle>", group);
-    RegAdminCmd("object_inspect_array_hex", ObjLibCommand_InspectArrayHex, adminFlags, "Inspects hex values in an array. Usage: object_inspect_array_hex <array handle>", group);
+    // Store prefix.
+    strcopy(ObjLib_CommandPrefix, sizeof(ObjLib_CommandPrefix), commandPrefix);
+    
+    new String:command[64];
+    
+    ObjLib_GetCommandName(commandPrefix, "object_help", command, sizeof(command));
+    RegAdminCmd(command, ObjLibCommand_Help, adminFlags, "Prints an overview of inspector commands.", group);
+    
+    ObjLib_GetCommandName(commandPrefix, "object_inspect", command, sizeof(command));
+    RegAdminCmd(command, ObjLibCommand_Inspect, adminFlags, "Inspects an object's keys and values. Usage: object_inspect <object address>", group);
+    
+    ObjLib_GetCommandName(commandPrefix, "object_inspect_ex", command, sizeof(command));
+    RegAdminCmd(command, ObjLibCommand_InspectEx, adminFlags, "Inspect an object's raw data. Usage: object_inspect_ex <object address>", group);
+    
+    ObjLib_GetCommandName(commandPrefix, "object_inspect_type_ex", command, sizeof(command));
+    RegAdminCmd(command, ObjLibCommand_InspectTypeEx, adminFlags, "Inspects a type descriptor's raw data. Usage: object_inspect_type_ex <type descriptor address>", group);
+    
+    ObjLib_GetCommandName(commandPrefix, "object_inspect_array_cell", command, sizeof(command));
+    RegAdminCmd(command, ObjLibCommand_InspectArrayCell, adminFlags, "Inspects cell values in an array. Usage: object_inspect_array_cell <array handle>", group);
+    
+    ObjLib_GetCommandName(commandPrefix, "object_inspect_array_float", command, sizeof(command));
+    RegAdminCmd(command, ObjLibCommand_InspectArrayFloat, adminFlags, "Inspects float values in an array. Usage: object_inspect_array_float <array handle>", group);
+    
+    ObjLib_GetCommandName(commandPrefix, "object_inspect_array_string", command, sizeof(command));
+    RegAdminCmd(command, ObjLibCommand_InspectArrayString, adminFlags, "Inspects string values in an array. Usage: object_inspect_array_string <array handle>", group);
+    
+    ObjLib_GetCommandName(commandPrefix, "object_inspect_array_hex", command, sizeof(command));
+    RegAdminCmd(command, ObjLibCommand_InspectArrayHex, adminFlags, "Inspects hex values in an array. Usage: object_inspect_array_hex <array handle>", group);
     
     ObjLib_InspectorBuilt = true;
+}
+
+/*____________________________________________________________________________*/
+
+/**
+ * Gets a command name with prefix applied, if any.
+ */
+stock ObjLib_GetCommandName(const String:prefix[], const String:commandName[], String:buffer[], maxlen)
+{
+    if (strlen(prefix) == 0)
+    {
+        strcopy(buffer, maxlen, commandName);
+    }
+    else
+    {
+        Format(buffer, maxlen, "%s_%s", prefix, commandName);
+    }
 }
 
 /*____________________________________________________________________________*/
@@ -80,17 +127,24 @@ stock ObjLib_BuildInspector(adminFlags = ADMFLAG_ROOT, const String:group[] = ""
  */
 public Action:ObjLibCommand_Help(client, argc)
 {
-    ReplyToCommand(client, "Object inspector commands:");
-    ReplyToCommand(client, "object_help                                         - Prints this overview.");
-    ReplyToCommand(client, "object_inspect <object address>                     - Inspect object keys and values.");
-    ReplyToCommand(client, "object_inspect_ex <object address>                  - Inspect object raw data.");
-    ReplyToCommand(client, "object_inspect_type_ex <type descriptor address>    - Inspect type descriptor raw data.");
-    ReplyToCommand(client, "object_inspect_array_cell <array handle>            - Inspect array elements as cell values.");
-    ReplyToCommand(client, "object_inspect_array_float <array handle>           - Inspect array elements as float values.");
-    ReplyToCommand(client, "object_inspect_array_string <array handle>          - Inspect array elements as string values.");
-    ReplyToCommand(client, "object_inspect_array_hex <array handle>             - Inspect array elements as hex values.");
+    new String:prefix[16];
     
-    ReplyToCommand(client, "Note: All addresses and handles are written as hex values (without the 0x prefix).");
+    if (strlen(ObjLib_CommandPrefix) > 0)
+    {
+        Format(prefix, sizeof(prefix), "%s_", ObjLib_CommandPrefix);
+    }
+    
+    ReplyToCommand(client, "Object inspector commands:");
+    ReplyToCommand(client, "%sobject_help                                         - Prints this overview.", prefix);
+    ReplyToCommand(client, "%sobject_inspect <object address>                     - Inspect object keys and values.", prefix);
+    ReplyToCommand(client, "%sobject_inspect_ex <object address>                  - Inspect object raw data.", prefix);
+    ReplyToCommand(client, "%sobject_inspect_type_ex <type descriptor address>    - Inspect type descriptor raw data.", prefix);
+    ReplyToCommand(client, "%sobject_inspect_array_cell <array handle>            - Inspect array elements as cell values.", prefix);
+    ReplyToCommand(client, "%sobject_inspect_array_float <array handle>           - Inspect array elements as float values.", prefix);
+    ReplyToCommand(client, "%sobject_inspect_array_string <array handle>          - Inspect array elements as string values.", prefix);
+    ReplyToCommand(client, "%sobject_inspect_array_hex <array handle>             - Inspect array elements as hex values.", prefix);
+    
+    ReplyToCommand(client, "\nNote: All addresses and handles must be written as hex values (without the 0x prefix).");
     
     return Plugin_Handled;
 }
