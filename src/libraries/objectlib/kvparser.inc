@@ -1129,8 +1129,7 @@ static stock ObjectType:ObjLib_KvGetColElementTypeOrFail(Collection:collection, 
     {
         // Something is trying to get an object type of a collection that
         // doesn't store objects. This is an error.
-        // TODO: Trigger an error that will skip the section if continuing.
-        ObjLib_KvTypeMismatchError(Object:collection, ObjLib_GetTypeDescriptor(Object:collection), errorHandler, parseContext, "(Collection element)", ObjDataType_Object, dataType);
+        ObjLib_KvCollectionTypeMismatchError(collection, ObjLib_GetTypeDescriptor(Object:collection), errorHandler, parseContext, ObjDataType_Object, dataType);
         return INVALID_OBJECT_TYPE;
     }
     

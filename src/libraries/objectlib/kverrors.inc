@@ -261,6 +261,59 @@ stock bool:ObjLib_KvTypeMismatchError(Object:object, ObjectType:typeDescriptor, 
 /*____________________________________________________________________________*/
 
 /**
+ * Triggers a collection element type mismatch error.
+ *
+ * @param object            Current object.
+ * @param typeDescriptor    Type descriptor for object.
+ * @param errorHandler      Error handler to use on errors.
+ * @param parseContext      Object with parser settings.
+ *                          (Type: ObjLib_KvParamsType)
+ * @param expectedType      Expected data type.
+ * @param actualType        Actual data type.
+ *
+ * @return                  True if error was handled. If not handled this
+ *                          function does not return at all.
+ */
+stock bool:ObjLib_KvCollectionTypeMismatchError(Collection:object, ObjectType:typeDescriptor, ObjLib_ErrorHandler:errorHandler, Object:parseContext, ObjectDataType:expectedType, ObjectDataType:actualType)
+{
+    // Get path to current location in keyvalue tree.
+    decl String:path[PLATFORM_MAX_PATH];
+    ObjLib_KvBuildPath(parseContext, path, sizeof(path));
+    
+    // Convert data types to strings.
+    new String:expectedTypeString[32];
+    new String:actualTypeString[32];
+    ObjLib_DataTypeToString(expectedType, expectedTypeString, sizeof(expectedTypeString));
+    ObjLib_DataTypeToString(actualType, actualTypeString, sizeof(actualTypeString));
+    
+    new Action:result = Plugin_Handled;
+    if (ObjLib_HandleError(typeDescriptor,                      // typeDescriptor
+                           Object:object,                       // object
+                           ObjLibError_TypeMismatch,            // errorType
+                           errorHandler,                        // customHandler
+                           result,                              // result
+                           parseContext,                        // data
+                           "Collection element type mismatch at \"%s\". Expected type: %s. Actual type: %s",   // format
+                           path,
+                           expectedTypeString,
+                           actualTypeString))
+    {
+        // Error was handled in customHandler. Update parser state, skip section
+        // if continuing.
+        ObjLib_KvUpdateParserState(result, parseContext, ObjLibState_SkipSection);
+        
+        // Return to parse loop. The parse state will tell if parser
+        // should abort or continue.
+        return true;
+    }
+    
+    // Not reachable due to call to ThrowError.
+    return false;
+}
+
+/*____________________________________________________________________________*/
+
+/**
  * Fallback error handler in case no error handler is provided to parser.
  *
  * @param typeDescriptor    Related type descriptor.
