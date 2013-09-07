@@ -3,7 +3,7 @@ root
     data_types
     {
         cell                10
-        bool                "true"
+        bool                "true"      // Converted using lookup constraints.
         float               2.5
         string              "This is a string."
     }
@@ -13,7 +13,7 @@ root
         value_a             1
         section_a
         {
-            value_b         2
+            valueB          2
         }
         section_b
         {
@@ -35,22 +35,30 @@ root
     
     collection
     {
-        collection_entry    6
-        collection_entry    7
-        collection_entry    8
+        // This section should trigger a type mismatch error.
+        collection_entry1
+        {
+            value           6
+        }
+        collection_entry2   7
+        collection_entry3   8
     }
     
     collection_of_objects
     {
-        dummy_object
+        dummy_object1
         {
-            dummy_key       9
+            // This section should trigger an invalid section error.
+            dummy_key
+            {
+                test        "abc"
+            }
         }
-        dummy_object
+        dummy_object2
         {
             dummy_key       10
         }
-        dummy_object
+        dummy_object3
         {
             dummy_key       11
         }
