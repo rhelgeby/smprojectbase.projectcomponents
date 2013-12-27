@@ -230,7 +230,7 @@ enum QueryLib_ResultMode
 {
     QueryLib_Invalid = -1,  /** Not a valid mode. Used by validators. */
     QueryLib_First,         /** Pick first accessible element. Useful for prioritized queries. */
-    QueryLib_Last,          /** Pick first accessible last. Useful for prioritized queries. */
+    QueryLib_Last,          /** Pick last accessible element. Useful for prioritized queries. */
     QueryLib_Random,        /** Pick a random accessible element. */
     QueryLib_List           /** Add accessible elements to a list for further processing. */
 }
