@@ -256,8 +256,7 @@ stock Object:ObjLib_GetStringConstraints(bool:nonempty = false,
  * @return              Constraint object. Use this once when adding a key.
  *                      Object must be deleted if not used anywhere.
  */
-stock Object:ObjLib_GetArrayConstraints(bool:nonempty = false,
-                                        bool:lowerLimit = false,
+stock Object:ObjLib_GetArrayConstraints(bool:lowerLimit = false,
                                         bool:upperLimit = false,
                                         minLen = 0,
                                         maxLen = 32)
